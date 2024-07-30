@@ -90,7 +90,7 @@ static SAMPLE_MPP_SENSOR_T libsns[SNS_TYPE_BUTT] = {
     {SONY_IMX378_MIPI_2M_60FPS_10BIT, "imx378-0-0-2-60", "libsns_imx378.so", "g_sns_imx378_obj"},
     {OV_XC9080_MIPI_8M_30FPS_10BIT, "xc9080-0-0-8-30", NULL, NULL},
     {SONY_IMX582_MIPI_8M_30FPS_10BIT, "imx582-0-0-8-30", "libsns_imx582.so", "g_sns_imx582_obj"},
-    {OV7251_MIPI_480P_20FPS_10BIT, "ov7251-0-0-8-20", "libsns_ov7251.so", "g_sns_ov7251_obj"},
+    {OV7251_MIPI_480P_30FPS_10BIT, "ov7251-0-0-8-30", "libsns_ov7251.so", "g_sns_ov7251_obj"},
 };
 
 static sample_vb_param g_vb_param = {
@@ -284,12 +284,12 @@ int wk_mpp_start(int mode)
     printf("BOARD [type:%s, snscnt:%d]\n", cfg[0].type, cfg[0].snscnt);
 
     sns_mode = mode;
-    wk_scence_mode = 1;
+    wk_scence_mode = 0;
     
     cfg[0].lane = 0;
     cfg[0].wdr = 0;
     cfg[0].res = 8;
-    cfg[0].fps = 20;
+    cfg[0].fps = 30;
 
 
     sprintf(home_path, "/root");
@@ -311,7 +311,7 @@ int wk_mpp_start(int mode)
     }
 
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_RECORD, TD_TRUE, PIC_640X480);
-    sample_comm_venc_set_src_framerate(20);
+    sample_comm_venc_set_src_framerate(30);
 
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_640X480);
     // wk_mpp_vpss_set_param(2,TD_TRUE,PIC_CIF);
@@ -393,8 +393,8 @@ static td_s32 wk_mpp_vb_init(ot_vi_vpss_mode_type mode_type, ot_vi_aiisp_mode vi
     ot_vb_cfg vb_cfg;
     td_u32 supplement_config;
 
-    size.width = 640;  /* 3840 pixel */
-    size.height = 480; /* 2160 line */
+    size.width = 1280;  /* 3840 pixel */
+    size.height = 720; /* 2160 line */
 
     wk_mpp_get_default_vb_config(&size, &vb_cfg);
 
@@ -944,7 +944,7 @@ int wk_mpp_scene_start(int scenemode)
     ot_scene_param stSceneParam;
     ot_scene_video_mode stVideoMode;
 
-    wk_scence_mode = scenemode;
+    wk_scence_mode = 0; //scenemode;
     printf("=========== wk_scence_mode[%d]\n", wk_scence_mode);
 
     inipath = "param/sensor_os04a10";
@@ -1222,4 +1222,5 @@ void wk_mpp_get_black_level(int iso)
     
     s32Ret = ss_mpi_isp_set_black_level_attr(viPipe, &mBlackLevel);
 }
+
 

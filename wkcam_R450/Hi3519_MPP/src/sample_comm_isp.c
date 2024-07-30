@@ -276,18 +276,18 @@ static ot_isp_pub_attr g_isp_pub_attr_xc9080_mipi_8m_30fps = {
     },
 };
 
-static ot_isp_pub_attr g_isp_pub_attr_ov7251_mipi_480p_20fps = {
+static ot_isp_pub_attr g_isp_pub_attr_ov7251_mipi_480p_30fps = {
     {0, 0, 640, 480},
-    {640, 480},
-    20,
+    {640, 480},  
+    30,
     OT_ISP_BAYER_RGGB,
-    OT_WDR_MODE_NONE,
-    0,
-    0,
-    0,
+    OT_WDR_MODE_NONE, 
+    0, 
+    0,  
+    0,                   
     {
-        0,
-        {0, 0, 640, 480},
+        0,               
+        {0, 0, 640, 480},  
     },
 };
 
@@ -378,9 +378,9 @@ td_s32 sample_comm_isp_get_pub_attr_by_sns(sample_sns_type sns_type, ot_isp_pub_
                 &g_isp_pub_attr_xc9080_mipi_8m_30fps, sizeof(ot_isp_pub_attr));
             break;
 
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             (td_void) memcpy_s(pub_attr, sizeof(ot_isp_pub_attr),
-                &g_isp_pub_attr_ov7251_mipi_480p_20fps, sizeof(ot_isp_pub_attr));
+                &g_isp_pub_attr_ov7251_mipi_480p_30fps, sizeof(ot_isp_pub_attr));
             break;
 
         default:

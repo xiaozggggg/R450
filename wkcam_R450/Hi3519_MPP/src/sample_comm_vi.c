@@ -342,15 +342,14 @@ static combo_dev_attr_t g_mipi_4lane_chn0_sensor_imx582_10bit_3000p_nowdr_attr =
 };
 
 static combo_dev_attr_t g_mipi_1lane_chn0_sensor_ov7251_10bit_8m_nowdr_attr = {
-    .devno = 0,
-    .input_mode = INPUT_MODE_MIPI,
-    .data_rate = MIPI_DATA_RATE_X1,
-    .img_rect = {0, 0, 640, 480},
-    .mipi_attr = {
-        DATA_TYPE_RAW_10BIT,
-        OT_MIPI_WDR_MODE_NONE,
-        {0, -1, -1, -1, -1, -1, -1, -1}
-        //{0, 1, 2, 3, -1, -1, -1, -1}
+    .devno = 0,                           
+    .input_mode = INPUT_MODE_MIPI,       
+    .data_rate = MIPI_DATA_RATE_X1,   
+    .img_rect = {0, 0, 640, 480},   
+    .mipi_attr = {           
+        DATA_TYPE_RAW_10BIT,   
+        OT_MIPI_WDR_MODE_NONE,    
+        {0, -1, -1, -1, -1, -1, -1, -1}  
     }
 };
 
@@ -467,9 +466,9 @@ static td_void sample_comm_vi_get_mipi_attr(sample_sns_type sns_type, combo_dev_
                 &g_mipi_4lane_chn0_sensor_imx582_10bit_3000p_nowdr_attr, sizeof(combo_dev_attr_t));
             break;
 
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             ob_height = IMX582_OB_HEIGHT_END;
-            printf("### OV7251_MIPI_480P_20FPS_10BIT\n");
+            printf("### OV7251_MIPI_480P_30FPS_10BIT\n");
             (td_void)memcpy_s(combo_attr, sizeof(combo_dev_attr_t),
                 &g_mipi_1lane_chn0_sensor_ov7251_10bit_8m_nowdr_attr, sizeof(combo_dev_attr_t));
             break;
@@ -498,7 +497,7 @@ static td_void sample_comm_vi_get_mipi_ext_data_attr(sample_sns_type sns_type, e
         case SONY_IMX582_MIPI_3000P_30FPS_10BIT: // add by Kyrie
         case OV_XC9080_MIPI_8M_30FPS_10BIT:   // add by Kyrie
         case SONY_IMX378_MIPI_2M_60FPS_10BIT:
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             (td_void)memcpy_s(ext_data_attr, sizeof(ext_data_type_t),
                 &g_mipi_ext_data_type_os08a20_12bit_8m_nowdr_attr, sizeof(ext_data_type_t));
             break;
@@ -630,7 +629,7 @@ static td_void sample_comm_vi_get_mipi_attr_by_dev_id(sample_sns_type sns_type, 
             }
             break;
 
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             ob_height = IMX378_OB_HEIGHT_END;
             if (vi_dev == 0) {
                 (td_void)memcpy_s(combo_attr, sizeof(combo_dev_attr_t),
@@ -800,7 +799,7 @@ td_void sample_comm_vi_get_size_by_sns_type(sample_sns_type sns_type, ot_size *s
             size->height = HEIGHT_1080;
             break;
 
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             size->width  = 640;
             size->height = 480;
             break;
@@ -835,7 +834,7 @@ td_u32 sample_comm_vi_get_obheight_by_sns_type(sample_sns_type sns_type)
             ob_height = IMX582_OB_HEIGHT_END;
             break;
         case OV_XC9080_MIPI_8M_30FPS_10BIT: // add by Kyrie
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             ob_height = XC9080_OB_HEIGHT_END;
             break;
         case OV_OS04A10_MIPI_4M_30FPS_12BIT:
@@ -869,7 +868,7 @@ static td_u32 sample_comm_vi_get_pipe_num_by_sns_type(sample_sns_type sns_type)
         case SONY_IMX582_MIPI_8M_30FPS_10BIT: // add by Kyrie
         case SONY_IMX582_MIPI_3000P_30FPS_10BIT: // add by Kyrie
         case OV_XC9080_MIPI_8M_30FPS_10BIT:   // add by Kyrie
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             return 1;
 
         case OV_OS08A20_MIPI_8M_30FPS_10BIT_WDR2TO1:
@@ -897,7 +896,7 @@ static ot_wdr_mode sample_comm_vi_get_wdr_mode_by_sns_type(sample_sns_type sns_t
         case SONY_IMX378_MIPI_2M_60FPS_10BIT: // add by Kyrie
         case SONY_IMX582_MIPI_8M_30FPS_10BIT: // add by Kyrie
         case SONY_IMX582_MIPI_3000P_30FPS_10BIT: // add by Kyrie
-        case OV7251_MIPI_480P_20FPS_10BIT:
+        case OV7251_MIPI_480P_30FPS_10BIT:
             return OT_WDR_MODE_NONE;
 
         case OV_OS08A20_MIPI_8M_30FPS_10BIT_WDR2TO1:
@@ -1015,7 +1014,7 @@ td_void sample_comm_vi_get_default_pipe_info(sample_sns_type sns_type, ot_vi_bin
         pipe_info[i].pipe_attr.frame_rate_ctrl.dst_frame_rate = -1;
 
         pipe_info[i].pipe_need_start = TD_TRUE;
-        pipe_info[i].isp_need_run = TD_FALSE;
+        pipe_info[i].isp_need_run = TD_TRUE;
         pipe_info[i].isp_quick_start = TD_FALSE;
 
         if (i == 0) {
@@ -1036,7 +1035,7 @@ td_void sample_comm_vi_get_default_pipe_info(sample_sns_type sns_type, ot_vi_bin
         pipe_info[i].chn_info[0].fmu_mode                                = OT_FMU_MODE_OFF;
         pipe_info[i].chn_info[0].chn_attr.size.width                     = size.width;
         pipe_info[i].chn_info[0].chn_attr.size.height                    = size.height;
-        pipe_info[i].chn_info[0].chn_attr.pixel_format                   = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_422;
+        pipe_info[i].chn_info[0].chn_attr.pixel_format                   = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420;
         pipe_info[i].chn_info[0].chn_attr.dynamic_range                  = OT_DYNAMIC_RANGE_SDR8;
         pipe_info[i].chn_info[0].chn_attr.video_format                   = OT_VIDEO_FORMAT_LINEAR;
         pipe_info[i].chn_info[0].chn_attr.compress_mode                  = OT_COMPRESS_MODE_SEG;

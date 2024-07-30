@@ -229,7 +229,7 @@ void * thread_video_rtsp_srv_entry(void * parg)
     //////////////////////////////////////////////
     std::string ip;
     char IpAddress[16] = {0};
-	if( getLocalIpAddress((char *)"eth0" ,(char *)IpAddress) ){ //wireless wlan0 有线：eth0
+	if( getLocalIpAddress((char *)"wlan0" ,(char *)IpAddress) ){ //wireless wlan0 有线：eth0
 		printf("getLocalIpAddress successful!\n");
         ip = IpAddress;
 	}else{
