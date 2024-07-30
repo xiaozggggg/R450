@@ -147,6 +147,59 @@ void ov7251_prog(ot_vi_pipe vi_pipe, const td_u32 *rom)
     return;
 }
 
+td_void ov7251_blc_clamp(ot_vi_pipe vi_pipe, ot_isp_sns_blc_clamp blc_clamp)
+{
+    td_s32 ret = TD_SUCCESS;
+
+    ov7251_set_blc_clamp_value(vi_pipe, blc_clamp.blc_clamp_en);
+
+	td_u8 u8blc_value = 0x85;
+    if (blc_clamp.blc_clamp_en == TD_TRUE) {
+        ret += ov7251_write_registeraaa(vi_pipe, 0x5000, u8blc_value);  /* clamp on */
+    } else {
+		u8blc_value = u8blc_value & 0xFE;
+        ret += ov7251_write_registeraaa(vi_pipe, 0x5000, u8blc_value);  /* clamp off */
+    }
+
+    if (ret != TD_SUCCESS) {
+        isp_err_trace("write register failed!\n");
+    }
+	
+    return;
+}
+
+td_void ov7251_mirror_flip(ot_vi_pipe vi_pipe, ot_isp_sns_mirrorflip_type sns_mirror_flip)
+{
+	td_u8 u8filp_value = 0x00; 	 // ov7251_read_register(vi_pipe, 0x3820);
+	td_u8 u8mirror_value = 0x00; //ov7251_read_register(vi_pipe, 0x3821);
+	
+    switch (sns_mirror_flip) {
+        case ISP_SNS_NORMAL:
+			u8filp_value = u8filp_value & 0xFB;
+			u8mirror_value = u8mirror_value & 0xFB;
+            break;
+        case ISP_SNS_MIRROR:
+			u8filp_value = u8filp_value & 0xFB;
+			u8mirror_value = u8mirror_value | (1 << 2);
+            break;
+        case ISP_SNS_FLIP:
+			u8filp_value = u8filp_value | (1 << 2);
+			u8mirror_value = u8mirror_value & 0xFB;
+            break;
+        case ISP_SNS_MIRROR_FLIP:
+			u8filp_value = u8filp_value | (1 << 2);
+			u8mirror_value = u8mirror_value | (1 << 2);
+            break;
+        default:
+            break;
+    }
+	
+	ov7251_write_registeraaa(vi_pipe, 0x3820, u8filp_value);
+	ov7251_write_registeraaa(vi_pipe, 0x3821, u8mirror_value);
+    return;
+}
+
+
 void ov7251_standby(ot_vi_pipe vi_pipe)
 {
     td_s32 ret = TD_SUCCESS;
@@ -160,7 +213,7 @@ void ov7251_standby(ot_vi_pipe vi_pipe)
 void ov7251_restart(ot_vi_pipe vi_pipe)
 {
     td_s32 ret = TD_SUCCESS;
-    ret += ov7251_write_registeraaa(vi_pipe, 0x0100, 0x01);  /* STANDBY */
+    ret += ov7251_write_registeraaa(vi_pipe, 0x0103, 0x01);  /* restart */
     if (ret != TD_SUCCESS) {
         isp_err_trace("write register failed!\n");
     }
@@ -183,22 +236,25 @@ static const td_u16 g_au16SensorCfgSeq[][OV7251_MODE_BUTT + 1] =
     { 0x301c, 0x00},
     { 0x3023, 0x05},
     { 0x3037, 0xf0},
-    { 0x3098, 0x04},
-    { 0x3099, 0x28},
-    { 0x309a, 0x05},
-    { 0x309b, 0x04},
-    { 0x30b0, 0x0a},
-    { 0x30b1, 0x01},
-    { 0x30b3, 0x64},
-    { 0x30b4, 0x03},
-    { 0x30b5, 0x05},
-    { 0x3106, 0xda},
-    { 0x3500, 0x00},
-    { 0x3501, 0x00},
-    { 0x3502, 0x50},
-    { 0x3503, 0x07},
-    { 0x3509, 0x10},
-    { 0x350b, 0x02},
+    /*** start 时钟PLL相关乘法除法器，配置    mipi_clk(600M) pix_clk(60M) sys_clk(48M) ADC_clk(240M)****/
+	{ 0x3098, 0x02},
+	{ 0x3099, 0x28},
+	{ 0x309a, 0x05},
+	{ 0x309b, 0x04},
+	{ 0x309d, 0x00},
+	{ 0x30b0, 0x0a},
+	{ 0x30b1, 0x01},
+	{ 0x30b3, 0x32},
+	{ 0x30b4, 0x01},
+	{ 0x30b5, 0x05},
+	/*** end ***/
+	{ 0x3106, 0xda},
+    { 0x3500, 0x00}, // 0x00  exposure高位寄存器
+    { 0x3501, 0x00}, // 0x00  exposure中位寄存器
+    { 0x3502, 0x50}, // 0x50  exposure低位寄存器
+    { 0x3503, 0x07}, // 0x07  曝光值和增益使能寄存器
+    { 0x3509, 0x10}, // 0x10  手动使能增益
+    { 0x350b, 0x02}, // 0x02  增益寄存器 
     { 0x3600, 0x1c},
     { 0x3602, 0x62},
     { 0x3620, 0xb7},
@@ -241,16 +297,16 @@ static const td_u16 g_au16SensorCfgSeq[][OV7251_MODE_BUTT + 1] =
     { 0x380b, 0xe0},
     { 0x380c, 0x03},
     { 0x380d, 0xa0},
-    { 0x380e, 0x02},//;02,0x,0xfor,0x20fps
-    { 0x380f, 0x10},//;0a
+    { 0x380e, 0x06}, // fps设置高位寄存器  100fps:0x02 60fps:0x03 30fps:0x06 20fps:0x0a
+    { 0x380f, 0xc0}, // fps设置地位寄存器  100fps:0x09 60fps:0x60 30fps:0xc0 20fps:0x10
     { 0x3810, 0x00},
     { 0x3811, 0x04},
     { 0x3812, 0x00},
     { 0x3813, 0x05},
     { 0x3814, 0x11},
     { 0x3815, 0x11},
-    { 0x3820, 0x40},
-    { 0x3821, 0x00},
+    { 0x3820, 0x00}, // 控制翻转
+    { 0x3821, 0x00}, // 控制镜像
     { 0x382f, 0x0e},
     { 0x3832, 0x00},
     { 0x3833, 0x05},
@@ -286,8 +342,8 @@ static const td_u16 g_au16SensorCfgSeq[][OV7251_MODE_BUTT + 1] =
     { 0x3c07, 0x06},
     { 0x3c0c, 0x01},
     { 0x3c0d, 0xd0},
-    { 0x3c0e, 0x02},
-    { 0x3c0f, 0x10},
+    { 0x3c0e, 0x02}, 
+    { 0x3c0f, 0x10},   
     { 0x4001, 0x42},
     { 0x4004, 0x04},
     { 0x4005, 0x00},
@@ -306,33 +362,10 @@ static const td_u16 g_au16SensorCfgSeq[][OV7251_MODE_BUTT + 1] =
     { 0x4a47, 0x7f},
     { 0x4a49, 0xf0},
     { 0x4a4b, 0x30},
-    { 0x5000, 0x85},
+    { 0x5000, 0x85}, // 0x85 开启黑电平矫正、关闭awb矫正
     { 0x5001, 0x80},
     { 0x0100, 0x01}
 };
-
-td_void ov7251_blc_clamp(ot_vi_pipe vi_pipe, ot_isp_sns_blc_clamp blc_clamp)
-{
-    td_s32 ret = TD_SUCCESS;
-
-    ov7251_set_blc_clamp_value(vi_pipe, blc_clamp.blc_clamp_en);
-
-#if 0 
-    if (blc_clamp.blc_clamp_en == TD_TRUE) {
-        ret += ov7251_write_registeraaa(vi_pipe, 0x3258, 0x01);  /* clamp on */
-    } else {
-        ret += ov7251_write_registeraaa(vi_pipe, 0x3258, 0x00);  /* clamp off */
-    }
-#endif
-
-    if (ret != TD_SUCCESS) {
-        isp_err_trace("write register failed!\n");
-    }
-    return;
-}
-
-
-static void ov7251_linear_480p20_10bit_init(ot_vi_pipe vi_pipe);
 
 static void ov7251_default_reg_init(ot_vi_pipe vi_pipe)
 {
@@ -350,6 +383,38 @@ static void ov7251_default_reg_init(ot_vi_pipe vi_pipe)
     }
     return;
 }
+
+/* 4K@30fps */
+static void ov7251_linear_480p20_10bit_init(ot_vi_pipe vi_pipe)
+{
+    td_s32 ret = TD_SUCCESS;
+    td_u32 i, u32SeqEntries;
+    td_u8 u16RegData;
+    td_u16 u16RegAddr;
+
+    u32SeqEntries = sizeof(g_au16SensorCfgSeq) / sizeof(g_au16SensorCfgSeq[0]);
+    for (i = 0; i < u32SeqEntries; i++) {
+        u16RegAddr = g_au16SensorCfgSeq[i][0];
+        u16RegData = g_au16SensorCfgSeq[i][1];
+
+        if (u16RegData == NA) {
+            continue;
+        }
+
+        ov7251_write_registeraaa(vi_pipe, u16RegAddr, u16RegData);
+    }
+	
+	ov7251_default_reg_init(vi_pipe);
+
+    printf("=========== write i2c register finish ========= \n");
+    if (ret != TD_SUCCESS) {
+        isp_err_trace("write register failed!\n");
+        return;
+    }
+
+    printf("===OV7251 480P 20fps 10bit LINE Init OK!===\n");
+}
+
 
 void ov7251_init(ot_vi_pipe vi_pipe)
 {
@@ -396,33 +461,4 @@ void ov7251_exit(ot_vi_pipe vi_pipe)
     return;
 }
 
-/* 4K@30fps */
-static void ov7251_linear_480p20_10bit_init(ot_vi_pipe vi_pipe)
-{
-    td_s32 ret = TD_SUCCESS;
-    td_u32 i, u32SeqEntries;
-    td_u8 u16RegData;
-    td_u16 u16RegAddr;
-    
-    u32SeqEntries = sizeof(g_au16SensorCfgSeq) / sizeof(g_au16SensorCfgSeq[0]);
-    for (i = 0; i < u32SeqEntries; i++) {
-        u16RegAddr = g_au16SensorCfgSeq[i][0];
-        u16RegData = g_au16SensorCfgSeq[i][1];
 
-        if (u16RegData == NA) {
-            continue;
-        }
-
-        ov7251_write_registeraaa(vi_pipe, u16RegAddr, u16RegData);
-    }
-
-    ov7251_default_reg_init(vi_pipe);
-
-    printf("=========== write i2c register finish ========= \n");
-    if (ret != TD_SUCCESS) {
-        isp_err_trace("write register failed!\n");
-        return;
-    }
-
-    printf("===OV7251 480P 20fps 10bit LINE Init OK!===\n");
-}

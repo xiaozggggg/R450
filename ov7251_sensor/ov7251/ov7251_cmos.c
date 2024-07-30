@@ -15,7 +15,7 @@
 #define OV7251_ID                    77
 #define SENSOR_OV7251_WIDTH          640
 #define SENSOR_OV7251_HEIGHT         480
-#define OV7251_BLACK_LEVEL           (1024)
+#define OV7251_BLACK_LEVEL           (0x400)
 #define OV7251_RATIO                 64
 
 #define higher_4bits(x) (((x) & 0xf0000) >> 16)
@@ -32,6 +32,8 @@
 static ot_isp_fswdr_mode g_fswdr_mode[OT_ISP_MAX_PIPE_NUM] = {
     [0 ... OT_ISP_MAX_PIPE_NUM - 1] = OT_ISP_FSWDR_NORMAL_MODE
 };
+
+static td_u8 g_ae_stat_pos[OT_ISP_MAX_PIPE_NUM] = {0};
 
 static td_u32 g_max_time_get_cnt[OT_ISP_MAX_PIPE_NUM] = {0};
 static td_u32 g_init_exposure[OT_ISP_MAX_PIPE_NUM]  = {0};
@@ -80,8 +82,10 @@ td_void ov7251_set_blc_clamp_value(ot_vi_pipe vi_pipe, td_bool clamp_en)
     blc_clamp_info[vi_pipe] = clamp_en;
 }
 
+#define OV7251_MAX_FPS	30
+
 const ov7251_video_mode_tbl g_ov7251_mode_tbl[OV7251_MODE_BUTT] = {
-    {OV7251_VMAX_480P20_LINEAR_10BIT,   OV7251_FULL_LINES_MAX,          20, 0.8,
+    {OV7251_VMAX_480P20_LINEAR_10BIT,   OV7251_FULL_LINES_MAX,          OV7251_MAX_FPS, 0.8,
      640, 480, 0, OT_WDR_MODE_NONE,       "OV7251_SENSOR_480P_20FPS_LINEAR_10BIT"},
 };
 
@@ -89,7 +93,7 @@ const ov7251_video_mode_tbl g_ov7251_mode_tbl[OV7251_MODE_BUTT] = {
  * local variables                                                            *
  ****************************************************************************/
 /* Imx327 Register Address */
-#define OV7251_SHR0_ADDR                  0x0203
+#define OV7251_SHR0_ADDR                  0x3502   // 曝光寄存器
 
 #define OV7251_PRSH_LENGTH                0x3f3b
 
@@ -138,10 +142,11 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->full_lines_std = sns_state->fl_std;
     ae_sns_dft->flicker_freq = 50 * 256; /* light flicker freq: 50Hz, accuracy: 256 */
     ae_sns_dft->full_lines_max = OV7251_FULL_LINES_MAX;
-    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * 20); /* 1000000000ns, 30fps */
+    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * OV7251_MAX_FPS); /* 1000000000ns, 30fps */
 
     ae_sns_dft->again_accu.accu_type = OT_ISP_AE_ACCURACY_TABLE;
     ae_sns_dft->again_accu.accuracy  = 1;
+	ae_sns_dft->int_time_accu.offset = 0;
 
     ae_sns_dft->dgain_accu.accu_type = OT_ISP_AE_ACCURACY_TABLE;
     ae_sns_dft->dgain_accu.accuracy = 1;
@@ -150,7 +155,7 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->min_isp_dgain_target = 1 << ae_sns_dft->isp_dgain_shift;
     ae_sns_dft->max_isp_dgain_target = 4 << ae_sns_dft->isp_dgain_shift; /* max 2 */
     if (g_lines_per500ms[vi_pipe] == 0) {
-        ae_sns_dft->lines_per500ms = sns_state->fl_std * 20 / 2; /* 30fps, div 2 */
+        ae_sns_dft->lines_per500ms = sns_state->fl_std * OV7251_MAX_FPS / 2; /* 30fps, div 2 */
     } else {
         ae_sns_dft->lines_per500ms = g_lines_per500ms[vi_pipe];
     }
@@ -163,7 +168,8 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->ae_route_attr_ex.total_num = 0;
     ae_sns_dft->quick_start.quick_start_enable = g_quick_start_en[vi_pipe];
     ae_sns_dft->quick_start.black_frame_num = 0;
-
+	ae_sns_dft->ae_stat_pos = g_ae_stat_pos[vi_pipe]; /* 1 use be stat to AE */
+	
     return;
 }
 
@@ -192,10 +198,10 @@ static td_void cmos_get_ae_linear_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_d
     ae_sns_dft->ae_exp_mode = OT_ISP_AE_EXP_HIGHLIGHT_PRIOR;
     ae_sns_dft->init_exposure = g_init_exposure[vi_pipe] ? g_init_exposure[vi_pipe] : 76151; /* init 76151 */
 
-    ae_sns_dft->max_int_time = sns_state->fl_std - 20; /* sub 6 */
-    ae_sns_dft->min_int_time = 5; /* min 2 */
+    ae_sns_dft->max_int_time = sns_state->fl_std - 2; /* sub 6 */
+    ae_sns_dft->min_int_time = 3; /* min 2 */
     ae_sns_dft->max_int_time_target = 65535; /* max 65535 */
-    ae_sns_dft->min_int_time_target = 1; /* min 1 */
+    ae_sns_dft->min_int_time_target = 3; /* min 1 */
     ae_sns_dft->ae_route_ex_valid = g_ae_route_ex_valid[vi_pipe];
     (td_void)memcpy_s(&ae_sns_dft->ae_route_attr, sizeof(ot_isp_ae_route),
                       &g_init_ae_route[vi_pipe],  sizeof(ot_isp_ae_route));
@@ -228,14 +234,35 @@ static td_s32 cmos_get_ae_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_default *
     return TD_SUCCESS;
 }
 
+/* 换算成曝光时间 */
+static td_u32 cmos_vmax2inttime(ot_isp_sns_state *sns_state, td_u32 vmax)
+{
+	td_u32 lines, lines_max, vmax_tmp;
+	td_float max_fps, min_fps;
+	const td_u32 fps = OV7251_MAX_FPS;
+	const td_u32 inttime_max = (1000000/OV7251_MAX_FPS)*0.9;  // 最大曝光时间
+	td_u32 int_time = 0; 
+
+    lines = g_ov7251_mode_tbl[sns_state->img_mode].ver_lines;
+    lines_max = g_ov7251_mode_tbl[sns_state->img_mode].max_ver_lines;
+    max_fps = g_ov7251_mode_tbl[sns_state->img_mode].max_fps;
+    min_fps = g_ov7251_mode_tbl[sns_state->img_mode].min_fps;
+
+    vmax_tmp = lines * max_fps / fps;
+    vmax_tmp = (vmax_tmp > lines_max) ? lines_max : vmax_tmp;
+    vmax_tmp = vmax_tmp + vmax_tmp % 2; /* mod 2 */
+
+	int_time = (inttime_max/(td_float)vmax_tmp) * vmax;  
+
+	printf("------- vmax = %d, int_time = %x\n", vmax, int_time);
+	return int_time;
+}
+
 static td_void cmos_config_vmax(ot_isp_sns_state *sns_state, td_u32 vmax)
 {
     if (sns_state->wdr_mode == OT_WDR_MODE_NONE) {
-        sns_state->regs_info[0].i2c_data[0].data = low_8bits(vmax); /* array index 5 */
-        sns_state->regs_info[0].i2c_data[1].data = high_8bits(vmax); /* array index 6 */
-        
-        sns_state->regs_info[0].i2c_data[9].data = low_8bits(vmax); /* array index 11 */
-        sns_state->regs_info[0].i2c_data[10].data = high_8bits(vmax); /* array index 12 */
+        sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, vmax)); 
+        sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, vmax)); 
     }
 
     return;
@@ -261,6 +288,7 @@ static td_void cmos_fps_set(ot_vi_pipe vi_pipe, td_float fps, ot_isp_ae_sensor_d
         isp_err_trace("Not support Fps: %f\n", fps);
         return;
     }
+	
     achieve_fps_flag = TD_TRUE;
     vmax = lines * max_fps / div_0_to_1_float(fps);
     {
@@ -275,7 +303,7 @@ static td_void cmos_fps_set(ot_vi_pipe vi_pipe, td_float fps, ot_isp_ae_sensor_d
     ae_sns_dft->fps = (achieve_fps_flag) ? fps : ae_sns_dft->fps;
 
     ae_sns_dft->full_lines_std = sns_state->fl_std;
-    ae_sns_dft->max_int_time = sns_state->fl_std - 20;  /* sub 2 */
+    ae_sns_dft->max_int_time = sns_state->fl_std - 2;  /* sub 2 */
     sns_state->fl[0] = sns_state->fl_std;
     ae_sns_dft->full_lines = sns_state->fl[0];
     ae_sns_dft->hmax_times =
@@ -302,18 +330,15 @@ static td_void cmos_slow_framerate_set(ot_vi_pipe vi_pipe, td_u32 full_lines, ot
     ot_unused(achieve_fps);
     switch (sns_state->wdr_mode) {
         case OT_WDR_MODE_NONE:
-            sns_state->regs_info[0].i2c_data[0].data = vmax & 0xFF; /* index 5 */
-            sns_state->regs_info[0].i2c_data[1].data = (vmax & 0xFF00) >> 8; /* index 6, shift 8 */
-
-            sns_state->regs_info[0].i2c_data[9].data = (vmax & 0xFF); /* index 11 */
-            sns_state->regs_info[0].i2c_data[10].data = (vmax & 0xFF00) >> 8; /* index 12, shift 8 */
+            sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, vmax)); 
+            sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, vmax)); 
             break;
         default:
             break;
     }
 
     ae_sns_dft->full_lines = sns_state->fl[0];
-    ae_sns_dft->max_int_time = sns_state->fl[0] - 20; /* max_int_time: Flstd - 2 */
+    ae_sns_dft->max_int_time = sns_state->fl[0] - 2; /* max_int_time: Flstd - 2 */
 
     return;
 }
@@ -325,12 +350,9 @@ static td_void cmos_inttime_update_linear(ot_vi_pipe vi_pipe, td_u32 int_time)
 
     OV7251_sensor_get_ctx(vi_pipe, sns_state);
     sns_check_pointer_void_return(sns_state);
-
-    value = int_time;
-    value = MIN2(value, 0xFFFFF);
-    value = MIN2(MAX2(value, 5), sns_state->fl[0] - 20); /* max 6, sub 2 */
-    sns_state->regs_info[0].i2c_data[2].data = low_8bits(value);
-    sns_state->regs_info[0].i2c_data[3].data = high_8bits(value);
+	
+    sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, int_time)); 
+    sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, int_time)); 	
 }
 
 /* while isp notify ae to update sensor regs, ae call these funcs. */
@@ -446,22 +468,8 @@ static td_void cmos_gains_update(ot_vi_pipe vi_pipe, td_u32 again, td_u32 dgain)
     OV7251_sensor_get_ctx(vi_pipe, sns_state);
     sns_check_pointer_void_return(sns_state);
 
-    sns_state->regs_info[0].i2c_data[4].data = (again & 0xFF);
-    sns_state->regs_info[0].i2c_data[5].data = ((again >> 8) & 0x0003);
-
-    if(dgain%1024 != 0)
-    {
-      sns_state->regs_info[0].i2c_data[7].data = (((dgain % 1024) >> 2) & 0x00FF);
-      sns_state->regs_info[0].i2c_data[8].data = ((dgain >> 10 ) & 0xF);
-      sns_state->regs_info[0].i2c_data[6].data = 1;
-    }
-    else 
-    {
-      sns_state->regs_info[0].i2c_data[7].data = 0xFF;
-      sns_state->regs_info[0].i2c_data[8].data = ((dgain >> 10 ) & 0xF) - 1;
-      sns_state->regs_info[0].i2c_data[6].data = 1;
-    }
-
+ 	/* 暂无使用增益 */ 
+ 	
     return;
 }
 
@@ -778,7 +786,7 @@ static td_s32 cmos_get_isp_black_level(ot_vi_pipe vi_pipe, ot_isp_cmos_black_lev
     sns_check_pointer_return(black_level);
     OV7251_sensor_get_ctx(vi_pipe, sns_state);
     sns_check_pointer_return(sns_state);
-    
+
     /* Don't need to update black level when iso change */
     black_level->auto_attr.update = TD_TRUE;
 
@@ -820,7 +828,7 @@ static td_void cmos_set_pixel_detect(ot_vi_pipe vi_pipe, td_bool enable)
         return;
     } else {
         if (sns_state->img_mode == OV7251_SENSOR_480P_20FPS_LINEAR_10BIT)  {
-            full_lines_5fps = (OV7251_VMAX_480P30_LINEAR_10BIT * 20) / 5; /* 30fps, 5fps */
+            full_lines_5fps = (OV7251_VMAX_480P30_LINEAR_10BIT * OV7251_MAX_FPS) / 5; /* 30fps, 5fps */
         }
         else {
             return;
@@ -828,27 +836,15 @@ static td_void cmos_set_pixel_detect(ot_vi_pipe vi_pipe, td_bool enable)
     }
 
     max_int_time_5fps = 20; /* max_int_time_5fps 6 */
+	
+	if (enable) { /* setup for ISP pixel calibration mode */
+		ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR,   low_8bits(cmos_vmax2inttime(sns_state, max_int_time_5fps)));
+		ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR-1, high_8bits(cmos_vmax2inttime(sns_state, max_int_time_5fps)) );
 
-    if (enable) { /* setup for ISP pixel calibration mode */
-
-        ov7251_write_registeraaa(vi_pipe, OV7251_AGAIN_ADDR, 0x00);
-        ov7251_write_registeraaa(vi_pipe, OV7251_AGAIN_ADDR - 1, 0x00);
-        ov7251_write_registeraaa(vi_pipe, OV7251_DGAIN_ADDR, 0x00);
-        ov7251_write_registeraaa(vi_pipe, OV7251_DGAIN_ADDR - 1, 0x00);
-        ov7251_write_registeraaa(vi_pipe, OV7251_DGAIN_CTL, 0x01);
-
-        ov7251_write_registeraaa(vi_pipe, OV7251_VMAX_ADDR, low_8bits(full_lines_5fps));
-        ov7251_write_registeraaa(vi_pipe, OV7251_VMAX_ADDR - 1, high_8bits(full_lines_5fps));
-
-        ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR, low_8bits(max_int_time_5fps));
-        ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR - 1, high_8bits(max_int_time_5fps));
-
-    } else { /* setup for ISP 'normal mode' */
-        sns_state->fl_std = (sns_state->fl_std > 0xFFFFF) ? 0xFFFFF : sns_state->fl_std;
-        ov7251_write_registeraaa(vi_pipe, OV7251_VMAX_ADDR, low_8bits(sns_state->fl_std));
-        ov7251_write_registeraaa(vi_pipe, OV7251_VMAX_ADDR + 1, high_8bits(sns_state->fl_std));
-        sns_state->sync_init = TD_FALSE;
-    }
+	} else { /* setup for ISP 'normal mode' */
+		sns_state->fl_std = (sns_state->fl_std > 0xFFFFF) ? 0xFFFFF : sns_state->fl_std;
+		sns_state->sync_init = TD_FALSE;
+	}
 
     return;
 }
@@ -884,47 +880,22 @@ static td_void cmos_comm_sns_reg_info_init(ot_vi_pipe vi_pipe, ot_isp_sns_state 
     sns_state->regs_info[0].sns_type = OT_ISP_SNS_TYPE_I2C;
     sns_state->regs_info[0].com_bus.i2c_dev = g_ov7251_bus_info[vi_pipe].i2c_dev;
     sns_state->regs_info[0].cfg2_valid_delay_max = 2; /* delay_max 2 */
-    sns_state->regs_info[0].reg_num = 0; /* reg_num 8 */
+    sns_state->regs_info[0].reg_num = 2; /* reg_num 8 */
 
+	/* i2c数据信息 */
     for (i = 0; i < sns_state->regs_info[0].reg_num; i++) {
         sns_state->regs_info[0].i2c_data[i].update = TD_TRUE;
         sns_state->regs_info[0].i2c_data[i].dev_addr = OV7251_I2C_ADDR;
         sns_state->regs_info[0].i2c_data[i].addr_byte_num = OV7251_ADDR_BYTE;
         sns_state->regs_info[0].i2c_data[i].data_byte_num = OV7251_DATA_BYTE;
     }
-
-    /* vmax */
-    sns_state->regs_info[0].i2c_data[0].delay_frame_num = 0;
-    sns_state->regs_info[0].i2c_data[0].reg_addr = OV7251_VMAX_ADDR;
+    
+    /* shutter */
+	sns_state->regs_info[0].i2c_data[0].delay_frame_num = 0;
+    sns_state->regs_info[0].i2c_data[0].reg_addr = OV7251_SHR0_ADDR - 1;
     sns_state->regs_info[0].i2c_data[1].delay_frame_num = 0;
-    sns_state->regs_info[0].i2c_data[1].reg_addr = OV7251_VMAX_ADDR - 1;
-    
-     /* shutter */
-    sns_state->regs_info[0].i2c_data[2].delay_frame_num = 0;
-    sns_state->regs_info[0].i2c_data[2].reg_addr = OV7251_SHR0_ADDR;
-    sns_state->regs_info[0].i2c_data[3].delay_frame_num = 0;
-    sns_state->regs_info[0].i2c_data[3].reg_addr = OV7251_SHR0_ADDR - 1;
-    
-    
-    /* again */
-    sns_state->regs_info[0].i2c_data[4].delay_frame_num = 1; /* index 3 */
-    sns_state->regs_info[0].i2c_data[4].reg_addr = OV7251_AGAIN_ADDR; /* index 3 */
-    sns_state->regs_info[0].i2c_data[5].delay_frame_num = 1;  /* index 4 */
-    sns_state->regs_info[0].i2c_data[5].reg_addr = OV7251_AGAIN_ADDR - 1; /* index 4 */
+    sns_state->regs_info[0].i2c_data[1].reg_addr = OV7251_SHR0_ADDR;
 
-    /* dgain */
-    sns_state->regs_info[0].i2c_data[6].delay_frame_num = 1; /* index 7 */
-    sns_state->regs_info[0].i2c_data[6].reg_addr = OV7251_DGAIN_CTL; /* index 7, index 2 */
-    sns_state->regs_info[0].i2c_data[7].delay_frame_num = 1; /* index 5 */
-    sns_state->regs_info[0].i2c_data[7].reg_addr = OV7251_DGAIN_ADDR; /* index 5 */
-    sns_state->regs_info[0].i2c_data[8].delay_frame_num = 1; /* index 6 */
-    sns_state->regs_info[0].i2c_data[8].reg_addr = OV7251_DGAIN_ADDR - 1; /* index 6 */
-
-    /* prsh */
-    sns_state->regs_info[0].i2c_data[9].delay_frame_num = 0; /* index 3 */
-    sns_state->regs_info[0].i2c_data[9].reg_addr = OV7251_PRSH_LENGTH; /* index 3 */
-    sns_state->regs_info[0].i2c_data[10].delay_frame_num = 0;  /* index 4 */
-    sns_state->regs_info[0].i2c_data[10].reg_addr = OV7251_PRSH_LENGTH - 1; /* index 4 */
     return;
 }
 
@@ -1202,6 +1173,7 @@ static td_s32 sensor_set_init(ot_vi_pipe vi_pipe, ot_isp_init_attr *init_attr)
     g_sample_r_gain[vi_pipe] = init_attr->sample_r_gain;
     g_sample_b_gain[vi_pipe] = init_attr->sample_b_gain;
     g_quick_start_en[vi_pipe] = init_attr->quick_start_en;
+	g_ae_stat_pos[vi_pipe]       = init_attr->ae_stat_pos;
 
     g_ae_route_ex_valid[vi_pipe] = init_attr->ae_route_ex_valid;
     (td_void)memcpy_s(&g_init_ae_route[vi_pipe], sizeof(ot_isp_ae_route),
@@ -1216,12 +1188,14 @@ static td_s32 sensor_set_init(ot_vi_pipe vi_pipe, ot_isp_init_attr *init_attr)
     return TD_SUCCESS;
 }
 
+
+
 ot_isp_sns_obj g_sns_ov7251_obj = {
     .pfn_register_callback     = sensor_register_callback,
     .pfn_un_register_callback  = sensor_unregister_callback,
     .pfn_standby               = ov7251_standby,
     .pfn_restart               = ov7251_restart,
-    .pfn_mirror_flip           = TD_NULL,
+    .pfn_mirror_flip           = ov7251_mirror_flip,
     .pfn_set_blc_clamp         = ov7251_blc_clamp,
     .pfn_write_reg             = ov7251_write_registeraaa,
     .pfn_read_reg              = ov7251_read_register,

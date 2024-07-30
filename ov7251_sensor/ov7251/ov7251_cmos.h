@@ -18,7 +18,7 @@ extern "C" {
 #endif
 #endif
 
-#define OV7251_I2C_ADDR    0xC0 //0x34 //0x20
+#define OV7251_I2C_ADDR    0xC0  // 从地址写用0xC0，读使用0xC1
 #define OV7251_ADDR_BYTE   2
 #define OV7251_DATA_BYTE   1
 
@@ -62,6 +62,8 @@ td_void ov7251_standby(ot_vi_pipe vi_pipe);
 td_void ov7251_restart(ot_vi_pipe vi_pipe);
 td_void ov7251_set_blc_clamp_value(ot_vi_pipe vi_pipe, td_bool clamp_en);
 td_void ov7251_blc_clamp(ot_vi_pipe vi_pipe, ot_isp_sns_blc_clamp blc_clamp);
+td_void ov7251_mirror_flip(ot_vi_pipe vi_pipe, ot_isp_sns_mirrorflip_type sns_mirror_flip);
+
 
 td_s32  ov7251_write_registeraaa(ot_vi_pipe vi_pipe, td_u32 addr, td_u32 data);
 td_s32  ov7251_read_register(ot_vi_pipe vi_pipe, td_u32 addr);
