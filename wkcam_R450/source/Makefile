@@ -23,7 +23,7 @@ HISI_SDK_LIB = -L ../Hi3519_MPP/lib -lwkmpp
 HISI_SDK_LIB += -L ../Hi3519_MPP/lib/hisisdk -lss_mpi -lss_mpi_sysbind -lss_mpi_sysmem -laiisp -lss_mpi_ae -lss_mpi_isp -lot_mpi_isp -lss_mpi_awb\
 				  -lss_mpi_aibnr -lss_mpi_aidrc -lsvp_acl -lsecurec -ldehaze -lextend_stats -ldrc -l ldci -lbnr -lcalcflicker -lir_auto -lacs\
 				 -laac_comm -laac_enc -laac_dec -laac_sbr_enc -laac_sbr_dec -lprotobuf-c -lss_mpi_dpu_match -lss_mpi_dpu_rect -lss_mpi_mcf  -lss_mpi_ai3dnr\
-				 -lheif -lfileformat -lot_mpi_km -lss_mpi_thermo
+				 -lheif -lfileformat -lot_mpi_km -lss_mpi_thermo -lss_mpi_ive
 
 ################# rtsp src #################
 RTSP_INC_PATH1 = ./Libraries/rtsp_srv/inc/net
@@ -45,6 +45,11 @@ APPLICATIONS_PATH = ./Applications
 APPLICATIONS_SRC  = $(notdir $(wildcard $(APPLICATIONS_PATH)/*.cpp))
 APPLICATIONS_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(APPLICATIONS_SRC))
 APPLICATIONS_INC_PATH = -I$(APPLICATIONS_PATH)
+
+ST_LK_PATH = ./Applications/st_lk
+ST_LK_SRC  = $(notdir $(wildcard $(ST_LK_PATH)/*.cpp))
+ST_LK_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(ST_LK_SRC))
+ST_LK_INC_PATH = -I$(ST_LK_PATH)
 
 ################# drivers src #################
 DRIVERS_PATH = ./Drivers
@@ -70,12 +75,18 @@ CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC)
 LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
-$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C)
+################# debug src #################
+CONFIG += -DDEBUG_ST_LK_POINTS_PREVIEW
+
+$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
 
 
 ################# .cpp ---> .o #################
 $(OBJPATH)/%.o:$(APPLICATIONS_PATH)/%.cpp
+	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
+
+$(OBJPATH)/%.o:$(ST_LK_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(UTILS_C_PATH)/%.c

@@ -3,6 +3,8 @@
 #include <isp_setting.h>
 #include <sys_utils.h>
 #include <VideoList.h>
+#include "st_lk/wk_st_lk_app.h"
+
 
 // 是否把录像与拍照的ISP参数区分开 0:使用同一套参数 1:使用不同的参数
 #define SENSOR_ISP_SWITCH_MODE 1
@@ -32,6 +34,9 @@ int imp_system_init(void)
     OnInitCameraParams();
 
     wk_scence_mode = 0;
+
+	
+	wk_st_lk_app_start(0, WK_VIDEO_CHANNEL_PREVIEW);
 	
     return 1;
 }
@@ -264,7 +269,7 @@ int OnInitStreamParam(void)
 
     wk_mpp_venc_set_payload(0); //0:h264 1:h265
 
-    wk_mpp_venc_set_param(WK_VIDEO_CHANNEL_PREVIEW,PIC_640X480,m_TagSecond.nframe_rate,m_TagSecond.nBitrate);
+    wk_mpp_venc_set_param(WK_VIDEO_CHANNEL_PREVIEW, PIC_576P, m_TagSecond.nframe_rate,m_TagSecond.nBitrate);
 
     return 0;
 }

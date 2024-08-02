@@ -313,7 +313,7 @@ int wk_mpp_start(int mode)
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_RECORD, TD_TRUE, PIC_640X480);
     sample_comm_venc_set_src_framerate(30);
 
-    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_640X480);
+    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_576P);
     // wk_mpp_vpss_set_param(2,TD_TRUE,PIC_CIF);
     wk_mpp_vpss_start(&wk_vpss);
 
@@ -638,7 +638,7 @@ int wk_mpp_venc_set_param(int chn_type,ot_pic_size pic_size,td_u32 framerate,td_
         venc_preview.VencChn         = WK_VIDEO_CHANNEL_PREVIEW;
         venc_preview.srcModId        = OT_ID_VPSS;
         venc_preview.VpssGrp         = 0;
-        venc_preview.VpssChn         = WK_VIDEO_CHANNEL_RECORD;
+        venc_preview.VpssChn         = WK_VIDEO_CHANNEL_PREVIEW;
         // if(m_preview_payload == 0){
         //     venc_preview.enPayLoad   = OT_PT_H264;
         // }
@@ -755,6 +755,60 @@ EXIT_VI_VPSS_UNBIND:
     return s32Ret;
 }
 
+
+int wk_mpp_venc_no_bind_start(wk_mpp_venc_t *venc)
+{
+    td_s32 s32Ret;
+    ot_venc_gop_attr stGopAttr;
+    ot_size in_size;
+
+    sample_comm_sys_get_pic_size(venc->enSize, &in_size);
+
+    sample_comm_venc_chn_param g_venc_chn_param;
+    g_venc_chn_param.bitrate              = venc->u32BitRate;
+    g_venc_chn_param.frame_rate           = venc->u32FrameRate;
+    if(WK_VIDEO_CHANNEL_PREVIEW == venc->VencChn){
+        g_venc_chn_param.stats_time           = 2;
+    }
+    else{
+        g_venc_chn_param.stats_time           = 1;
+    }
+    g_venc_chn_param.gop                  = venc->u32Gop;
+    g_venc_chn_param.venc_size.width      = in_size.width;
+    g_venc_chn_param.venc_size.height     = in_size.height;
+    g_venc_chn_param.size                 = venc->enSize;
+    g_venc_chn_param.profile              = venc->u32Profile;
+    g_venc_chn_param.is_rcn_ref_share_buf = venc->bRcnRefShareBuf;
+    g_venc_chn_param.gop_attr.gop_mode    = venc->enGopMode;
+    g_venc_chn_param.gop_attr.normal_p.ip_qp_delta    = 2;
+    g_venc_chn_param.type                 = venc->enPayLoad;
+    g_venc_chn_param.rc_mode              = venc->enRcMode;
+
+    printf("venc start chn[%d] payload[%d] framerate[%d] bitrate[%d]\n", venc->VencChn, g_venc_chn_param.type, g_venc_chn_param.frame_rate, g_venc_chn_param.bitrate);
+    printf("venc start width[%d] height[%d]\n", g_venc_chn_param.venc_size.width, g_venc_chn_param.venc_size.height);
+    printf("venc start size[%d] profile[%d]\n",g_venc_chn_param.size, g_venc_chn_param.profile);
+    
+    if(OT_PT_JPEG == venc->enPayLoad) {    //抓拍通道创建
+        s32Ret = WK_COMM_VENC_SnapStart(venc->VencChn, venc->enSize);
+    }
+    else{
+        s32Ret = sample_comm_venc_start(venc->VencChn, &g_venc_chn_param);
+    }
+
+    if (s32Ret != TD_SUCCESS) {
+        printf("sample_comm_venc_start ch[%d] failed.\n", venc->VencChn);
+        goto EXIT_VI_VPSS_UNBIND;
+    }
+
+    // sample_comm_vpss_bind_venc(venc->VpssGrp, venc->VpssChn, venc->VencChn);
+
+    return s32Ret;
+
+EXIT_VI_VPSS_UNBIND:
+    return s32Ret;
+}
+
+
 int wk_mpp_venc_set_IntraRefresh(ot_venc_chn VencChn)
 {
     ot_venc_intra_refresh  stIntraRefresh;
@@ -836,9 +890,13 @@ int wk_mpp_venc_stream_start(ot_venc_chn VencChn)
         break;
 
     case WK_VIDEO_CHANNEL_PREVIEW:
+#ifdef DEBUG_ST_LK_POINTS_PREVIEW
         wk_mpp_venc_start(&venc_preview);
         wk_mpp_venc_set_IntraRefresh(VencChn);
         wk_mpp_venc_setRcParam(VencChn);
+#else 
+		wk_mpp_venc_no_bind_start(&venc_preview);
+#endif
 
         s32Ret = WK_COMM_VENC_GetStreamStart(VencChn);
         if (TD_SUCCESS != s32Ret)

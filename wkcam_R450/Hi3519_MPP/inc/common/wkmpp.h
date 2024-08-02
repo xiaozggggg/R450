@@ -199,6 +199,7 @@ void wk_mpp_record_debug(int option);
 int wk_mpp_venc_set_param(int chn_type,ot_pic_size pic_size,td_u32 framerate,td_u32 bitrate);
 void wk_mpp_venc_set_payload(int payload_type);
 int wk_mpp_venc_start(wk_mpp_venc_t *venc);
+int wk_mpp_venc_no_bind_start(wk_mpp_venc_t *venc);
 int wk_mpp_venc_stop(void);
 int wk_mpp_venc_stream_start(ot_venc_chn VencChn);
 void wk_mpp_venc_stream_stop(ot_venc_chn VencChn);
