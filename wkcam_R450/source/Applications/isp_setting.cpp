@@ -36,7 +36,7 @@ int imp_system_init(void)
     wk_scence_mode = 0;
 
 	
-	wk_st_lk_app_start(0, WK_VIDEO_CHANNEL_PREVIEW);
+	wk_st_lk_start(0, WK_VIDEO_CHANNEL_PREVIEW);
 	
     return 1;
 }

@@ -46,6 +46,11 @@ APPLICATIONS_SRC  = $(notdir $(wildcard $(APPLICATIONS_PATH)/*.cpp))
 APPLICATIONS_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(APPLICATIONS_SRC))
 APPLICATIONS_INC_PATH = -I$(APPLICATIONS_PATH)
 
+CORNER_PATH = ./Applications/corner_common
+CORNER_SRC  = $(notdir $(wildcard $(CORNER_PATH)/*.cpp))
+CORNER_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(CORNER_SRC))
+CORNER_INC_PATH = -I$(CORNER_PATH)
+
 ST_LK_PATH = ./Applications/st_lk
 ST_LK_SRC  = $(notdir $(wildcard $(ST_LK_PATH)/*.cpp))
 ST_LK_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(ST_LK_SRC))
@@ -70,7 +75,7 @@ UTILS_C_INC_PATH = -I$(UTILS_C_PATH)
 
 CUR_INC_PATH = -I./
 ########################################################################
-CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH)
+CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(CORNER_INC_PATH)
 CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC)
 LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
@@ -78,12 +83,15 @@ LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -st
 ################# debug src #################
 CONFIG += -DDEBUG_ST_LK_POINTS_PREVIEW
 
-$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS)
+$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(CORNER_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
 
 
 ################# .cpp ---> .o #################
 $(OBJPATH)/%.o:$(APPLICATIONS_PATH)/%.cpp
+	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
+
+$(OBJPATH)/%.o:$(CORNER_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(ST_LK_PATH)/%.cpp

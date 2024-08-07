@@ -36,6 +36,13 @@ typedef struct {
 	/* 用于图像数据源 */
     ot_svp_img pyr_tmp;
     ot_svp_img src_yuv;   	 // 输入图片
+
+	/* 保存输出点数据 */
+	ot_svp_point_s25q7 prev_corner_points[512];   		// 保存上一帧输出的角点
+	ot_svp_point_s25q7 curr_corner_points[512];         // 保存当前帧输出角点
+	td_u32	points_cnt;							        // 角点数量
+	td_u8 curr_points_status[512];                      // 当前帧角点状态
+	td_u9q7 curr_points_err[512];	                    // 当前帧已跟踪点的误差
 } wk_ive_st_lk_info;
 
 /* ive st lk 配置参数 */

@@ -6,7 +6,7 @@
 */
 
 
-#define OT_SAMPLE_IVE_LK_QUERY_SLEEP        100
+#define OT_SAMPLE_IVE_LK_QUERY_SLEEP        10
 #define OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN      7
 #define OT_SAMPLE_IVE_HOR_SEG_SIZE          2
 #define OT_SAMPLE_IVE_ELEM_SIZE             1
@@ -155,8 +155,9 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	/* st提取点识别 */
  	corner_info = sample_svp_convert_addr_to_ptr(ot_ive_st_corner_info, _lk_info->corner.virt_addr);
 	next_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->next_points.virt_addr);
-	
-    ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[0], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE);
+
+	ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[0], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE);  
+    //ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[1], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE); // 使用缩小一倍的分辨率
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),ss_mpi_ive_st_cand_corner failed!\n", ret);
 		return TD_FAILURE;
@@ -174,10 +175,19 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 		return TD_FAILURE;
 	}
 
-    _lk_info->lk_pyr_ctrl.points_num = corner_info->corner_num;
+	/* 角点输出保存 */
+	memset(&_lk_info->prev_corner_points, 0, sizeof(_lk_info->prev_corner_points));
+	memset(&_lk_info->curr_corner_points, 0, sizeof(_lk_info->curr_corner_points));
+	memset(&_lk_info->curr_points_status, 0, sizeof(_lk_info->curr_points_status));
+	memset(&_lk_info->curr_points_err, 0, sizeof(_lk_info->curr_points_err));
+
+    _lk_info->points_cnt = _lk_info->lk_pyr_ctrl.points_num = corner_info->corner_num;
     for (k = 0; k < _lk_info->lk_pyr_ctrl.points_num; k++) {
-        next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
-        next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+		_lk_info->curr_corner_points[k].x = next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+        _lk_info->curr_corner_points[k].y = next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+	
+        //_lk_info->curr_corner_points[k].x = next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小一倍的分辨率
+        //_lk_info->curr_corner_points[k].y = next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
     }
 
 	/* 将新获取的当前帧特征点， 赋值到上一帧特征点 */
@@ -205,6 +215,9 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
     ot_ive_dma_ctrl dma_ctrl;	
 	ot_ive_st_corner_info *corner_info = NULL;
 	ot_svp_point_s25q7 *next_points =  NULL;
+	ot_svp_point_s25q7 *prev_points =  NULL;
+	td_u8* pstatus = NULL;
+	td_u9q7* perr = NULL;
 
 	if(_lk_info == NULL || _frame == NULL) {
 		printf("param is null\n");
@@ -253,8 +266,30 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 		printf("Error(%#x),_wk_ive_query_task failed!\n", ret);
 		return TD_FAILURE;
 	}
+
+	/* 角点输出保存 */
+	memset(&_lk_info->prev_corner_points, 0, sizeof(_lk_info->prev_corner_points));
+	memset(&_lk_info->curr_corner_points, 0, sizeof(_lk_info->curr_corner_points));
+	memset(&_lk_info->curr_points_status, 0, sizeof(_lk_info->curr_points_status));
+	memset(&_lk_info->curr_points_err, 0, sizeof(_lk_info->curr_points_err));
+
+	_lk_info->points_cnt = _lk_info->lk_pyr_ctrl.points_num;
+	prev_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->prev_points.virt_addr);
+	pstatus = sample_svp_convert_addr_to_ptr(td_u8, _lk_info->status.virt_addr);
+	perr = sample_svp_convert_addr_to_ptr(td_u9q7, _lk_info->err.virt_addr);
+    for (k = 0; k < _lk_info->points_cnt; k++) {
+		_lk_info->prev_corner_points[k].x = prev_points[k].x;
+        _lk_info->prev_corner_points[k].y = prev_points[k].y;
 	
-	/* 更新当前帧的特征点坐标（这里没有提现输出和输入特征点index一一对应）【需修改】 */
+		_lk_info->curr_corner_points[k].x = next_points[k].x;
+		_lk_info->curr_corner_points[k].y = next_points[k].y;
+
+		_lk_info->curr_points_status[k] = pstatus[k];
+		
+		_lk_info->curr_points_err[k] = perr[k];
+    }	
+	
+	/* 更新数据角点结构 */
 	rect_num = 0;
 	for (k = 0; k < _lk_info->lk_pyr_ctrl.points_num; k++) {
 		if ((sample_svp_convert_addr_to_ptr(td_u8, _lk_info->status.virt_addr))[k] == 0) {
@@ -384,7 +419,9 @@ static td_s32 _wk_ive_st_param_init(wk_ive_st_lk_info *_lk_info,  wk_ive_st_lk_p
 		printf("Error(%#x),Create src image failed!\n", ret);
 		goto st_init_fail;
 	}
-    ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width, _src_size.height);
+
+	ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width, _src_size.height);
+    //ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width/2, _src_size.height/2); // 使用缩小一倍的分辨率
 	if(ret != TD_SUCCESS) {
 		printf("Error(%#x),Create dst image failed!\n", ret);
 		goto st_init_fail;

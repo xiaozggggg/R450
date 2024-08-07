@@ -234,6 +234,7 @@ typedef enum {
     PIC_7680X4320,
     PIC_3840X8640,
     PIC_8000X6000,
+    PIC_512X512,
     PIC_BUTT
 } ot_pic_size;
 

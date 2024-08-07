@@ -1024,7 +1024,7 @@ td_void sample_comm_vi_get_default_pipe_info(sample_sns_type sns_type, ot_vi_bin
         /* pub attr */
         sample_comm_isp_get_pub_attr_by_sns(sns_type, &pipe_info[i].isp_info.isp_pub_attr);
 
-        pipe_info[i].nr_attr.enable = TD_FALSE;
+        pipe_info[i].nr_attr.enable = TD_TRUE;
         pipe_info[i].nr_attr.compress_mode = OT_COMPRESS_MODE_FRAME;
         pipe_info[i].nr_attr.nr_type = OT_NR_TYPE_VIDEO_NORM;
         pipe_info[i].nr_attr.nr_motion_mode = OT_NR_MOTION_MODE_NORM;
