@@ -119,7 +119,6 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
     ot_ive_handle handle;
     ot_ive_dma_ctrl dma_ctrl;	
 	ot_ive_st_corner_info *corner_info = NULL;
-	ot_svp_point_s25q7 *next_points =  NULL;
 
 	if(_lk_info == NULL || _frame == NULL) {
 		printf("param is null\n");
@@ -154,8 +153,7 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 
 	/* st提取点识别 */
  	corner_info = sample_svp_convert_addr_to_ptr(ot_ive_st_corner_info, _lk_info->corner.virt_addr);
-	next_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->next_points.virt_addr);
-
+	
 	ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[0], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE);  
     //ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[1], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE); // 使用缩小一倍的分辨率
 	if(ret != TD_SUCCESS){
@@ -176,38 +174,26 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	}
 
 	/* 角点输出保存 */
-	memset(&_lk_info->prev_corner_points, 0, sizeof(_lk_info->prev_corner_points));
 	memset(&_lk_info->curr_corner_points, 0, sizeof(_lk_info->curr_corner_points));
-	memset(&_lk_info->curr_points_status, 0, sizeof(_lk_info->curr_points_status));
-	memset(&_lk_info->curr_points_err, 0, sizeof(_lk_info->curr_points_err));
-
-    _lk_info->points_cnt = _lk_info->lk_pyr_ctrl.points_num = corner_info->corner_num;
-    for (k = 0; k < _lk_info->lk_pyr_ctrl.points_num; k++) {
-		_lk_info->curr_corner_points[k].x = next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
-        _lk_info->curr_corner_points[k].y = next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+    _lk_info->points_cnt =  corner_info->corner_num;
+    for (k = 0; k < _lk_info->points_cnt; k++) {
+		_lk_info->curr_corner_points[k].x  = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+        _lk_info->curr_corner_points[k].y  = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
 	
         //_lk_info->curr_corner_points[k].x = next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小一倍的分辨率
         //_lk_info->curr_corner_points[k].y = next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
     }
 
-	/* 将新获取的当前帧特征点， 赋值到上一帧特征点 */
-    ret = memcpy_s(sample_svp_convert_addr_to_ptr(td_void, _lk_info->prev_points.virt_addr),
-        sizeof(ot_svp_point_s25q7) * _lk_info->lk_pyr_ctrl.points_num,
-        sample_svp_convert_addr_to_ptr(td_void, _lk_info->next_points.virt_addr),
-        sizeof(ot_svp_point_s25q7) * _lk_info->lk_pyr_ctrl.points_num);
-	if(ret != EOK) {
-		printf("Error,memcpy_s lk points failed!\n");
-		return TD_FAILURE;
-	}
-
-	/* 复制金字塔 */
-    _wk_ive_st_lk_copy_pyr(_lk_info->next_pyr, _lk_info->prev_pyr, _lk_info->lk_pyr_ctrl.max_level);
 	return TD_SUCCESS;
 }
 
 
 /* 通过lk提取特征点 */
-td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_frame)
+td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, 
+								ot_video_frame_info *_curr_frame, 
+								ot_video_frame_info *_prev_frame,
+								ot_svp_point_s25q7* _prev_points_src,
+								td_u16 _points_num)
 {
 	td_u32 k = 0, rect_num = 0;
     td_s32 ret = OT_ERR_IVE_NULL_PTR;
@@ -219,7 +205,7 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	td_u8* pstatus = NULL;
 	td_u9q7* perr = NULL;
 
-	if(_lk_info == NULL || _frame == NULL) {
+	if(_lk_info == NULL || _curr_frame == NULL || _prev_frame == NULL) {
 		printf("param is null\n");
 		return TD_FAILURE;
 	}
@@ -227,21 +213,17 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
     memset(&dma_ctrl, 0, sizeof(dma_ctrl));
     dma_ctrl.mode = OT_IVE_DMA_MODE_DIRECT_COPY;
 
-	/* 转换frame格式 */
-	ret = sample_common_ive_dma_image(_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	/* curr_frame 转换frame格式 ，并构建金字塔 */
+	ret = sample_common_ive_dma_image(_curr_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
 		return TD_FAILURE;
 	}
-
-	/* 复制src_yuv到next_pyr金字塔底层 */
     ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->next_pyr[0], &dma_ctrl, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
 		return TD_FAILURE;
 	}
-	
-	/* 循环构建next_pyr图像金字塔 */
 	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
 		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->next_pyr[k - 1], &_lk_info->next_pyr[k]);
 		if(ret != TD_SUCCESS){
@@ -250,10 +232,35 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 		}
 	}
 
-	/* lk提取点识别 */
+	/* _prev_frame 转换frame格式 ，并构建金字塔 */
+	ret = sample_common_ive_dma_image(_prev_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	if(ret != TD_SUCCESS){
+		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
+		return TD_FAILURE;
+	}
+    ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->prev_pyr[0], &dma_ctrl, TD_FALSE);
+	if(ret != TD_SUCCESS){
+		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
+		return TD_FAILURE;
+	}
+	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
+		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->prev_pyr[k - 1], &_lk_info->prev_pyr[k]);
+		if(ret != TD_SUCCESS){
+			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
+			return TD_FAILURE;
+		}
+	}
+
+	/* 角点数据赋值 */
  	corner_info = sample_svp_convert_addr_to_ptr(ot_ive_st_corner_info, _lk_info->corner.virt_addr);
 	next_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->next_points.virt_addr);
-	
+	prev_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->prev_points.virt_addr);
+    for (k = 0; k < _points_num; k++) {
+		prev_points[k].x = next_points[k].x = _prev_points_src[k].x;
+        prev_points[k].y = next_points[k].y = _prev_points_src[k].y;
+    }	
+
+	/* lk提取点识别 */
 	ret = ss_mpi_ive_lk_optical_flow_pyr(&handle, _lk_info->prev_pyr, _lk_info->next_pyr, &_lk_info->prev_points,
 		&_lk_info->next_points, &_lk_info->status, &_lk_info->err, &_lk_info->lk_pyr_ctrl, TD_TRUE);
 	if(ret != TD_SUCCESS){
@@ -274,7 +281,6 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	memset(&_lk_info->curr_points_err, 0, sizeof(_lk_info->curr_points_err));
 
 	_lk_info->points_cnt = _lk_info->lk_pyr_ctrl.points_num;
-	prev_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->prev_points.virt_addr);
 	pstatus = sample_svp_convert_addr_to_ptr(td_u8, _lk_info->status.virt_addr);
 	perr = sample_svp_convert_addr_to_ptr(td_u9q7, _lk_info->err.virt_addr);
     for (k = 0; k < _lk_info->points_cnt; k++) {
@@ -289,46 +295,9 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 		_lk_info->curr_points_err[k] = perr[k];
     }	
 	
-	/* 更新数据角点结构 */
-	rect_num = 0;
-	for (k = 0; k < _lk_info->lk_pyr_ctrl.points_num; k++) {
-		if ((sample_svp_convert_addr_to_ptr(td_u8, _lk_info->status.virt_addr))[k] == 0) {
-			continue;
-		}
-		next_points[rect_num].x = next_points[k].x;
-		next_points[rect_num].y = next_points[k].y;
-		rect_num++;
-	}
-	_lk_info->lk_pyr_ctrl.points_num = rect_num;
-
-
-	/* 将新获取的当前帧特征点， 赋值到上一帧特征点 */
-    ret = memcpy_s(sample_svp_convert_addr_to_ptr(td_void, _lk_info->prev_points.virt_addr),
-        sizeof(ot_svp_point_s25q7) * _lk_info->lk_pyr_ctrl.points_num,
-        sample_svp_convert_addr_to_ptr(td_void, _lk_info->next_points.virt_addr),
-        sizeof(ot_svp_point_s25q7) * _lk_info->lk_pyr_ctrl.points_num);
-	if(ret != EOK) {
-		printf("Error,memcpy_s lk points failed!\n");
-		return TD_FAILURE;
-	}
-
-	/* 复制金字塔 */
-    _wk_ive_st_lk_copy_pyr(_lk_info->next_pyr, _lk_info->prev_pyr, _lk_info->lk_pyr_ctrl.max_level);
 	return TD_SUCCESS;	
 }
 
-/* 返回特征点数组地址 */
-td_s32 wk_ive_st_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_svp_point_s25q7** _points_arr, td_u32* _points_num)
-{
-	if(_lk_info == NULL || _points_num == NULL || _points_arr == NULL) {
-		printf("param is null\n");
-		return TD_FAILURE;
-	}
-	*_points_arr = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->next_points.virt_addr);
-	*_points_num = _lk_info->lk_pyr_ctrl.points_num;
-	
-	return TD_SUCCESS;
-}
 
 /* st相关参数初始化 */
 static td_s32 _wk_ive_lk_param_init(wk_ive_st_lk_info *_lk_info, wk_ive_st_lk_param* _param)

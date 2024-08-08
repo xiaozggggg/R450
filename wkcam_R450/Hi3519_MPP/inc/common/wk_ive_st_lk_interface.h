@@ -72,13 +72,11 @@ td_void wk_ive_st_lk_uninit(wk_ive_st_lk_info* _lk_info);
 td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_frame);
 
 /* 通过lk提取特征点 */
-td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_frame);
-
-/* 返回特征点数组地址 
-lk_info: 特征提取总数据结构
-points_arr: 输出参数，特征点地址
-points_num：输出参数，特征点个数*/
-td_s32 wk_ive_st_lk_get_points(wk_ive_st_lk_info *_lk_info, ot_svp_point_s25q7** _points_arr, td_u32* _points_num);
+td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info, 
+								ot_video_frame_info *_curr_frame, 
+								ot_video_frame_info *_prev_frame,
+								ot_svp_point_s25q7* _prev_points_src,
+								td_u16 _points_num);
 
 
 #ifdef __cplusplus

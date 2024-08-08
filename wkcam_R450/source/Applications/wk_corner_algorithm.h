@@ -12,10 +12,11 @@
 #include <sample_comm.h>
 
 #include "wk_corner_info.h"
-#include "wk_st_lk_corner.h"
+#include "wk_st_lk_middle.h"
 
 using namespace std; 
 
+int middle_test();
 
 
 #endif /* __WK_CORNER_ALGORITHM_H__ */

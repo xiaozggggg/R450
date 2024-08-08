@@ -3,7 +3,8 @@
 #include <isp_setting.h>
 #include <sys_utils.h>
 #include <VideoList.h>
-#include "st_lk/wk_st_lk_app.h"
+
+#include "wk_corner_algorithm.h"
 
 
 // 是否把录像与拍照的ISP参数区分开 0:使用同一套参数 1:使用不同的参数
@@ -34,10 +35,8 @@ int imp_system_init(void)
     OnInitCameraParams();
 
     wk_scence_mode = 0;
-
 	
-	wk_st_lk_start(0, WK_VIDEO_CHANNEL_PREVIEW);
-	
+	middle_test();
     return 1;
 }
 
