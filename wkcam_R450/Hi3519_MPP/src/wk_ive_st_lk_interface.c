@@ -154,8 +154,8 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	/* st提取点识别 */
  	corner_info = sample_svp_convert_addr_to_ptr(ot_ive_st_corner_info, _lk_info->corner.virt_addr);
 	
-	ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[0], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE);  
-    //ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[1], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE); // 使用缩小一倍的分辨率
+	//ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[0], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE);  
+    ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[1], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE); // 使用缩小1倍的分辨率
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),ss_mpi_ive_st_cand_corner failed!\n", ret);
 		return TD_FAILURE;
@@ -177,11 +177,11 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	memset(&_lk_info->curr_corner_points, 0, sizeof(_lk_info->curr_corner_points));
     _lk_info->points_cnt =  corner_info->corner_num;
     for (k = 0; k < _lk_info->points_cnt; k++) {
-		_lk_info->curr_corner_points[k].x  = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
-        _lk_info->curr_corner_points[k].y  = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+		//_lk_info->curr_corner_points[k].x  = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
+        //_lk_info->curr_corner_points[k].y  = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
 	
-        //_lk_info->curr_corner_points[k].x = next_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小一倍的分辨率
-        //_lk_info->curr_corner_points[k].y = next_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
+        _lk_info->curr_corner_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小1倍的分辨率
+        _lk_info->curr_corner_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
     }
 
 	return TD_SUCCESS;
@@ -213,25 +213,6 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
     memset(&dma_ctrl, 0, sizeof(dma_ctrl));
     dma_ctrl.mode = OT_IVE_DMA_MODE_DIRECT_COPY;
 
-	/* curr_frame 转换frame格式 ，并构建金字塔 */
-	ret = sample_common_ive_dma_image(_curr_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
-	if(ret != TD_SUCCESS){
-		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
-		return TD_FAILURE;
-	}
-    ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->next_pyr[0], &dma_ctrl, TD_FALSE);
-	if(ret != TD_SUCCESS){
-		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
-		return TD_FAILURE;
-	}
-	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
-		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->next_pyr[k - 1], &_lk_info->next_pyr[k]);
-		if(ret != TD_SUCCESS){
-			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
-			return TD_FAILURE;
-		}
-	}
-
 	/* _prev_frame 转换frame格式 ，并构建金字塔 */
 	ret = sample_common_ive_dma_image(_prev_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
 	if(ret != TD_SUCCESS){
@@ -245,6 +226,25 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 	}
 	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
 		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->prev_pyr[k - 1], &_lk_info->prev_pyr[k]);
+		if(ret != TD_SUCCESS){
+			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
+			return TD_FAILURE;
+		}
+	}
+
+	/* curr_frame 转换frame格式 ，并构建金字塔 */
+	ret = sample_common_ive_dma_image(_curr_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	if(ret != TD_SUCCESS){
+		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
+		return TD_FAILURE;
+	}
+    ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->next_pyr[0], &dma_ctrl, TD_FALSE);
+	if(ret != TD_SUCCESS){
+		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
+		return TD_FAILURE;
+	}
+	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
+		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->next_pyr[k - 1], &_lk_info->next_pyr[k]);
 		if(ret != TD_SUCCESS){
 			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
 			return TD_FAILURE;
@@ -294,7 +294,7 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 		
 		_lk_info->curr_points_err[k] = perr[k];
     }	
-	
+
 	return TD_SUCCESS;	
 }
 
@@ -389,8 +389,8 @@ static td_s32 _wk_ive_st_param_init(wk_ive_st_lk_info *_lk_info,  wk_ive_st_lk_p
 		goto st_init_fail;
 	}
 
-	ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width, _src_size.height);
-    //ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width/2, _src_size.height/2); // 使用缩小一倍的分辨率
+	//ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width, _src_size.height);
+    ret = sample_common_ive_create_image(&_lk_info->dst, OT_SVP_IMG_TYPE_U8C1, _src_size.width/2, _src_size.height/2); // 使用缩小1倍的分辨率
 	if(ret != TD_SUCCESS) {
 		printf("Error(%#x),Create dst image failed!\n", ret);
 		goto st_init_fail;
@@ -465,7 +465,7 @@ td_s32 wk_ive_st_lk_init(wk_ive_st_lk_info* _lk_info, wk_ive_st_lk_param* _param
 		printf("Error(%#x),Create srcYuv image failed!\n", ret);
 		goto st_lk_init_fail;
 	}	
-
+	
     return TD_SUCCESS;
 
 st_lk_init_fail:

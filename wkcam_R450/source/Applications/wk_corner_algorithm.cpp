@@ -5,7 +5,8 @@ wk_corner_video_frame_s::wk_ptr prev_frame;
 wk_st_points_s prev_pionts_test;
 bool falg;
 
-
+wk_lk_points_output_s output;
+wk_lk_points_input_s intput;
 
 
 void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
@@ -15,21 +16,18 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 	if(falg == false){
 		falg = true;
 		
-		middle->wk_corner_recognize(_info->frame, &prev_pionts_test);
-		middle->wk_frame_pionts_venc_debug(_info->frame, &prev_pionts_test.points[0], prev_pionts_test.points_cnt);
+		middle->wk_corner_recognize(&_info->frame, &prev_pionts_test);
+		middle->wk_frame_pionts_venc_debug(&_info->frame, &prev_pionts_test.points[0], prev_pionts_test.points_cnt);
 		
 		prev_frame = _info;
 	}
 	else{
-		wk_lk_points_output_s output;
-		wk_lk_points_input_s intput;
-
 		memset(&output, 0, sizeof(wk_lk_points_output_s));
 		memset(&intput, 0, sizeof(wk_lk_points_input_s));
 		
-		intput.curr_frame = _info->frame;
-		intput.prev_frame = prev_frame->frame;
-		memcpy(intput.prev_points, prev_pionts_test.points, sizeof(prev_pionts_test.points));
+		intput.curr_frame = &_info->frame;
+		intput.prev_frame = &prev_frame->frame;
+		memcpy(intput.prev_points, &prev_pionts_test.points[0], sizeof(prev_pionts_test.points));
 		intput.points_cnt = prev_pionts_test.points_cnt;
 		
 		middle->wk_corner_track(&intput, &output);
@@ -45,16 +43,13 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 		}
 		prev_pionts_test.points_cnt = rect_num;
 
-		middle->wk_frame_pionts_venc_debug(_info->frame, &prev_pionts_test.points[0], prev_pionts_test.points_cnt);
+		middle->wk_frame_pionts_venc_debug(&_info->frame, &prev_pionts_test.points[0], prev_pionts_test.points_cnt);
 
 		prev_frame = _info;
 	}
 	
 	return;
 }
-
-
-
 
 
 int middle_test()

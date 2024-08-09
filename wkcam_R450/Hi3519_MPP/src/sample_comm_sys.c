@@ -73,7 +73,7 @@ static ot_size g_sample_pic_size[PIC_BUTT] = {
     { 7680, 4320 },  /* PIC_7680X4320 */
     { 3840, 8640 },  /* PIC_3840X8640 */
     { 9600, 5400 },  /* PIC_8000X6000 */
-    { 512,  512 }
+    { 768,  576  }   /* PIC_768X576  */
 };
 
 #ifndef __LITEOS__

@@ -1,17 +1,10 @@
 #include "wk_st_lk_mng.h"
 
-/* 文件实现：
-1. 配置st lk参数，并初始化st lk 和帧处理
-2. 运行图像帧获取线程
-3. 对接算法中间层，为中间层提供接口，以及回调角点数据
-4. 使用libwkmpp接口，实现ive提取关键点
-5. 能进行输出venc调试
-*/
 
-#define WK_IVE_LK_D1_WIDTH           	720   		              	/* 图像大小 */ 	
+#define WK_IVE_LK_D1_WIDTH           	768   		              	/* 图像大小 */ 	
 #define WK_IVE_LK_D1_HEIGHT          	576
 #define WK_IVE_ST_LK_SRC_FRAMW_TYPE		OT_SVP_IMG_TYPE_YUV420SP  	/* 输入图像类型 */ 
-#define WK_IVE_LK_MAX_LEVEL          	3         				  	/* 金字塔层数 [0~3] */ 
+#define WK_IVE_LK_MAX_LEVEL          	(WK_IVE_LK_PYR_NUM-1)       /* 金字塔层数 [0~3] */ 
 #define WK_IVE_ST_QUALITY_LEVEL      	25							/* ST特征点质量控制参数 [1~255]*/
 #define WK_IVE_ST_LK_MAX_POINTS_NUM     100        					/* 特征点个数最大值 */ 
 #define WK_IVE_ST_LK_MIN_POINTS_NUM     5							/* 特征点个数最小值 */
@@ -202,7 +195,6 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 
 	s32ret = wk_ive_lk_get_points(&pmng->st_lk_infor, _info->curr_frame, _info->prev_frame, _info->prev_points, _info->points_cnt);
 	if(s32ret == TD_SUCCESS) {
-		
 		_points->points_cnt = _info->points_cnt;
 		memcpy(_points->prev_points, pmng->st_lk_infor.prev_corner_points, sizeof(pmng->st_lk_infor.prev_corner_points));
 		memcpy(_points->curr_points, pmng->st_lk_infor.curr_corner_points, sizeof(pmng->st_lk_infor.curr_corner_points));
@@ -225,7 +217,7 @@ void _wk_st_lk_get_frame_cb_handle(ot_vpss_grp grp, ot_vpss_chn chn, ot_video_fr
 
 	frame_ptr->grp = grp;
 	frame_ptr->chn = chn;
-	frame_ptr->frame = _frame;
+	frame_ptr->frame = *_frame;
 	ss_mpi_sys_get_cur_pts(&frame_ptr->pts);
 
 	if(g_st_lk_mng_info._cb != NULL){
@@ -255,7 +247,7 @@ static void * _wk_st_lk_proc(void* _pArgs)
 
 		/* 调用算法回调 */
 		_wk_st_lk_get_frame_cb_handle(pmng->grp, pmng->chn, &st_frame_info);
-		
+
 		// ss_mpi_vpss_release_chn_frame(pmng->grp, pmng->chn, &st_frame_info); // 算法层释放
 		usleep(5*1000);
 	}

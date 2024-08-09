@@ -18,24 +18,22 @@ public:
 	ot_vpss_grp grp;
 	ot_vpss_chn chn;
 	wk_corner_video_frame_s() {
-		frame = NULL;
 		pts = 0;
 		grp = chn = -1;
 	}
 	
 	~wk_corner_video_frame_s() {
-		ss_mpi_vpss_release_chn_frame(grp, chn, frame);
-		frame = NULL;
+		ss_mpi_vpss_release_chn_frame(grp, chn, &frame);
 	}
 		
-	ot_video_frame_info* frame;					// 图像帧
+	ot_video_frame_info frame;					// 图像帧
 	td_u64 pts;									// 时间戳
 };
 
 
 /* 识别角点数据结构 */
 struct wk_st_points_s{
-	ot_svp_point_s25q7 points[512];        		// 帧角点
+	ot_svp_point_s25q7 points[500];        		// 帧角点
 	td_u32	points_cnt;							// 角点数量
 };
 
@@ -43,7 +41,7 @@ struct wk_st_points_s{
 /* 跟综角点输入数据结构 */
 struct wk_lk_points_input_s{
 	ot_video_frame_info* prev_frame;			// 前图像帧
-	ot_svp_point_s25q7 prev_points[512];        // 前帧角点
+	ot_svp_point_s25q7 prev_points[500];        // 前帧角点
 	td_u32	points_cnt;							// 角点数量
 
 	ot_video_frame_info* curr_frame;			// 当前图像帧
@@ -52,11 +50,11 @@ struct wk_lk_points_input_s{
 
 /* 跟综角点输出数据结构 */
 struct wk_lk_points_output_s{
-	ot_svp_point_s25q7 prev_points[512];   	    // 前帧角点
-	ot_svp_point_s25q7 curr_points[512];        // 当前帧角点
+	ot_svp_point_s25q7 prev_points[500];   	    // 前帧角点
+	ot_svp_point_s25q7 curr_points[500];        // 当前帧角点
 	td_u32	points_cnt;							// 角点数量
-	td_u8 	status[512];                    	// 当前帧角点状态
-	td_u9q7 err[512];	                    	// 当前帧已跟踪点的误差
+	td_u8 	status[500];                    	// 当前帧角点状态
+	td_u9q7 err[500];	                    	// 当前帧已跟踪点的误差
 };
 
 /* 结果输出数据结构 */
