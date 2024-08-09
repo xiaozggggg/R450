@@ -82,11 +82,11 @@ td_void ov7251_set_blc_clamp_value(ot_vi_pipe vi_pipe, td_bool clamp_en)
     blc_clamp_info[vi_pipe] = clamp_en;
 }
 
-#define OV7251_MAX_FPS	30
+#define OV7251_MAX_FPS	60
 
 const ov7251_video_mode_tbl g_ov7251_mode_tbl[OV7251_MODE_BUTT] = {
     {OV7251_VMAX_480P20_LINEAR_10BIT,   OV7251_FULL_LINES_MAX,          OV7251_MAX_FPS, 0.8,
-     640, 480, 0, OT_WDR_MODE_NONE,       "OV7251_SENSOR_480P_20FPS_LINEAR_10BIT"},
+     640, 480, 0, OT_WDR_MODE_NONE,       "OV7251_SENSOR_480P_60FPS_LINEAR_10BIT"},
 };
 
 /****************************************************************************
@@ -142,7 +142,7 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->full_lines_std = sns_state->fl_std;
     ae_sns_dft->flicker_freq = 50 * 256; /* light flicker freq: 50Hz, accuracy: 256 */
     ae_sns_dft->full_lines_max = OV7251_FULL_LINES_MAX;
-    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * OV7251_MAX_FPS); /* 1000000000ns, 30fps */
+    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * 30); /* 1000000000ns, 30fps */
 
     ae_sns_dft->again_accu.accu_type = OT_ISP_AE_ACCURACY_TABLE;
     ae_sns_dft->again_accu.accuracy  = 1;
@@ -155,7 +155,7 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->min_isp_dgain_target = 1 << ae_sns_dft->isp_dgain_shift;
     ae_sns_dft->max_isp_dgain_target = 4 << ae_sns_dft->isp_dgain_shift; /* max 2 */
     if (g_lines_per500ms[vi_pipe] == 0) {
-        ae_sns_dft->lines_per500ms = sns_state->fl_std * OV7251_MAX_FPS / 2; /* 30fps, div 2 */
+        ae_sns_dft->lines_per500ms = sns_state->fl_std * 30 / 2; /* 30fps, div 2 */
     } else {
         ae_sns_dft->lines_per500ms = g_lines_per500ms[vi_pipe];
     }
@@ -240,8 +240,15 @@ static td_u32 cmos_vmax2inttime(ot_isp_sns_state *sns_state, td_u32 vmax)
 	td_u32 lines, lines_max, vmax_tmp;
 	td_float max_fps, min_fps;
 	const td_u32 fps = OV7251_MAX_FPS;
-	const td_u32 inttime_max = (1000000/OV7251_MAX_FPS)*0.9;  // 最大曝光时间
+	td_u32 inttime_max = 0;  // 最大曝光时间
 	td_u32 int_time = 0; 
+
+	if(OV7251_MAX_FPS == 30) {
+		inttime_max = (1000000/OV7251_MAX_FPS)*0.9;
+	}
+	else{
+		inttime_max = (1000000/OV7251_MAX_FPS)*0.82;
+	}
 
     lines = g_ov7251_mode_tbl[sns_state->img_mode].ver_lines;
     lines_max = g_ov7251_mode_tbl[sns_state->img_mode].max_ver_lines;
@@ -254,7 +261,7 @@ static td_u32 cmos_vmax2inttime(ot_isp_sns_state *sns_state, td_u32 vmax)
 
 	int_time = (inttime_max/(td_float)vmax_tmp) * vmax;  
 
-	printf("------- vmax = %d, int_time = %x\n", vmax, int_time);
+	// printf("------- inttime_max = %d, vmax_tmp =%d, vmax = %d, int_time = %x\n", inttime_max, vmax_tmp, vmax, int_time);
 	return int_time;
 }
 
@@ -828,7 +835,7 @@ static td_void cmos_set_pixel_detect(ot_vi_pipe vi_pipe, td_bool enable)
         return;
     } else {
         if (sns_state->img_mode == OV7251_SENSOR_480P_20FPS_LINEAR_10BIT)  {
-            full_lines_5fps = (OV7251_VMAX_480P30_LINEAR_10BIT * OV7251_MAX_FPS) / 5; /* 30fps, 5fps */
+            full_lines_5fps = (OV7251_VMAX_480P30_LINEAR_10BIT * 30) / 5; /* 30fps, 5fps */
         }
         else {
             return;
