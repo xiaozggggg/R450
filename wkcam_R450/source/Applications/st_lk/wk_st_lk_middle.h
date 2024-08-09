@@ -43,20 +43,20 @@ public:
 	td_bool wk_corner_recognize_set_param(td_u16 _quality_level, td_u16 _max_points_num, td_u16 _min_points_interval);
 	
 	/* 识别角点 */
-	td_s32 wk_corner_recognize(ot_video_frame_info *_frame, wk_st_points_s* _points);
+	td_s32 wk_corner_recognize(wk_corner_video_frame_s::wk_ptr& _frame, wk_st_points_s::wk_ptr& _points);
 
 	/* 设置跟踪角点参数 */
 	td_bool wk_corner_track_set_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps);
 
 	/* 跟踪角点 */
-	td_s32 wk_corner_track(wk_lk_points_input_s* _info, wk_lk_points_output_s* _points);
+	td_s32 wk_corner_track(wk_lk_points_input_s::wk_ptr& _info, wk_lk_points_output_s::wk_ptr& _points);
 
 	/* 输出算法执行结果 */
-	td_bool wk_result_export(wk_location_result_s* _result);
+	td_bool wk_result_export(wk_location_result_s::wk_ptr& _result);
 
 
 	/* 调试性代码,  将帧描点，并送入venc进行编码 */
-	td_s32 wk_frame_pionts_venc_debug(ot_video_frame_info* _frame, ot_svp_point_s25q7* _points, td_u32 _points_num);
+	td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, ot_svp_point_s25q7* _points, td_u32 _points_num);
 
 private:
 	wk_st_lk_middle();

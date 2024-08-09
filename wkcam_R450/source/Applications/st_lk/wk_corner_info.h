@@ -33,6 +33,8 @@ public:
 
 /* 识别角点数据结构 */
 struct wk_st_points_s{
+	using wk_ptr = std::shared_ptr<wk_st_points_s>;
+
 	ot_svp_point_s25q7 points[500];        		// 帧角点
 	td_u32	points_cnt;							// 角点数量
 };
@@ -40,6 +42,8 @@ struct wk_st_points_s{
 
 /* 跟综角点输入数据结构 */
 struct wk_lk_points_input_s{
+	using wk_ptr = std::shared_ptr<wk_lk_points_input_s>;
+
 	ot_video_frame_info* prev_frame;			// 前图像帧
 	ot_svp_point_s25q7 prev_points[500];        // 前帧角点
 	td_u32	points_cnt;							// 角点数量
@@ -50,6 +54,8 @@ struct wk_lk_points_input_s{
 
 /* 跟综角点输出数据结构 */
 struct wk_lk_points_output_s{
+	using wk_ptr = std::shared_ptr<wk_lk_points_output_s>;
+
 	ot_svp_point_s25q7 prev_points[500];   	    // 前帧角点
 	ot_svp_point_s25q7 curr_points[500];        // 当前帧角点
 	td_u32	points_cnt;							// 角点数量
@@ -59,6 +65,8 @@ struct wk_lk_points_output_s{
 
 /* 结果输出数据结构 */
 struct wk_location_result_s{
+	using wk_ptr = std::shared_ptr<wk_location_result_s>;
+
 
 
 };
