@@ -73,4 +73,30 @@ struct wk_location_result_s{
 
 typedef void (*pfun_wk_get_frame_cb)(wk_corner_video_frame_s::wk_ptr);
 
+
+
+class wk_corner_points
+{
+
+public:
+	using wk_ptr = std::shared_ptr<wk_corner_points>;
+    virtual ~wk_corner_points();
+
+	virtual td_bool wk_get_image_size(ot_size* _ive_size, ot_size* _sensor_size)=0;
+	virtual td_bool wk_get_points_num_max_min(td_u16* _max, td_u16* _min)=0;
+	virtual td_bool wk_register_get_frame_cb(pfun_wk_get_frame_cb _cb)=0;
+	virtual td_s32 wk_corner_reinit()=0;
+	virtual td_bool wk_corner_recognize_set_param(td_u16 _quality_level, td_u16 _max_points_num, td_u16 _min_points_interval)=0;
+	virtual td_s32 wk_corner_recognize(wk_corner_video_frame_s::wk_ptr& _frame, wk_st_points_s::wk_ptr& _points)=0;
+	virtual td_bool wk_corner_track_set_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps)=0;
+	virtual td_s32 wk_corner_track(wk_lk_points_input_s::wk_ptr& _info, wk_lk_points_output_s::wk_ptr& _points)=0;
+	virtual td_bool wk_result_export(wk_location_result_s::wk_ptr& _result)=0;
+	virtual td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, ot_svp_point_s25q7* _points, td_u32 _points_num)=0;
+	
+protected:
+	wk_corner_points();
+};
+
+
+
 #endif /* __WK_CORNER_INFO_H__ */

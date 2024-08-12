@@ -32,7 +32,7 @@ td_s32 wk_st_lk_start(ot_vpss_grp _grp, ot_vpss_chn _chn);
 td_s32 wk_st_lk_stop();
 
 /* 获取图像源分辨率 */
-td_bool wk_st_lk_get_image_resolution(td_u16* _width, td_u16* _hight);
+td_bool wk_st_lk_get_image_resolution(ot_size* _ive_size, ot_size* _sensor_size);
 
 /* 设置的最大最小角点数量 */
 td_bool wk_st_lk_get_points_num_max_min(td_u16* _max, td_u16* _min);

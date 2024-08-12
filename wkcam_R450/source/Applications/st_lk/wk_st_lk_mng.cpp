@@ -1,8 +1,7 @@
 #include "wk_st_lk_mng.h"
 
-
-#define WK_IVE_LK_D1_WIDTH           	768   		              	/* 图像大小 */ 	
-#define WK_IVE_LK_D1_HEIGHT          	576
+#define WK_IVE_SENSOR_PIC_SIZE			PIC_640X480					/* sensor输出图像分辨率 */
+#define WK_IVE_LK_D1_PIC_SIZE           PIC_576P   		            /* st lk中使用的图像分辨率 */ 	
 #define WK_IVE_ST_LK_SRC_FRAMW_TYPE		OT_SVP_IMG_TYPE_YUV420SP  	/* 输入图像类型 */ 
 #define WK_IVE_LK_MAX_LEVEL          	(WK_IVE_LK_PYR_NUM-1)       /* 金字塔层数 [0~3] */ 
 #define WK_IVE_ST_QUALITY_LEVEL      	25							/* ST特征点质量控制参数 [1~255]*/
@@ -29,10 +28,10 @@ typedef struct {
 static wk_st_lk_mng_info_s g_st_lk_mng_info;
 
 
-td_bool wk_st_lk_get_image_resolution(td_u16* _width, td_u16* _hight)
+td_bool wk_st_lk_get_image_resolution(ot_size* _ive_size, ot_size* _sensor_size)
 {
-	*_width = WK_IVE_LK_D1_WIDTH;
-	*_hight = WK_IVE_LK_D1_HEIGHT;
+	sample_comm_sys_get_pic_size(WK_IVE_LK_D1_PIC_SIZE, _ive_size);
+	sample_comm_sys_get_pic_size(WK_IVE_SENSOR_PIC_SIZE, _sensor_size);
 	return TD_TRUE;
 }
 
@@ -69,12 +68,16 @@ td_bool wk_st_lk_frame_release(ot_video_frame_info* _frame)
 /* 光流定位参数初始化 */
 static td_s32 _wk_st_lk_set_default_param(wk_ive_st_lk_param* _param)
 {
+	ot_size in_size;
+
 	if(_param == NULL){
 		return TD_FAILURE;
 	}
+
+    sample_comm_sys_get_pic_size(WK_IVE_LK_D1_PIC_SIZE, &in_size);
 	
-	_param->frame_size.width = WK_IVE_LK_D1_WIDTH;
-	_param->frame_size.height = WK_IVE_LK_D1_HEIGHT;
+	_param->frame_size.width = in_size.width;
+	_param->frame_size.height = in_size.height;
 	_param->frame_type = WK_IVE_ST_LK_SRC_FRAMW_TYPE;
 	_param->max_points_num = WK_IVE_ST_LK_MAX_POINTS_NUM;
 	_param->min_points_num = WK_IVE_ST_LK_MIN_POINTS_NUM;

@@ -313,7 +313,7 @@ int wk_mpp_start(int mode)
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_RECORD, TD_TRUE, PIC_640X480);
     sample_comm_venc_set_src_framerate(60);
 
-    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_768X576);
+    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_576P);
     // wk_mpp_vpss_set_param(2,TD_TRUE,PIC_CIF);
     wk_mpp_vpss_start(&wk_vpss);
 
