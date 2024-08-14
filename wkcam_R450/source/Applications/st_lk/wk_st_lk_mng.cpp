@@ -1,7 +1,8 @@
 #include "wk_st_lk_mng.h"
 
 #define WK_IVE_SENSOR_PIC_SIZE			PIC_640X480					/* sensor输出图像分辨率 */
-#define WK_IVE_LK_D1_PIC_SIZE           PIC_576P   		            /* st lk中使用的图像分辨率 */ 	
+#define WK_IVE_LK_D1_PIC_WIDTH          640   		            	/* st lk中使用的图像分辨率 */ 	
+#define WK_IVE_LK_D1_PIC_HIGTH          512   		         
 #define WK_IVE_ST_LK_SRC_FRAMW_TYPE		OT_SVP_IMG_TYPE_YUV420SP  	/* 输入图像类型 */ 
 #define WK_IVE_LK_MAX_LEVEL          	(WK_IVE_LK_PYR_NUM-1)       /* 金字塔层数 [0~3] */ 
 #define WK_IVE_ST_QUALITY_LEVEL      	25							/* ST特征点质量控制参数 [1~255]*/
@@ -10,6 +11,8 @@
 #define WK_IVE_LK_MIN_EIG_VALUE  		100							/* LK最小特征阈值 [1~255] */
 #define WK_IVE_LK_ITER_CNT          	10							/* LK最大迭代次数 [1~20] */
 #define WK_IVE_LK_EPS                	2							/* LK迭代收敛条件 [1~255] */
+
+#define WK_IVE_SENSOR_VI_PIPE 			0							/* 下视sensor使用的VI PIPE */
 
 typedef struct {
 	/* 图像帧采集 */
@@ -28,9 +31,8 @@ typedef struct {
 static wk_st_lk_mng_info_s g_st_lk_mng_info;
 
 
-td_bool wk_st_lk_get_image_resolution(ot_size* _ive_size, ot_size* _sensor_size)
+td_bool wk_st_lk_get_image_resolution(ot_size* _sensor_size)
 {
-	sample_comm_sys_get_pic_size(WK_IVE_LK_D1_PIC_SIZE, _ive_size);
 	sample_comm_sys_get_pic_size(WK_IVE_SENSOR_PIC_SIZE, _sensor_size);
 	return TD_TRUE;
 }
@@ -74,10 +76,8 @@ static td_s32 _wk_st_lk_set_default_param(wk_ive_st_lk_param* _param)
 		return TD_FAILURE;
 	}
 
-    sample_comm_sys_get_pic_size(WK_IVE_LK_D1_PIC_SIZE, &in_size);
-	
-	_param->frame_size.width = in_size.width;
-	_param->frame_size.height = in_size.height;
+	_param->frame_size.width = WK_IVE_LK_D1_PIC_WIDTH;
+	_param->frame_size.height = WK_IVE_LK_D1_PIC_HIGTH;
 	_param->frame_type = WK_IVE_ST_LK_SRC_FRAMW_TYPE;
 	_param->max_points_num = WK_IVE_ST_LK_MAX_POINTS_NUM;
 	_param->min_points_num = WK_IVE_ST_LK_MIN_POINTS_NUM;
@@ -148,12 +148,19 @@ td_s32 wk_st_get_points(ot_video_frame_info *_frame, wk_st_points_s* _points)
 		return TD_FAILURE;
 	}
 
+	uint32_t now_ms = system_time_ms_get();
+	uint32_t last_ms = now_ms;
+	int times = 0;
+
 	s32ret = wk_ive_st_get_points(&pmng->st_lk_infor, _frame);
 	if(s32ret == TD_SUCCESS){
 		_points->points_cnt = pmng->st_lk_infor.points_cnt;
 		memcpy(_points->points, pmng->st_lk_infor.curr_corner_points, sizeof(pmng->st_lk_infor.curr_corner_points));	
 	}
-	
+
+	now_ms = system_time_ms_get();
+	times = get_delta_time(now_ms, last_ms);
+	//printf("### wk_st_get_points calculateC times ===> %d [%d]\n", times);  
 	return s32ret;
 }
 
@@ -196,6 +203,10 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 		return TD_FAILURE;
 	}
 
+	uint32_t now_ms = system_time_ms_get();
+	uint32_t last_ms = now_ms;
+	int times = 0;
+
 	s32ret = wk_ive_lk_get_points(&pmng->st_lk_infor, _info->curr_frame, _info->prev_frame, _info->prev_points, _info->points_cnt);
 	if(s32ret == TD_SUCCESS) {
 		_points->points_cnt = _info->points_cnt;
@@ -204,6 +215,10 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 		memcpy(_points->status, pmng->st_lk_infor.curr_points_status, sizeof(pmng->st_lk_infor.curr_points_status));
 		memcpy(_points->err, pmng->st_lk_infor.curr_points_err, sizeof(pmng->st_lk_infor.curr_points_err));	
 	}
+
+	now_ms = system_time_ms_get();
+	times = get_delta_time(now_ms, last_ms);
+	//printf("### wk_lk_get_points calculateC times ===> %d [%d]\n", times);  
 	return s32ret;
 }
 
@@ -217,11 +232,15 @@ void _wk_st_lk_get_frame_cb_handle(ot_vpss_grp grp, ot_vpss_chn chn, ot_video_fr
 		printf("param is _frame null\n");
 		return;
 	}
+	
+	ot_isp_exp_info exp;
+	ss_mpi_isp_query_exposure_info(WK_IVE_SENSOR_VI_PIPE, &exp);
 
 	frame_ptr->grp = grp;
 	frame_ptr->chn = chn;
 	frame_ptr->frame = *_frame;
 	ss_mpi_sys_get_cur_pts(&frame_ptr->pts);
+	frame_ptr->ave_lum = exp.ave_lum;
 
 	if(g_st_lk_mng_info._cb != NULL){
 		g_st_lk_mng_info._cb(frame_ptr);

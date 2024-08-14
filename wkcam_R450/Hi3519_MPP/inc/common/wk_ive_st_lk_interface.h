@@ -34,6 +34,7 @@ typedef struct {
     ot_ive_st_corner_ctrl corner_ctrl;   				// st角点筛选控制参数
 
 	/* 用于图像数据源 */
+	ot_size frame_size;  	 // 图像源大小
     ot_svp_img pyr_tmp;
     ot_svp_img src_yuv;   	 // 输入图片
 

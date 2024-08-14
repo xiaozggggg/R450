@@ -111,6 +111,81 @@ static td_void _wk_ive_st_lk_copy_pyr(ot_svp_src_img _pyr_src[], ot_svp_dst_img 
 	}
 }
 
+static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info *user_frame_info)
+{
+    td_s32 ret;
+    sample_vi_get_frame_vb_cfg vb_cfg;
+
+    vb_cfg.size.width    = dst_size->width;
+    vb_cfg.size.height   = dst_size->height;
+    vb_cfg.pixel_format  = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420;
+    vb_cfg.video_format  = OT_VIDEO_FORMAT_LINEAR;
+    vb_cfg.compress_mode = OT_COMPRESS_MODE_NONE;
+    vb_cfg.dynamic_range = OT_DYNAMIC_RANGE_SDR8;
+
+    ret = sample_comm_vi_get_frame_blk(&vb_cfg, user_frame_info, 1);
+    if (ret != TD_SUCCESS) {
+        sample_print("get user pic frame vb failed!\n");
+        return ret;
+    }
+
+    return TD_SUCCESS;
+}
+
+static td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_frame_info[], td_s32 frame_cnt)
+{
+    td_s32 i;
+    ot_vb_pool pool_id;
+
+    for (i = 0; i < frame_cnt; i++) {
+        sample_comm_vi_free_frame_blk(&user_frame_info[i]);
+    }
+
+    pool_id = user_frame_info[0].frame_info.pool_id;
+    ss_mpi_vb_destroy_pool(pool_id);
+}
+
+static td_s32 _wk_scale_task(ot_video_frame_info *src_frame, ot_video_frame_info *dst_frame)
+{
+    td_s32 ret;
+    ot_vgs_handle handle;
+    ot_vgs_task_attr vgs_task_attr;
+
+    ret = ss_mpi_vgs_begin_job(&handle);
+    if (ret != TD_SUCCESS) {
+        sample_print("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
+        return TD_FAILURE;
+    }
+
+    if (memcpy_s(&vgs_task_attr.img_in, sizeof(ot_video_frame_info),
+        src_frame, sizeof(ot_video_frame_info)) != EOK) {
+        sample_print("memcpy_s img_in failed\n");
+        return TD_FAILURE;
+    }
+
+    if (memcpy_s(&vgs_task_attr.img_out, sizeof(ot_video_frame_info),
+        dst_frame, sizeof(ot_video_frame_info)) != EOK) {
+        sample_print("memcpy_s img_out failed\n");
+        return TD_FAILURE;
+    }
+
+    if (ss_mpi_vgs_add_scale_task(handle, &vgs_task_attr, OT_VGS_SCALE_COEF_NORM) != TD_SUCCESS) {
+        sample_print("ss_mpi_vgs_add_scale_task failed\n");
+        return TD_FAILURE;
+    }
+
+    ret = ss_mpi_vgs_end_job(handle);
+    if (ret != TD_SUCCESS) {
+        ss_mpi_vgs_cancel_job(handle);
+        sample_print("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
+        return TD_FAILURE;
+    }
+
+    return TD_SUCCESS;
+}
+
+
+
 /* 通过st提取特征点 */
 td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_frame)
 {
@@ -128,18 +203,34 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
     memset(&dma_ctrl, 0, sizeof(dma_ctrl));
     dma_ctrl.mode = OT_IVE_DMA_MODE_DIRECT_COPY;
 
+	/* 图像放大 */
+	ot_size frame_size;
+	frame_size.width = _lk_info->frame_size.width;
+	frame_size.height = _lk_info->frame_size.height;
+    sample_vi_user_frame_info pic_frame_info;
+    ret = _wk_create_user_frame(&frame_size, &pic_frame_info);
+    if (ret != TD_SUCCESS) {
+        return ret;
+    }
+	ret = _wk_scale_task(_frame, &pic_frame_info.frame_info);
+    if (ret != TD_SUCCESS) {
+        sample_print("add vgs scale task failed.\n");
+		goto task_err;
+    }
+	
+
 	/* 转换frame格式 */
-	ret = sample_common_ive_dma_image(_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	ret = sample_common_ive_dma_image(&pic_frame_info.frame_info, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 
 	/* 复制src_yuv到next_pyr金字塔底层 */
     ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->next_pyr[0], &dma_ctrl, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 	
 	/* 循环构建next_pyr图像金字塔 */
@@ -147,7 +238,7 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->next_pyr[k - 1], &_lk_info->next_pyr[k]);
 		if(ret != TD_SUCCESS){
 			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
-			return TD_FAILURE;
+			goto task_err;
 		}
 	}
 
@@ -158,19 +249,19 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
     ret = ss_mpi_ive_st_cand_corner(&handle, &_lk_info->next_pyr[1], &_lk_info->dst, &_lk_info->cand_corner_ctrl, TD_TRUE); // 使用缩小1倍的分辨率
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),ss_mpi_ive_st_cand_corner failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 
     ret = _wk_ive_query_task(handle);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_query_task failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 
     ret = ss_mpi_ive_st_corner(&_lk_info->dst, &_lk_info->corner, &_lk_info->corner_ctrl);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),ss_mpi_ive_st_corner failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 
 	/* 角点输出保存 */
@@ -182,9 +273,14 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
 	
         _lk_info->curr_corner_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小1倍的分辨率
         _lk_info->curr_corner_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
-    }
 
-	return TD_SUCCESS;
+		/* 缩小角点坐标倍数 */
+		_lk_info->curr_corner_points[k].x *= ((_frame->video_frame.height*1.0)/(_lk_info->frame_size.height*1.0));
+	}
+
+task_err:
+	_wk_create_user_release_frame_blk(&pic_frame_info, 1);
+	return ret;
 }
 
 
@@ -214,40 +310,67 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
     dma_ctrl.mode = OT_IVE_DMA_MODE_DIRECT_COPY;
 
 	/* _prev_frame 转换frame格式 ，并构建金字塔 */
-	ret = sample_common_ive_dma_image(_prev_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	// 图像放大
+	ot_size frame_size;
+	frame_size.width = _lk_info->frame_size.width;
+	frame_size.height = _lk_info->frame_size.height;
+    sample_vi_user_frame_info prev_frame_info;
+    ret = _wk_create_user_frame(&frame_size, &prev_frame_info);
+    if (ret != TD_SUCCESS) {
+        return ret;
+    }
+	ret = _wk_scale_task(_prev_frame, &prev_frame_info.frame_info);
+    if (ret != TD_SUCCESS) {
+        sample_print("add vgs scale task failed.\n");
+		goto task_err;
+    }
+	
+	ret = sample_common_ive_dma_image(&prev_frame_info.frame_info, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
     ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->prev_pyr[0], &dma_ctrl, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err;
 	}
 	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
 		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->prev_pyr[k - 1], &_lk_info->prev_pyr[k]);
 		if(ret != TD_SUCCESS){
 			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
-			return TD_FAILURE;
+			goto task_err;
 		}
 	}
 
 	/* curr_frame 转换frame格式 ，并构建金字塔 */
-	ret = sample_common_ive_dma_image(_curr_frame, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
+	// 放大
+    sample_vi_user_frame_info curr_frame_info;
+    ret = _wk_create_user_frame(&frame_size, &curr_frame_info);
+    if (ret != TD_SUCCESS) {
+        goto task_err;
+    }
+	ret = _wk_scale_task(_curr_frame, &curr_frame_info.frame_info);
+    if (ret != TD_SUCCESS) {
+        sample_print("add vgs scale task failed.\n");
+		goto task_err2;
+    }
+	
+	ret = sample_common_ive_dma_image(&curr_frame_info.frame_info, (ot_svp_dst_img*)&_lk_info->src_yuv, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),sample_common_ive_dma_image failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err2;
 	}
     ret = _wk_ive_st_lk_dma(&handle, &_lk_info->src_yuv, &_lk_info->next_pyr[0], &dma_ctrl, TD_FALSE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_st_lk_dma failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err2;
 	}
 	for (k = 1; k <= _lk_info->lk_pyr_ctrl.max_level; k++) {
 		ret = _wk_ive_st_lk_pyr_down(_lk_info, &_lk_info->next_pyr[k - 1], &_lk_info->next_pyr[k]);
 		if(ret != TD_SUCCESS){
 			printf("Error(%#x),_wk_ive_st_lk_pyr_down %u failed!\n", ret, k);
-			return TD_FAILURE;
+			goto task_err2;
 		}
 	}
 
@@ -257,7 +380,7 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 	prev_points = sample_svp_convert_addr_to_ptr(ot_svp_point_s25q7, _lk_info->prev_points.virt_addr);
     for (k = 0; k < _points_num; k++) {
 		prev_points[k].x = next_points[k].x = _prev_points_src[k].x;
-        prev_points[k].y = next_points[k].y = _prev_points_src[k].y;
+        prev_points[k].y = next_points[k].y = _prev_points_src[k].y * ((_lk_info->frame_size.height*1.0)/(_curr_frame->video_frame.height*1.0));
     }	
 
 	/* lk提取点识别 */
@@ -265,13 +388,13 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 		&_lk_info->next_points, &_lk_info->status, &_lk_info->err, &_lk_info->lk_pyr_ctrl, TD_TRUE);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),ss_mpi_ive_lk_optical_flow_pyr failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err2;
 	}
 	
 	ret = _wk_ive_query_task(handle);
 	if(ret != TD_SUCCESS){
 		printf("Error(%#x),_wk_ive_query_task failed!\n", ret);
-		return TD_FAILURE;
+		goto task_err2;
 	}
 
 	/* 角点输出保存 */
@@ -285,17 +408,21 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 	perr = sample_svp_convert_addr_to_ptr(td_u9q7, _lk_info->err.virt_addr);
     for (k = 0; k < _lk_info->points_cnt; k++) {
 		_lk_info->prev_corner_points[k].x = prev_points[k].x;
-        _lk_info->prev_corner_points[k].y = prev_points[k].y;
+        _lk_info->prev_corner_points[k].y = prev_points[k].y * ((_curr_frame->video_frame.height*1.0)/(_lk_info->frame_size.height*1.0));
 	
 		_lk_info->curr_corner_points[k].x = next_points[k].x;
-		_lk_info->curr_corner_points[k].y = next_points[k].y;
+		_lk_info->curr_corner_points[k].y = next_points[k].y * ((_curr_frame->video_frame.height*1.0)/(_lk_info->frame_size.height*1.0));
 
 		_lk_info->curr_points_status[k] = pstatus[k];
 		
 		_lk_info->curr_points_err[k] = perr[k];
     }	
 
-	return TD_SUCCESS;	
+task_err2:
+	_wk_create_user_release_frame_blk(&curr_frame_info, 1);
+task_err:
+	_wk_create_user_release_frame_blk(&prev_frame_info, 1);
+	return ret;	
 }
 
 
@@ -439,6 +566,7 @@ td_s32 wk_ive_st_lk_init(wk_ive_st_lk_info* _lk_info, wk_ive_st_lk_param* _param
 	}
 
 	memset(_lk_info, 0, sizeof(wk_ive_st_lk_info));
+	_lk_info->frame_size = _param->frame_size;
 
     /* lk相关参数初始化 */
     ret = _wk_ive_lk_param_init(_lk_info, _param);

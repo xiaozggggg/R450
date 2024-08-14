@@ -43,6 +43,7 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 		middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, prev_pionts_test->points_cnt);
 
 		prev_frame = _info;
+
 	}
 	 
 	return;

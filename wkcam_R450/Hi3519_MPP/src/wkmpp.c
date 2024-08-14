@@ -84,6 +84,7 @@ extern td_s32 sample_svp_dpu_proc_frame_from_file(const ot_size *pic_size);
 extern void sample_yuv_8bit_dump(const ot_video_frame *video_frame_buf, FILE *pfd);
 extern td_s32 sample_comm_vi_read_file_to_sp42_x(FILE *file, ot_video_frame *frame);
 
+
 static SAMPLE_MPP_SENSOR_T libsns[SNS_TYPE_BUTT] = {
     //{OV_OS04A10_MIPI_4M_30FPS_12BIT, "ov_os04a10-0-0-8-30", "libsns_os04a10.so", "g_sns_os04a10_obj"},
     {SONY_IMX378_MIPI_8M_30FPS_10BIT, "imx378-0-0-8-30", "libsns_imx378.so", "g_sns_imx378_obj"},
@@ -313,7 +314,7 @@ int wk_mpp_start(int mode)
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_RECORD, TD_TRUE, PIC_640X480);
     sample_comm_venc_set_src_framerate(60);
 
-    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_576P);
+    wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_640X480);
     // wk_mpp_vpss_set_param(2,TD_TRUE,PIC_CIF);
     wk_mpp_vpss_start(&wk_vpss);
 
@@ -543,6 +544,38 @@ int wk_mpp_digital_zoom(unsigned char zoom_step)
 
     return m_zoom_step;
 }
+
+
+static td_s32 wk_mpp_vpss_set_chn_rotation(ot_vpss_grp grp, ot_vpss_chn chn, td_u16 angle)
+{
+	ot_rotation_attr attr;
+	ot_rotation e_angle; 
+
+	switch (angle)
+	{
+		case 0:
+			e_angle = OT_ROTATION_0;
+			break;
+		case 90:
+			e_angle = OT_ROTATION_90;
+			break;
+		case 180:
+			e_angle = OT_ROTATION_180;
+			break;
+		case 270:
+			e_angle = OT_ROTATION_270;
+			break;
+		default:
+			e_angle = OT_ROTATION_0;
+			break;	
+	}
+	
+	attr.enable = TD_TRUE;
+	attr.rotation_type = OT_ROTATION_ANG_FIXED;
+	attr.rotation_fixed = e_angle;
+	return ss_mpi_vpss_set_chn_rotation(grp, chn, &attr);
+}
+
 
 int wk_mpp_vpss_start(wk_mpp_vpss_t *vpss)
 {

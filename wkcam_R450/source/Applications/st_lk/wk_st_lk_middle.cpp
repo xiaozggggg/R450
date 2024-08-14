@@ -56,9 +56,9 @@ td_s32 wk_st_lk_middle::wk_st_lk_destroy_instance()
 }
 
 
-td_bool wk_st_lk_middle::wk_get_image_size(ot_size* _ive_size, ot_size* _sensor_size)
+td_bool wk_st_lk_middle::wk_get_image_size(ot_size* _sensor_size)
 {
-	return wk_st_lk_get_image_resolution(_ive_size, _sensor_size);
+	return wk_st_lk_get_image_resolution(_sensor_size);
 }
 
 td_bool wk_st_lk_middle::wk_get_points_num_max_min(td_u16* _max, td_u16* _min)

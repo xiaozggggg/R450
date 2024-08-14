@@ -32,7 +32,7 @@ public:
 	 * @param _ive_size		输出参数，识别和跟踪角点，图像使用的分辨率
 	 * @param _sensor_size	输出参数，sensor输出的图像的分辨率
 	 */
-	td_bool wk_get_image_size(ot_size* _ive_size, ot_size* _sensor_size);
+	td_bool wk_get_image_size(ot_size* _sensor_size);
 
 	/**
 	 * @brief 获取角度数量最大最小值

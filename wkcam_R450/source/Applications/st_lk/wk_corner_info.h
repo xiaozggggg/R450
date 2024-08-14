@@ -28,6 +28,7 @@ public:
 		
 	ot_video_frame_info frame;					// 图像帧
 	td_u64 pts;									// 时间戳
+	td_u32 ave_lum;								// 图像亮度
 };
 
 
@@ -67,8 +68,14 @@ struct wk_lk_points_output_s{
 struct wk_location_result_s{
 	using wk_ptr = std::shared_ptr<wk_location_result_s>;
 
+	/* 四元素+平移 */
+	td_float x;
+	td_float y;
+	td_float z;
+	td_float q[4];
 
-
+	td_u16 corner_num;					/* 有效角点数 */
+	wk_corner_video_frame_s frame;  	/* 帧数据 */
 };
 
 typedef void (*pfun_wk_get_frame_cb)(wk_corner_video_frame_s::wk_ptr);
@@ -82,7 +89,7 @@ public:
 	using wk_ptr = std::shared_ptr<wk_corner_points>;
     virtual ~wk_corner_points();
 
-	virtual td_bool wk_get_image_size(ot_size* _ive_size, ot_size* _sensor_size)=0;
+	virtual td_bool wk_get_image_size(ot_size* _sensor_size)=0;
 	virtual td_bool wk_get_points_num_max_min(td_u16* _max, td_u16* _min)=0;
 	virtual td_bool wk_register_get_frame_cb(pfun_wk_get_frame_cb _cb)=0;
 	virtual td_s32 wk_corner_reinit()=0;
