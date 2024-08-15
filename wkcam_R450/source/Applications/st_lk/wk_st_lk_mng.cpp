@@ -350,7 +350,33 @@ td_s32 wk_st_lk_stop()
 /* 协议处理函数 */
 td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
 {
+	uint16_t length;
+    mavlink_message_t msg;
+    uint8_t msgbuff[MAVLINK_MAX_PACKET_LEN];
+    mavlink_wk_camera_visual_intertial_odometry_data_t wk_location_result;
 
+    wk_location_result.x = _result->x;
+    wk_location_result.y = _result->y;
+	wk_location_result.z = _result->z;
+	memcpy(wk_location_result.quaternion, _result->q, sizeof(_result->q));
+    wk_location_result.width = _result->frame->frame.video_frame.width;
+    wk_location_result.height = _result->frame->frame.video_frame.height;
+	wk_location_result.ave_lun = _result->frame->ave_lum;
+	wk_location_result.corner = _result->corner_num;
+	wk_location_result.timestamp = _result->frame->pts;
+	
+    printf("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
+         wk_location_result.x, wk_location_result.y, wk_location_result.z, 
+    	 wk_location_result.quaternion[0], wk_location_result.quaternion[1], wk_location_result.quaternion[2], wk_location_result.quaternion[3],
+         wk_location_result.width, wk_location_result.height, 
+         wk_location_result.ave_lun, wk_location_result.corner, wk_location_result.timestamp);
+
+    mavlink_msg_wk_camera_visual_intertial_odometry_data_encode(MAVLINK_SYS_ID,WK_MODULE_TYPE_CAMERA, &msg, &wk_location_result);
+    length = mavlink_msg_to_send_buffer(msgbuff,&msg);
+	
+    CamSendHandle((char *)msgbuff,length);
+	//UdpSendHandle((char *)msgbuff,length);
+	
 	return TD_TRUE;
 }
 

@@ -23,7 +23,9 @@ public:
 	}
 	
 	~wk_corner_video_frame_s() {
-		ss_mpi_vpss_release_chn_frame(grp, chn, &frame);
+		if(grp != -1 && chn != -1){
+			ss_mpi_vpss_release_chn_frame(grp, chn, &frame);
+		}	
 	}
 		
 	ot_video_frame_info frame;					// 图像帧
@@ -74,8 +76,8 @@ struct wk_location_result_s{
 	td_float z;
 	td_float q[4];
 
-	td_u16 corner_num;					/* 有效角点数 */
-	wk_corner_video_frame_s frame;  	/* 帧数据 */
+	td_u16 corner_num;							/* 有效角点数 */
+	wk_corner_video_frame_s::wk_ptr frame;  	/* 帧数据 */
 };
 
 typedef void (*pfun_wk_get_frame_cb)(wk_corner_video_frame_s::wk_ptr);

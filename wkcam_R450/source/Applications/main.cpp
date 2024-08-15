@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	printf("=========== R450 start  version: v1.0.1 20240301 ========== \n");
     printf("=========== OV7251 ===========\n");
 
-#if 0
+#if 1
 	//initial serial communications thread
 	if (thread_comm_init() == false)
 	{

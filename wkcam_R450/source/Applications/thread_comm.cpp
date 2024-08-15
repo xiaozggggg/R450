@@ -30,6 +30,8 @@ void PrintBuftest(unsigned char DataBuf[] ,unsigned int DataLen)
         printf("%x ", DataBuf[i]);
     }
     printf("\n");
+	
+	return;
 }
 
 void *MavlinkCmdAnalysisThread(void *arg) 
@@ -123,6 +125,8 @@ void CamSendHandle(char *buf,int size)
     int nRet;
 
     nRet = sendto(Sock_wkdata, buf, size, 0, (struct sockaddr*)&addr_remote, sizeof(addr_remote));
+
+	return;
 }
 
 /*
@@ -160,11 +164,14 @@ void UdpSendHandle(char *buf,int size)
         usleep(50*1000);
         net_close_socket(&Sock_send);
     }
+
+	return;
 }
 
 void comm_send_data(uint8_t *data,uint16_t length)
 {
     UdpSendHandle((char*)data,length);
+	return;
 }
 
 bool thread_comm_init(void)
