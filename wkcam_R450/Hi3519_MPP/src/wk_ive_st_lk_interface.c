@@ -39,7 +39,8 @@ static td_s32 _wk_ive_st_lk_dma(ot_ive_handle *_ive_handle, ot_svp_src_img *_src
 
     return ret;
 }
-	
+
+/* 高斯录波，并构造上一层金字塔图像 */	
 static td_s32 _wk_ive_st_lk_pyr_down(wk_ive_st_lk_info *_lk_info, ot_svp_src_img *_src, ot_svp_dst_img *_dst)
 {
 	td_s32 ret;
@@ -92,6 +93,7 @@ static td_s32 _wk_ive_query_task(ot_ive_handle _handle)
 	return TD_SUCCESS;
 }
 
+/* 复制金字塔 */
 static td_void _wk_ive_st_lk_copy_pyr(ot_svp_src_img _pyr_src[], ot_svp_dst_img _pyr_dst[], td_u8 _max_level)
 {
 	td_u8 i;
@@ -109,8 +111,11 @@ static td_void _wk_ive_st_lk_copy_pyr(ot_svp_src_img _pyr_src[], ot_svp_dst_img 
 			break;
 		}
 	}
+
+	return;
 }
 
+/* 创建用户帧 */
 static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info *user_frame_info)
 {
     td_s32 ret;
@@ -118,7 +123,7 @@ static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info
 
     vb_cfg.size.width    = dst_size->width;
     vb_cfg.size.height   = dst_size->height;
-    vb_cfg.pixel_format  = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420;
+    vb_cfg.pixel_format  = OT_PIXEL_FORMAT_YUV_SEMIPLANAR_420;
     vb_cfg.video_format  = OT_VIDEO_FORMAT_LINEAR;
     vb_cfg.compress_mode = OT_COMPRESS_MODE_NONE;
     vb_cfg.dynamic_range = OT_DYNAMIC_RANGE_SDR8;
@@ -132,6 +137,7 @@ static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info
     return TD_SUCCESS;
 }
 
+/* 释放用户帧 */
 static td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_frame_info[], td_s32 frame_cnt)
 {
     td_s32 i;
@@ -143,47 +149,52 @@ static td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_
 
     pool_id = user_frame_info[0].frame_info.pool_id;
     ss_mpi_vb_destroy_pool(pool_id);
+
+	return;
 }
 
+/* 缩放图像帧 */
 static td_s32 _wk_scale_task(ot_video_frame_info *src_frame, ot_video_frame_info *dst_frame)
 {
     td_s32 ret;
-    ot_vgs_handle handle;
+    ot_vgs_handle handle = -1;
     ot_vgs_task_attr vgs_task_attr;
 
     ret = ss_mpi_vgs_begin_job(&handle);
     if (ret != TD_SUCCESS) {
         sample_print("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
-        return TD_FAILURE;
+        return ret;
     }
 
     if (memcpy_s(&vgs_task_attr.img_in, sizeof(ot_video_frame_info),
         src_frame, sizeof(ot_video_frame_info)) != EOK) {
         sample_print("memcpy_s img_in failed\n");
-        return TD_FAILURE;
+        goto scale_task_err;
     }
 
     if (memcpy_s(&vgs_task_attr.img_out, sizeof(ot_video_frame_info),
         dst_frame, sizeof(ot_video_frame_info)) != EOK) {
         sample_print("memcpy_s img_out failed\n");
-        return TD_FAILURE;
+        goto scale_task_err;
     }
 
     if (ss_mpi_vgs_add_scale_task(handle, &vgs_task_attr, OT_VGS_SCALE_COEF_NORM) != TD_SUCCESS) {
         sample_print("ss_mpi_vgs_add_scale_task failed\n");
-        return TD_FAILURE;
+        goto scale_task_err;
     }
 
     ret = ss_mpi_vgs_end_job(handle);
     if (ret != TD_SUCCESS) {
-        ss_mpi_vgs_cancel_job(handle);
         sample_print("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
-        return TD_FAILURE;
+       goto scale_task_err;
     }
 
-    return TD_SUCCESS;
+scale_task_err:
+	if(handle != -1){
+		ss_mpi_vgs_cancel_job(handle);
+	}
+    return ret;
 }
-
 
 
 /* 通过st提取特征点 */
@@ -301,7 +312,7 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 	td_u8* pstatus = NULL;
 	td_u9q7* perr = NULL;
 
-	if(_lk_info == NULL || _curr_frame == NULL || _prev_frame == NULL) {
+	if(_lk_info == NULL || _curr_frame == NULL || _prev_frame == NULL || _prev_points_src == NULL) {
 		printf("param is null\n");
 		return TD_FAILURE;
 	}
@@ -560,6 +571,11 @@ td_s32 wk_ive_st_lk_init(wk_ive_st_lk_info* _lk_info, wk_ive_st_lk_param* _param
 	ot_size src_size = _param->frame_size;
     ot_size pyr_size = _param->frame_size;
 
+	if(_lk_info == NULL || _param == NULL) {
+		printf("param is null\n");
+		return TD_FAILURE;
+	}
+
 	if(_param->max_level >  (WK_IVE_LK_PYR_NUM - 1)){
 		printf("max_level can't be larger than %d", (WK_IVE_LK_PYR_NUM - 1));
 		return TD_FAILURE;
@@ -631,6 +647,8 @@ td_void wk_ive_st_lk_uninit(wk_ive_st_lk_info *_lk_info)
 
     sample_svp_mmz_free(_lk_info->pyr_tmp.phys_addr[0], _lk_info->pyr_tmp.virt_addr[0]);
     sample_svp_mmz_free(_lk_info->src_yuv.phys_addr[0], _lk_info->src_yuv.virt_addr[0]);
+
+	return;
 }
 
 

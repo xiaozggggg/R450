@@ -142,7 +142,7 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->full_lines_std = sns_state->fl_std;
     ae_sns_dft->flicker_freq = 50 * 256; /* light flicker freq: 50Hz, accuracy: 256 */
     ae_sns_dft->full_lines_max = OV7251_FULL_LINES_MAX;
-    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * 30); /* 1000000000ns, 30fps */
+    ae_sns_dft->hmax_times = (1000000000) / (sns_state->fl_std * OV7251_MAX_FPS); /* 1000000000ns, 30fps */
 
     ae_sns_dft->again_accu.accu_type = OT_ISP_AE_ACCURACY_TABLE;
     ae_sns_dft->again_accu.accuracy  = 1;
@@ -261,7 +261,7 @@ static td_u32 cmos_vmax2inttime(ot_isp_sns_state *sns_state, td_u32 vmax)
 
 	int_time = (inttime_max/(td_float)vmax_tmp) * vmax;  
 
-	// printf("------- inttime_max = %d, vmax_tmp =%d, vmax = %d, int_time = %x\n", inttime_max, vmax_tmp, vmax, int_time);
+	//printf("------- inttime_max = %d, vmax_tmp =%d, vmax = %d, int_time = %x\n", inttime_max, vmax_tmp, vmax, int_time);
 	return int_time;
 }
 
