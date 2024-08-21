@@ -95,6 +95,12 @@ const ov7251_video_mode_tbl g_ov7251_mode_tbl[OV7251_MODE_BUTT] = {
 /* Imx327 Register Address */
 #define OV7251_SHR0_ADDR                  0x3502   // 曝光寄存器
 
+#define OV7251_AGAIN_ADDR_H				  0x3504   // 模拟增益
+#define OV7251_AGAIN_ADDR_L				  0x3505
+
+#define OV7251_DGAIN_ADDR_H				  0x350A   // 数字增益
+#define OV7251_DGAIN_ADDR_L               0x350B
+
 #define OV7251_PRSH_LENGTH                0x3f3b
 
 #define OV7251_DGAIN_CTL		          0x3ff9
@@ -104,8 +110,8 @@ const ov7251_video_mode_tbl g_ov7251_mode_tbl[OV7251_MODE_BUTT] = {
 #define OV7251_VMAX_ADDR                  0x0341
 
 /* sensor gain */
-#define OV7251_AGAIN_MAX                  16384    /* the max again is 31356 */
-#define OV7251_DGAIN_MAX                  (16384-1)/* the max dgain is 128913 */
+#define OV7251_AGAIN_MAX                  8096    /* the max again is 31356 */
+#define OV7251_DGAIN_MAX                  (8096-1)/* the max dgain is 128913 */
 
 #define OV7251_AGAIN_21X    (21504)
 
@@ -155,7 +161,7 @@ static td_void cmos_get_ae_comm_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_def
     ae_sns_dft->min_isp_dgain_target = 1 << ae_sns_dft->isp_dgain_shift;
     ae_sns_dft->max_isp_dgain_target = 4 << ae_sns_dft->isp_dgain_shift; /* max 2 */
     if (g_lines_per500ms[vi_pipe] == 0) {
-        ae_sns_dft->lines_per500ms = sns_state->fl_std * 30 / 2; /* 30fps, div 2 */
+        ae_sns_dft->lines_per500ms = sns_state->fl_std * OV7251_MAX_FPS / 2; /* 30fps, div 2 */
     } else {
         ae_sns_dft->lines_per500ms = g_lines_per500ms[vi_pipe];
     }
@@ -185,7 +191,7 @@ static td_void cmos_get_ae_linear_default(ot_vi_pipe vi_pipe, ot_isp_ae_sensor_d
     ae_sns_dft->max_again_target = ae_sns_dft->max_again;
     ae_sns_dft->min_again_target = ae_sns_dft->min_again;
 
-    ae_sns_dft->max_dgain = 1024; /* max 1024 */
+    ae_sns_dft->max_dgain = 1024; //OV7251_DGAIN_MAX; /* max 1024 */
     ae_sns_dft->min_dgain = 1024; /* min 1024 */
     ae_sns_dft->max_dgain_target = ae_sns_dft->max_dgain;
     ae_sns_dft->min_dgain_target = ae_sns_dft->min_dgain;
@@ -268,8 +274,12 @@ static td_u32 cmos_vmax2inttime(ot_isp_sns_state *sns_state, td_u32 vmax)
 static td_void cmos_config_vmax(ot_isp_sns_state *sns_state, td_u32 vmax)
 {
     if (sns_state->wdr_mode == OT_WDR_MODE_NONE) {
-        sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, vmax)); 
-        sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, vmax)); 
+		td_u32 inttime_prev = ((sns_state->regs_info[0].i2c_data[0].data & 0xff) << 8) | (sns_state->regs_info[0].i2c_data[1].data & 0xff);
+		td_u32 inttime_curr = cmos_vmax2inttime(sns_state, vmax);
+		if(inttime_prev != inttime_curr){
+			sns_state->regs_info[0].i2c_data[0].data = high_8bits(inttime_curr); 
+			sns_state->regs_info[0].i2c_data[1].data = low_8bits(inttime_curr); 
+		}
     }
 
     return;
@@ -337,9 +347,15 @@ static td_void cmos_slow_framerate_set(ot_vi_pipe vi_pipe, td_u32 full_lines, ot
     ot_unused(achieve_fps);
     switch (sns_state->wdr_mode) {
         case OT_WDR_MODE_NONE:
-            sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, vmax)); 
-            sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, vmax)); 
-            break;
+			{
+				td_u32 inttime_prev = ((sns_state->regs_info[0].i2c_data[0].data & 0xff) << 8) | (sns_state->regs_info[0].i2c_data[1].data & 0xff);
+				td_u32 inttime_curr = cmos_vmax2inttime(sns_state, vmax);
+				if(inttime_prev != inttime_curr){
+					sns_state->regs_info[0].i2c_data[0].data = high_8bits(inttime_curr); 
+					sns_state->regs_info[0].i2c_data[1].data = low_8bits(inttime_curr); 
+				}
+				break;
+			}
         default:
             break;
     }
@@ -357,9 +373,15 @@ static td_void cmos_inttime_update_linear(ot_vi_pipe vi_pipe, td_u32 int_time)
 
     OV7251_sensor_get_ctx(vi_pipe, sns_state);
     sns_check_pointer_void_return(sns_state);
-	
-    sns_state->regs_info[0].i2c_data[0].data = high_8bits(cmos_vmax2inttime(sns_state, int_time)); 
-    sns_state->regs_info[0].i2c_data[1].data = low_8bits(cmos_vmax2inttime(sns_state, int_time)); 	
+
+	td_u32 inttime_prev = ((sns_state->regs_info[0].i2c_data[0].data & 0xff) << 8) | (sns_state->regs_info[0].i2c_data[1].data & 0xff);
+	td_u32 inttime_curr = cmos_vmax2inttime(sns_state, int_time);
+	if(inttime_prev != inttime_curr){
+		sns_state->regs_info[0].i2c_data[0].data = high_8bits(inttime_curr); 
+		sns_state->regs_info[0].i2c_data[1].data = low_8bits(inttime_curr); 
+	}
+
+	return;
 }
 
 /* while isp notify ae to update sensor regs, ae call these funcs. */
@@ -376,65 +398,91 @@ static td_void cmos_inttime_update(ot_vi_pipe vi_pipe, td_u32 int_time)
 
     return;
 }
-#define GAIN_NODE_NUM    100
-#define AGAIN_NODE_NUM   62
-#define DGAIN_NODE_NUM   97
 
-/* Again segmentation = 62 */
-static td_u32 g_again_table[GAIN_NODE_NUM] =
+
+#define GAIN_NODE_NUM   16
+
+/* gain segmentation = 1024 */
+static td_u32 g_gain_table[GAIN_NODE_NUM] =
 {
-    1024, 1040, 1057, 1074, 1092, 1111, 1130, 1150, 1170, 1192,
-    1214, 1237, 1260, 1285, 1311, 1337, 1365, 1394, 1425, 1456,
-    1489, 1524, 1560, 1598, 1638, 1680, 1725, 1771, 1820, 1872,
-    1928, 1986, 2048, 2114, 2185, 2260, 2341, 2427, 2521, 2621,
-    2731, 2849, 2979, 3121, 3277, 3449, 3641, 3855, 4096, 4369,
-    4681, 5041, 5461, 5958, 6554, 7282, 8192, 9362, 10923, 13107,
-    16384, 21845
+	1024, 1494, 1964, 2434, 2904, 3374, 3844, 4314, 
+	4784, 5254, 5724, 6194, 6664, 7134, 7604, OV7251_AGAIN_MAX
 };
 
-/* dgain segmentation = 97 */
-static td_u32 g_dgain_table[GAIN_NODE_NUM] =
+
+#if 0
+#define GAIN_NODE_NUM   32
+
+/* gain segmentation = 1024 */
+static td_u32 g_gain_table[GAIN_NODE_NUM] =
 {
-    1024, 1034, 1044, 1055, 1066, 1077, 1088, 1099, 1111, 1123,
-    1135, 1147, 1160, 1173, 1186, 1200, 1214, 1228, 1242, 1257,
-    1273, 1288, 1304, 1321, 1337, 1355, 1372, 1391, 1409, 1429,
-    1448, 1469, 1489, 1511, 1533, 1556, 1579, 1603, 1628, 1654,
-    1680, 1708, 1736, 1765, 1796, 1827, 1859, 1893, 1928, 1964,
-    2001, 2040, 2081, 2123, 2166, 2212, 2260, 2310, 2362, 2416,
-    2473, 2533, 2595, 2661, 2731, 2804, 2881, 2962, 3048, 3139,
-    3236, 3339, 3449, 3567, 3692, 3827, 3972, 4128, 4297, 4481,
-    4681, 4900, 5140, 5405, 5699, 6026, 6394, 6809, 7282, 7825,
-    8456, 9198, 10082, 11155, 12483, 14170, (16384-1)
+	1024, 1248, 1472, 1696, 1920, 2144, 2368, 2592, 
+	2816, 3040, 3264, 3488, 3712, 3936, 4160, 4384, 
+	4608, 4832, 5056, 5280, 5504, 5728, 5952, 6176, 
+	6400, 6624, 6848, 7072, 7296, 7520, 7744, 7968
 };
+#endif
+
 
 
 static td_void cmos_again_calc_table(ot_vi_pipe vi_pipe, td_u32 *again_lin, td_u32 *again_db)
 {
     int i;
-
+	
+		
     ot_unused(vi_pipe);
     sns_check_pointer_void_return(again_lin);
     sns_check_pointer_void_return(again_db);
 
-    if (*again_lin >= g_again_table[AGAIN_NODE_NUM - 1]) {
-        *again_lin = g_again_table[AGAIN_NODE_NUM - 1];
-        *again_db = AGAIN_NODE_NUM - 1;
+
+    if (*again_lin >= g_gain_table[GAIN_NODE_NUM - 1]) {
+        *again_lin = g_gain_table[GAIN_NODE_NUM - 1];
+        *again_db = GAIN_NODE_NUM - 1;
         goto calc_table_end;
-        return;
     }
 
-    for (i = 1; i < AGAIN_NODE_NUM; i++) {
-        if (*again_lin < g_again_table[i]) {
-            *again_lin = g_again_table[i - 1];
+    for (i = 1; i < GAIN_NODE_NUM; i++) {
+        if (*again_lin < g_gain_table[i]) {
+            *again_lin = g_gain_table[i - 1];
             *again_db = i - 1;
              goto calc_table_end;
-            break;
         }
     }
-    
+	
 calc_table_end:
     g_au32AGain[vi_pipe] = *again_lin;
-    *again_db <<= 4;
+
+	static td_s8 u8cnt = 0;
+	static td_u32 again_delay=0;
+	const td_u8 u8level = 4; 
+	if(*again_lin >= OV7251_AGAIN_MAX) {
+		if(again_delay++ > 5){
+			u8cnt++;
+			if(u8cnt>=u8level){
+				u8cnt = u8level;
+			}
+			again_delay=0;
+		}
+	}
+	else if(*again_lin <= 1024){
+		if(again_delay++ > 5){
+			u8cnt--;
+			if(u8cnt<=0){
+				u8cnt = 0;
+			}
+			again_delay = 0;
+		}
+	}
+	else{
+		again_delay = 0;
+	}
+		
+	if(u8cnt>0){
+		*again_db += u8cnt*32 - 16 ;
+	}
+	
+	// printf(" \n ===== again_lin = %d, again_db = %d  u8cnt = %d  ", *again_lin, *again_db, u8cnt);
+
     return;
 }
 
@@ -446,16 +494,16 @@ static td_void cmos_dgain_calc_table(ot_vi_pipe vi_pipe, td_u32 *dgain_lin, td_u
     sns_check_pointer_void_return(dgain_lin);
     sns_check_pointer_void_return(dgain_db);
 
-    if (*dgain_lin >= g_dgain_table[DGAIN_NODE_NUM - 1]) {
-        *dgain_lin = g_dgain_table[DGAIN_NODE_NUM - 1];
-        *dgain_db = DGAIN_NODE_NUM - 1;
+    if (*dgain_lin >= g_gain_table[GAIN_NODE_NUM - 1]) {
+        *dgain_lin = g_gain_table[GAIN_NODE_NUM - 1];
+        *dgain_db = GAIN_NODE_NUM;
         goto calc_table_end;
         return;
     }
 
-    for (i = 1; i < DGAIN_NODE_NUM; i++) {
-        if (*dgain_lin < g_dgain_table[i]) {
-            *dgain_lin = g_dgain_table[i - 1];
+    for (i = 1; i < GAIN_NODE_NUM; i++) {
+        if (*dgain_lin < g_gain_table[i]) {
+            *dgain_lin = g_gain_table[i - 1];
             *dgain_db = i - 1;
             goto calc_table_end;
             break;
@@ -470,13 +518,21 @@ calc_table_end:
 static td_void cmos_gains_update(ot_vi_pipe vi_pipe, td_u32 again, td_u32 dgain)
 {
     ot_isp_sns_state *sns_state = TD_NULL;
-    //td_u32 hcg = g_ov7251_state[vi_pipe].hcg;
 
     OV7251_sensor_get_ctx(vi_pipe, sns_state);
     sns_check_pointer_void_return(sns_state);
+	td_u32 again_tmp = ((sns_state->regs_info[0].i2c_data[2].data & 0x3) << 8) | (sns_state->regs_info[0].i2c_data[3].data & 0xff);
+	
+	//printf("======= again = %d, again_tmp = %d    ", again, again_tmp);
 
- 	/* 暂无使用增益 */ 
- 	
+	if(again_tmp != again){
+		sns_state->regs_info[0].i2c_data[2].data = ((again >> 8) & 0x3);   /* index 2 */
+		sns_state->regs_info[0].i2c_data[3].data = (again & 0xFF);		   /* index 3 */
+	}
+	
+    //sns_state->regs_info[0].i2c_data[4].data = ((dgain_tmp >> 8) & 0x3);   /* index 4 */
+    //sns_state->regs_info[0].i2c_data[5].data = (dgain_tmp & 0xFF);         /* index 5 */
+	
     return;
 }
 
@@ -515,15 +571,15 @@ static td_s32 cmos_init_ae_exp_function(ot_isp_ae_sensor_exp_func *exp_func)
 
     (td_void)memset_s(exp_func, sizeof(ot_isp_ae_sensor_exp_func), 0, sizeof(ot_isp_ae_sensor_exp_func));
 
-    exp_func->pfn_cmos_get_ae_default    = cmos_get_ae_default;
-    exp_func->pfn_cmos_fps_set           = cmos_fps_set;
-    exp_func->pfn_cmos_slow_framerate_set = cmos_slow_framerate_set;
-    exp_func->pfn_cmos_inttime_update    = cmos_inttime_update;
-    exp_func->pfn_cmos_gains_update      = cmos_gains_update;
-    exp_func->pfn_cmos_again_calc_table  = cmos_again_calc_table;
-    exp_func->pfn_cmos_dgain_calc_table  = cmos_dgain_calc_table;
-    exp_func->pfn_cmos_get_inttime_max   = cmos_get_inttime_max;
-    exp_func->pfn_cmos_ae_fswdr_attr_set = cmos_ae_fswdr_attr_set;
+    exp_func->pfn_cmos_get_ae_default    = cmos_get_ae_default;    		/* 获取AE算法库的初始化值 */
+    exp_func->pfn_cmos_fps_set           = cmos_fps_set;				/* 设置sensor的帧率 */
+    exp_func->pfn_cmos_slow_framerate_set = cmos_slow_framerate_set;	/* 降低sensor帧率 */
+    exp_func->pfn_cmos_inttime_update    = cmos_inttime_update;			/* 设置sensor曝光时间 */
+    exp_func->pfn_cmos_gains_update      = cmos_gains_update;			/* 设置sensor模拟增益和数字增益 */
+    exp_func->pfn_cmos_again_calc_table  = cmos_again_calc_table;		/* 查表方式计算AE模拟增益 */
+    exp_func->pfn_cmos_dgain_calc_table  = cmos_dgain_calc_table;		/* 查表方式计算AE数字增益 */
+    exp_func->pfn_cmos_get_inttime_max   = cmos_get_inttime_max;		/* WDR模式下，计算短曝光帧的最大曝光时间 */
+    exp_func->pfn_cmos_ae_fswdr_attr_set = cmos_ae_fswdr_attr_set;		/* WDR模式下，设置长帧模式 */
 
     return TD_SUCCESS;
 }
@@ -845,9 +901,14 @@ static td_void cmos_set_pixel_detect(ot_vi_pipe vi_pipe, td_bool enable)
     max_int_time_5fps = 20; /* max_int_time_5fps 6 */
 	
 	if (enable) { /* setup for ISP pixel calibration mode */
+		ov7251_write_registeraaa(vi_pipe, OV7251_AGAIN_ADDR_H, 0x00);
+		ov7251_write_registeraaa(vi_pipe, OV7251_AGAIN_ADDR_L, 0x01);
+	
+		ov7251_write_registeraaa(vi_pipe, OV7251_DGAIN_ADDR_H, 0x00);
+		ov7251_write_registeraaa(vi_pipe, OV7251_DGAIN_ADDR_L, 0x01);
+		
 		ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR,   low_8bits(cmos_vmax2inttime(sns_state, max_int_time_5fps)));
 		ov7251_write_registeraaa(vi_pipe, OV7251_SHR0_ADDR-1, high_8bits(cmos_vmax2inttime(sns_state, max_int_time_5fps)) );
-
 	} else { /* setup for ISP 'normal mode' */
 		sns_state->fl_std = (sns_state->fl_std > 0xFFFFF) ? 0xFFFFF : sns_state->fl_std;
 		sns_state->sync_init = TD_FALSE;
@@ -887,7 +948,7 @@ static td_void cmos_comm_sns_reg_info_init(ot_vi_pipe vi_pipe, ot_isp_sns_state 
     sns_state->regs_info[0].sns_type = OT_ISP_SNS_TYPE_I2C;
     sns_state->regs_info[0].com_bus.i2c_dev = g_ov7251_bus_info[vi_pipe].i2c_dev;
     sns_state->regs_info[0].cfg2_valid_delay_max = 2; /* delay_max 2 */
-    sns_state->regs_info[0].reg_num = 2; /* reg_num 8 */
+    sns_state->regs_info[0].reg_num = 6; /* reg_num 8 */
 
 	/* i2c数据信息 */
     for (i = 0; i < sns_state->regs_info[0].reg_num; i++) {
@@ -902,6 +963,18 @@ static td_void cmos_comm_sns_reg_info_init(ot_vi_pipe vi_pipe, ot_isp_sns_state 
     sns_state->regs_info[0].i2c_data[0].reg_addr = OV7251_SHR0_ADDR - 1;
     sns_state->regs_info[0].i2c_data[1].delay_frame_num = 0;
     sns_state->regs_info[0].i2c_data[1].reg_addr = OV7251_SHR0_ADDR;
+
+    /* again */
+	sns_state->regs_info[0].i2c_data[2].delay_frame_num = 1;
+    sns_state->regs_info[0].i2c_data[2].reg_addr = OV7251_AGAIN_ADDR_H;
+    sns_state->regs_info[0].i2c_data[3].delay_frame_num = 0;
+    sns_state->regs_info[0].i2c_data[3].reg_addr = OV7251_AGAIN_ADDR_L;
+
+	/* dgain */
+	sns_state->regs_info[0].i2c_data[4].delay_frame_num = 1;
+    sns_state->regs_info[0].i2c_data[4].reg_addr = OV7251_DGAIN_ADDR_H;
+    sns_state->regs_info[0].i2c_data[5].delay_frame_num = 0;
+    sns_state->regs_info[0].i2c_data[5].reg_addr = OV7251_DGAIN_ADDR_L;
 
     return;
 }

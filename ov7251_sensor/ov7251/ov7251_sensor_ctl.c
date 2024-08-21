@@ -58,7 +58,7 @@ int ov7251_i2c_init(ot_vi_pipe vi_pipe)
 
     ret = ioctl(g_fd[vi_pipe], OT_I2C_SLAVE_FORCE, (OV7251_I2C_ADDR >> 1));
     if (ret < 0) {
-        isp_err_trace("I2C_SLAVE_FORCE error!\n");
+        isp_err_trace("I2C_SLAVE_FORCE error!, ret = 0x%x\n", ret);
         close(g_fd[vi_pipe]);
         g_fd[vi_pipe] = -1;
         return ret;
@@ -126,7 +126,8 @@ td_s32 ov7251_write_registeraaa(ot_vi_pipe vi_pipe, td_u32 addr, td_u32 data)
 
     ret = write(g_fd[vi_pipe], buf, OV7251_ADDR_BYTE + OV7251_DATA_BYTE);
     if (ret < 0) {
-        isp_err_trace("I2C_WRITE error!\n");
+        isp_err_trace("I2C_WRITE error!, ret = 0x%x\n", ret);
+		perror("write");
         return TD_FAILURE;
     }
 
@@ -252,9 +253,14 @@ static const td_u16 g_au16SensorCfgSeq[][OV7251_MODE_BUTT + 1] =
     { 0x3500, 0x00}, // 0x00  exposure高位寄存器
     { 0x3501, 0x00}, // 0x00  exposure中位寄存器
     { 0x3502, 0x50}, // 0x50  exposure低位寄存器
+    
     { 0x3503, 0x07}, // 0x07  曝光值和增益使能寄存器
-    { 0x3509, 0x10}, // 0x10  手动使能增益
-    { 0x350b, 0x02}, // 0x02  增益寄存器 
+    { 0x3504, 0x00}, // 0x00  手动增益寄存器高位
+    { 0x3505, 0x00}, // 0x00  手动增益寄存器低位
+    { 0x3509, 0x18}, // 0x10  使能手动增益和变频增益
+    { 0x350a, 0x00}, // 0x00  增益输出到sensor高位
+    { 0x350b, 0x02}, // 0x10  增益输出到sensor低位
+    
     { 0x3600, 0x1c},
     { 0x3602, 0x62},
     { 0x3620, 0xb7},
