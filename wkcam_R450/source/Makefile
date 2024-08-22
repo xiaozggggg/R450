@@ -1,6 +1,11 @@
 
+PRINTF_READ 		:= @printf "\033[31;1m\t%s\033[0m\n"
+PRINTF_GREEN 		:= @printf "\033[32;1m\t%s\033[0m\n"
+PRINTF_BLUE 		:= @printf "\033[34;1m\t%s\033[0m\n"
+
 ELFPATH=./bin
 OBJPATH=./obj
+MKDIR_DEPEND=mkdir_elf_obj
 
 COMPILE_CC=aarch64-v01c01-linux-gnu-gcc
 COMPILE_CPP=aarch64-v01c01-linux-gnu-g++
@@ -73,6 +78,12 @@ UTILS_SRC_C  = $(notdir $(wildcard $(UTILS_C_PATH)/*.c))
 UTILS_OBJS_C = $(patsubst %.c,$(OBJPATH)/%.o,$(UTILS_SRC_C))
 UTILS_C_INC_PATH = -I$(UTILS_C_PATH)
 
+################# git info shell #################
+GIT_INFO_PATH = ./Applications/git_info
+GIT_INFO_SHELL_PATH = $(GIT_INFO_PATH)/git_info.sh
+GIT_INFO_INC_PATH = $(GIT_INFO_PATH)/git_info.h
+GIT_INFO_DEPEND = gitinfo
+
 CUR_INC_PATH = -I./
 ########################################################################
 CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(CORNER_INC_PATH)
@@ -82,6 +93,18 @@ LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -st
 
 ################# debug src #################
 CONFIG += -DDEBUG_ST_LK_POINTS_PREVIEW
+
+all: $(MKDIR_DEPEND) $(GIT_INFO_DEPEND) $(ELF)
+	$(PRINTF_GREEN) "Compile $(ELF) complete"
+
+$(MKDIR_DEPEND):
+	mkdir -p $(ELFPATH)
+	mkdir -p $(OBJPATH)
+
+$(GIT_INFO_DEPEND):
+	chmod a+x $(GIT_INFO_SHELL_PATH)
+	$(GIT_INFO_SHELL_PATH)
+	$(PRINTF_GREEN) "Generate $(GIT_INFO_INC_PATH)"
 
 $(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(CORNER_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
@@ -113,5 +136,5 @@ $(OBJPATH)/%.o:$(RTSP_SRC_PATH2)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(RTSP_INC_PATH) -Os
 
 clean:
-	rm $(OBJPATH)/*.o $(ELF)
+	rm $(OBJPATH)/*.o $(ELF) $(GIT_INFO_INC_PATH)
 

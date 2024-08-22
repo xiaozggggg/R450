@@ -45,17 +45,22 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 		prev_frame = _info;
 
 		wk_location_result_s::wk_ptr result(new wk_location_result_s);
-		result->x = 0x12;
-		result->y = 0x13;
-		result->z = 0x14;
-		result->q[0] = 0x21;
-		result->q[1] = 0x22;
-		result->q[2] = 0x23;
-		result->q[3] = 0x24;
-		result->corner_num = 0x31;
+		result->x = 12.3;
+		result->y = 13.2;
+		result->z = 3.12;
+		result->q[0] = 2.2;
+		result->q[1] = 3.3;
+		result->q[2] = 4.4;
+		result->q[3] = 5.5;
+		result->corner_num = prev_pionts_test->points_cnt;
 		result->frame = _info;
 		middle->wk_result_export(result);
+	
+		if(prev_pionts_test->points_cnt == 0){
+			falg = false;
+		}
 	}
+
 	 
 	return;
 }

@@ -270,7 +270,7 @@ static void * _wk_st_lk_proc(void* _pArgs)
 		_wk_st_lk_get_frame_cb_handle(pmng->grp, pmng->chn, &st_frame_info);
 
 		// ss_mpi_vpss_release_chn_frame(pmng->grp, pmng->chn, &st_frame_info); // 算法层释放
-		usleep(5*1000);
+		// usleep(5*1000);
 	}
 
 	return NULL;
@@ -372,6 +372,24 @@ td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
 
     mavlink_msg_wk_camera_visual_intertial_odometry_data_encode(MAVLINK_SYS_ID,WK_MODULE_TYPE_CAMERA, &msg, &wk_location_result);
     length = mavlink_msg_to_send_buffer(msgbuff,&msg);
+
+#if 0
+		mavlink_message_t wkmsg;
+		mavlink_status_t  wkstatus;
+		for(int ifor=0; ifor<length; ifor++) {
+			if (mavlink_parse_char(0, msgbuff[ifor], &wkmsg, &wkstatus)) {
+				if(wkmsg.msgid == MAVLINK_MSG_ID_WK_CAMERA_VISUAL_INTERTIAL_ODOMETRY_DATA){
+					mavlink_wk_camera_visual_intertial_odometry_data_t wk_result;
+					mavlink_msg_wk_camera_visual_intertial_odometry_data_decode(&wkmsg, &wk_result);
+					printf("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
+						 wk_result.x, wk_result.y, wk_result.z, 
+						 wk_result.quaternion[0], wk_result.quaternion[1], wk_result.quaternion[2], wk_result.quaternion[3],
+						 wk_result.width, wk_result.height, 
+						 wk_result.ave_lun, wk_result.corner, wk_result.timestamp);
+				}
+			}
+		}
+#endif
 
     CamSendHandle((char *)msgbuff,length);
 	return TD_TRUE;

@@ -7,15 +7,29 @@
 #include <thread_comm.h>
 #include <thread_video_preview.h>
 #include <isp_setting.h>
+#include "git_info/git_info.h"
+
 
 #define TAG "wkcam_app"
+
+#include "ss_mpi_ae.h"
+void wk_mpp_get_Exptime_gain()
+{
+    ot_isp_exp_info stExpInfo;
+    ss_mpi_isp_query_exposure_info(0, &stExpInfo);
+	printf("a_gain = %d, exposure = %d, exp_time = %d, fps = %d\n", 
+			stExpInfo.a_gain, stExpInfo.exposure, stExpInfo.exp_time, stExpInfo.fps);
+	
+	return;
+}
+
 
 int main(int argc, char *argv[])
 {
 	int ret = 0;
 
-	printf("=========== R450 start  version: v1.0.1 20240301 ========== \n");
     printf("=========== OV7251 ===========\n");
+	wk_git_info_print();
 
 #if 1
 	//initial serial communications thread
@@ -35,6 +49,8 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
+		//wk_mpp_get_Exptime_gain();
+		//usleep(10);
         usleep(2000*1000);
 		system("sync");         //  定时对写磁盘刷新
 	}
