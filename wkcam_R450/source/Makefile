@@ -30,6 +30,13 @@ HISI_SDK_LIB += -L ../Hi3519_MPP/lib/hisisdk -lss_mpi -lss_mpi_sysbind -lss_mpi_
 				 -laac_comm -laac_enc -laac_dec -laac_sbr_enc -laac_sbr_dec -lprotobuf-c -lss_mpi_dpu_match -lss_mpi_dpu_rect -lss_mpi_mcf  -lss_mpi_ai3dnr\
 				 -lheif -lfileformat -lot_mpi_km -lss_mpi_thermo -lss_mpi_ive
 
+################# opencv lib #################
+OPENCV_INC = -I ../include/opencv/
+OPENCV_INC += -I ../include/opencv2/
+OPENCV_LIB = -L ../lib/opencv 	-lopencv_dnn -lopencv_ml -lopencv_objdetect -lopencv_shape -lopencv_stitching -lopencv_superres \
+								-lopencv_videostab -lopencv_calib3d -lopencv_features2d -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs \
+								-lopencv_video -lopencv_photo -lopencv_imgproc -lopencv_flann -lopencv_core
+
 ################# rtsp src #################
 RTSP_INC_PATH1 = ./Libraries/rtsp_srv/inc/net
 RTSP_INC_PATH2 = ./Libraries/rtsp_srv/inc/xop
@@ -87,8 +94,8 @@ GIT_INFO_DEPEND = gitinfo
 CUR_INC_PATH = -I./
 ########################################################################
 CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(CORNER_INC_PATH)
-CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC)
-LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB)
+CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
+LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
 ################# debug src #################

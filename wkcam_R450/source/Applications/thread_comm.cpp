@@ -4,6 +4,7 @@
 #include <cJSON.h>
 #include <sample_comm.h>
 #include "wkringbuffer.h"
+#include "wk_log.h"
 
 struct rt_ringbuffer rb_queue;   //recv from uart1
 unsigned char rb_buffer[MAX_RB_SIZE];
@@ -75,7 +76,7 @@ void *SocketRecvThread(void *arg)
     {
         Sock_wkdata = socket(AF_UNIX, SOCK_DGRAM, 0);
         if(Sock_wkdata < 0){
-            printf("socket create failed\n");
+            WK_LOGE("socket create failed\n");
             sleep(1);
             continue;
         }
@@ -85,11 +86,11 @@ void *SocketRecvThread(void *arg)
         remove(SOCKET_CLIENT);//绑定之前要删除原来的文件
         if(bind(Sock_wkdata, (struct sockaddr*)&addr_local, sizeof(addr_local)) < 0){
             close(Sock_wkdata);
-            printf("bind address failed \n");
+            WK_LOGE("bind address failed \n");
             sleep(1);
             continue;
         }
-        printf("Bind wkcam addr success Sock_wkdata[%d]!\n",Sock_wkdata);
+        WK_LOGD("Bind wkcam addr success Sock_wkdata[%d]!\n",Sock_wkdata);
 
         addr_remote.sun_family = AF_UNIX;
         sprintf(addr_remote.sun_path, SOCKET_SERVER);
@@ -143,24 +144,24 @@ void UdpSendHandle(char *buf,int size)
         addr_dst.sin_addr.s_addr = (unsigned long)inet_addr(UDP_GRD_ADDR);
 
         if ((Sock_send = net_create_sock()) < 0){
-            printf("Create socket fail\n");
+            WK_LOGE("Create socket fail\n");
             sleep(1);
             continue ;
         }
 
         if (net_bind_sock(Sock_send,UDP_SRC_PORT)  < 0){
-            printf("Bind addr error %d %s\n",errno,strerror(errno));
+            WK_LOGE("Bind addr error %d %s\n",errno,strerror(errno));
             net_close_socket(&Sock_send);
             sleep(1);
             continue;
         }
-        printf("Bind wkcam addr success Sock_send[%d]! \n",Sock_send);
+        WK_LOGD("Bind wkcam addr success Sock_send[%d]! \n",Sock_send);
         break;
     }
 
     nRet = net_udp_send(Sock_send,(unsigned char*)buf,size,(struct sockaddr *)&addr_dst);
     if(nRet<0){
-        printf("cam udp[%d] send%d,%s\n",Sock_send,errno,strerror(errno));
+        WK_LOGE("cam udp[%d] send%d,%s\n",Sock_send,errno,strerror(errno));
         usleep(50*1000);
         net_close_socket(&Sock_send);
     }

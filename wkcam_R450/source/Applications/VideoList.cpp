@@ -1,4 +1,5 @@
 #include "VideoList.h"
+#include "wk_log.h"
 
 extern void write_frame_to_file(unsigned char *videobuf, int nsize);
 
@@ -110,7 +111,7 @@ int VideoList_Init1(void)
     if(pthread_rwlock_init(&rwlock1, &attr1) != 0)
     	return -1;
 
-    printf("%s successful\n" ,__FUNCTION__);
+    WK_LOGD("%s successful\n" ,__FUNCTION__);
 
 	return 0;
 }
@@ -128,7 +129,7 @@ int VideoList_ReadOneFrame1(unsigned char *pBuf, int *pLen)
 {
     // Param Check
     if( (!pBuf) || (!pLen) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -172,7 +173,7 @@ int VideoList_AppendWriteNode1(unsigned char *pBuf, int length ,WK_FRAME_FLAG_E 
 {
     // Param Check
     if( (!pBuf) || (length<=0) || (FrameFlag<0) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -286,7 +287,7 @@ int VideoList_Init2(void)
     if(pthread_rwlock_init(&rwlock2, &attr2) != 0)
     	return -1;
 
-    printf("%s successful\n" ,__FUNCTION__);
+    WK_LOGD("%s successful\n" ,__FUNCTION__);
 
 	return 0;
 }
@@ -304,7 +305,7 @@ int VideoList_ReadOneFrame2(unsigned char *pBuf, int *pLen)
 {
     // Param Check
     if( (!pBuf) || (!pLen) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -348,7 +349,7 @@ int VideoList_AppendWriteNode2(unsigned char *pBuf, int length ,WK_FRAME_FLAG_E 
 {
     // Param Check
     if( (!pBuf) || (length<=0) || (FrameFlag<0) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -463,7 +464,7 @@ int VideoList_Init3(void)
     if(pthread_rwlock_init(&rwlock3, &attr3) != 0)
     	return -1;
 
-    printf("%s successful\n" ,__FUNCTION__);
+    WK_LOGD("%s successful\n" ,__FUNCTION__);
 
 	return 0;
 }
@@ -481,7 +482,7 @@ int VideoList_ReadOneFrame3(unsigned char *pBuf, int *pLen)
 {
     // Param Check
     if( (!pBuf) || (!pLen) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -525,7 +526,7 @@ int VideoList_AppendWriteNode3(unsigned char *pBuf, int length ,WK_FRAME_FLAG_E 
 {
     // Param Check
     if( (!pBuf) || (length<=0) || (FrameFlag<0) ){
-        printf("Input Param Error!\n");
+        WK_LOGE("Input Param Error!\n");
         return -1;
     }
 
@@ -584,7 +585,7 @@ void OnVideoListInit(void)
 {
     pVideoBufEx = NULL;
 
-    printf("----------OnVideoListInit------------------\n");
+    WK_LOGD("----------OnVideoListInit------------------\n");
 	if(pVideoBufEx == NULL){
 		pVideoBufEx = (char*)malloc(LINK_LIST_LENGTH*MAX_IDR_FRAME_SIZE);
 	}
@@ -662,5 +663,5 @@ void OnVideoListReset(void)
 	pListQueue.pread = pListQueue.pwrite = &pListQueue.lists[0];
     pListQueue.lists[399].next = &pListQueue.lists[0];
 
-    printf("============= OnVideoListReset ============\n");
+    WK_LOGI("============= OnVideoListReset ============\n");
 }

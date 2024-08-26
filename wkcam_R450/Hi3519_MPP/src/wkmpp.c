@@ -28,6 +28,8 @@
 
 //#include "hifb.h"
 #include "wkmpp.h"
+#include "wk_log.h"
+
 
 #define SCRIPT_NAME(type) strcasestr(type, "3519")?"load3519dv500":"load3516dv300"
 
@@ -107,7 +109,7 @@ static SAMPLE_MPP_SENSOR_T* SAMPLE_MPP_SERSOR_GET(char* name)
     int i = 0;
     for (i = 0; i < SNS_TYPE_BUTT; i++)
     {
-        //printf("libsns[%d].name:%s, name:%s\n", i, libsns[i].name, name);
+        //WK_LOGD("libsns[%d].name:%s, name:%s\n", i, libsns[i].name, name);
         if(strstr(libsns[i].name, name))
         {
             return &libsns[i];
@@ -177,12 +179,12 @@ int wk_mpp_cfg_sns(char *path, wk_mpp_cfg_t *cfg, int cfg_num)
     char snsstr[64];
     sprintf(snsstr, "%s-%d-%d-%d-%d"
             , cfg->snsname, cfg->lane, cfg->wdr, cfg->res, cfg->fps);
-    printf("[%s] --> snsstr[%s]\n",__func__,snsstr);
+    WK_LOGD("[%s] --> snsstr[%s]\n",__func__,snsstr);
 
     SAMPLE_MPP_SENSOR_T* sns = SAMPLE_MPP_SERSOR_GET(snsstr);
     if(!sns)
     {
-        printf("%s => snsstr:%s, unknow.\n", __func__, snsstr);
+        WK_LOGE("%s => snsstr:%s, unknow.\n", __func__, snsstr);
         return -1;
     }
 
@@ -198,7 +200,7 @@ int wk_mpp_cfg_sns(char *path, wk_mpp_cfg_t *cfg, int cfg_num)
         sprintf(loadstr, "%s -yuv0 2", loadstr);
     }
 
-    printf("%s => loadstr: %s\n", __func__, loadstr);
+    WK_LOGD("%s => loadstr: %s\n", __func__, loadstr);
     system(loadstr); 
 
     SENSOR_TYPE = SENSOR0_TYPE = SENSOR1_TYPE = sns->type;
@@ -222,10 +224,10 @@ int wk_mpp_cfg_sns(char *path, wk_mpp_cfg_t *cfg, int cfg_num)
         dl[cfg_num] = dlopen(sns->lib, RTLD_LAZY);
         if (dl[cfg_num] == NULL)
         {
-            printf("err dlopen %s -%s\n", sns->lib, dlerror());
+            WK_LOGE("err dlopen %s -%s\n", sns->lib, dlerror());
             goto __err;
         }
-        printf("========= dlopen success \n");
+        WK_LOGD("========= dlopen success \n");
 
         if(cfg_num == 0) {
             g_pstSnsObj[0] = dlsym(dl[cfg_num], sns->obj);
@@ -237,11 +239,11 @@ int wk_mpp_cfg_sns(char *path, wk_mpp_cfg_t *cfg, int cfg_num)
         
         if(NULL != dlerror())
         {
-            printf("err dlsym %s\n", sns->obj);
+            WK_LOGE("err dlsym %s\n", sns->obj);
             goto __err;
         }
     }
-    printf("%s => snsstr:%s, sensor_type:%d, load:%s\n"
+    WK_LOGI("%s => snsstr:%s, sensor_type:%d, load:%s\n"
         , __func__, snsstr, SENSOR_TYPE, sns->lib?:"");
 
     signal(SIGINT, SAMPLE_VENC_HandleSig2);
@@ -279,10 +281,10 @@ int wk_mpp_start(int mode)
     cfg[0].snscnt = 1;
 
     char *chipid = "3519"; // [3516a300 3516d300 35590200 3403 3519]
-    printf("chipid[%s]-cfg[0].snsname[%s] mode[%d]\n", chipid, cfg[0].snsname, mode);
+    WK_LOGD("chipid[%s]-cfg[0].snsname[%s] mode[%d]\n", chipid, cfg[0].snsname, mode);
     strcpy(cfg[0].type, chipid);
     //second channel from bsp_def.json; [0: disable, 1: BT656.PAL, 2:BT656.NTSC, 3: BT601.GD]
-    printf("BOARD [type:%s, snscnt:%d]\n", cfg[0].type, cfg[0].snscnt);
+    WK_LOGD("BOARD [type:%s, snscnt:%d]\n", cfg[0].type, cfg[0].snscnt);
 
     sns_mode = mode;
     wk_scence_mode = 0;
@@ -294,18 +296,18 @@ int wk_mpp_start(int mode)
 
 
     sprintf(home_path, "/root");
-    printf("home_path:[%s]\n", home_path);
+    WK_LOGD("home_path:[%s]\n", home_path);
 
     for(i=0; i<cfg_num; i++) {
         wk_mpp_cfg(home_path, &cfg[i], i);
     }
 
     // vi start;
-    printf("[LIB] ================== start vi ==================\n");
+    WK_LOGI("[LIB] ================== start vi ==================\n");
     wk_mpp_vi_start(&vi);
 
     // vpss start;
-    printf("[LIB] ================== start vpss ==================\n");
+    WK_LOGI("[LIB] ================== start vpss ==================\n");
 
     for(i=0; i<OT_VPSS_MAX_PHYS_CHN_NUM; i++){
         wk_vpss.enable[i] = TD_FALSE;
@@ -379,12 +381,12 @@ static td_void wk_mpp_get_default_vb_config(ot_size *size, ot_vb_cfg *vb_cfg)
     vb_cfg->common_pool[0].blk_size = calc_cfg.vb_size;
     vb_cfg->common_pool[0].blk_cnt  = 20; /* 42 blks */   
 
-    printf("============ SAMPLE_VGS_GetYUVBufferCfg start\n");
+    WK_LOGD("============ SAMPLE_VGS_GetYUVBufferCfg start\n");
     SAMPLE_VGS_GetYUVBufferCfg(&calc_cfg);
     vb_cfg->common_pool[1].blk_size = calc_cfg.vb_size;
     vb_cfg->common_pool[1].blk_cnt = 2;
     SAMPLE_VGS_SetVbConfig(&calc_cfg);
-    printf("============ SAMPLE_VGS_GetYUVBufferCfg blk_size[%d] end\n", calc_cfg.vb_size);
+    WK_LOGI("============ SAMPLE_VGS_GetYUVBufferCfg blk_size[%d] end\n", calc_cfg.vb_size);
 }
 
 static td_s32 wk_mpp_vb_init(ot_vi_vpss_mode_type mode_type, ot_vi_aiisp_mode video_mode)
@@ -612,7 +614,7 @@ int wk_mpp_vpss_start(wk_mpp_vpss_t *vpss)
         vpss_chn_attr.chn_array_size = OT_VPSS_MAX_PHYS_CHN_NUM;
         vpss_chn_attr.chn0_wrap = TD_FALSE;
 
-        printf("====== i = [%d] width[%d] height[%d]\n", i, in_size.width, in_size.height);
+        WK_LOGD("====== i = [%d] width[%d] height[%d]\n", i, in_size.width, in_size.height);
     }
 
     s32Ret = sample_common_vpss_start(vpss->VpssGrp, &grp_attr, &vpss_chn_attr);
@@ -764,9 +766,9 @@ int wk_mpp_venc_start(wk_mpp_venc_t *venc)
     g_venc_chn_param.type                 = venc->enPayLoad;
     g_venc_chn_param.rc_mode              = venc->enRcMode;
 
-    printf("venc start chn[%d] payload[%d] framerate[%d] bitrate[%d]\n", venc->VencChn, g_venc_chn_param.type, g_venc_chn_param.frame_rate, g_venc_chn_param.bitrate);
-    printf("venc start width[%d] height[%d]\n", g_venc_chn_param.venc_size.width, g_venc_chn_param.venc_size.height);
-    printf("venc start size[%d] profile[%d]\n",g_venc_chn_param.size, g_venc_chn_param.profile);
+    WK_LOGD("venc start chn[%d] payload[%d] framerate[%d] bitrate[%d]\n", venc->VencChn, g_venc_chn_param.type, g_venc_chn_param.frame_rate, g_venc_chn_param.bitrate);
+    WK_LOGD("venc start width[%d] height[%d]\n", g_venc_chn_param.venc_size.width, g_venc_chn_param.venc_size.height);
+    WK_LOGD("venc start size[%d] profile[%d]\n",g_venc_chn_param.size, g_venc_chn_param.profile);
     
     if(OT_PT_JPEG == venc->enPayLoad) {    //抓拍通道创建
         s32Ret = WK_COMM_VENC_SnapStart(venc->VencChn, venc->enSize);
@@ -776,7 +778,7 @@ int wk_mpp_venc_start(wk_mpp_venc_t *venc)
     }
 
     if (s32Ret != TD_SUCCESS) {
-        printf("sample_comm_venc_start ch[%d] failed.\n", venc->VencChn);
+        WK_LOGE("sample_comm_venc_start ch[%d] failed.\n", venc->VencChn);
         goto EXIT_VI_VPSS_UNBIND;
     }
 
@@ -817,9 +819,9 @@ int wk_mpp_venc_no_bind_start(wk_mpp_venc_t *venc)
     g_venc_chn_param.type                 = venc->enPayLoad;
     g_venc_chn_param.rc_mode              = venc->enRcMode;
 
-    printf("venc start chn[%d] payload[%d] framerate[%d] bitrate[%d]\n", venc->VencChn, g_venc_chn_param.type, g_venc_chn_param.frame_rate, g_venc_chn_param.bitrate);
-    printf("venc start width[%d] height[%d]\n", g_venc_chn_param.venc_size.width, g_venc_chn_param.venc_size.height);
-    printf("venc start size[%d] profile[%d]\n",g_venc_chn_param.size, g_venc_chn_param.profile);
+    WK_LOGD("venc start chn[%d] payload[%d] framerate[%d] bitrate[%d]\n", venc->VencChn, g_venc_chn_param.type, g_venc_chn_param.frame_rate, g_venc_chn_param.bitrate);
+    WK_LOGD("venc start width[%d] height[%d]\n", g_venc_chn_param.venc_size.width, g_venc_chn_param.venc_size.height);
+    WK_LOGD("venc start size[%d] profile[%d]\n",g_venc_chn_param.size, g_venc_chn_param.profile);
     
     if(OT_PT_JPEG == venc->enPayLoad) {    //抓拍通道创建
         s32Ret = WK_COMM_VENC_SnapStart(venc->VencChn, venc->enSize);
@@ -829,7 +831,7 @@ int wk_mpp_venc_no_bind_start(wk_mpp_venc_t *venc)
     }
 
     if (s32Ret != TD_SUCCESS) {
-        printf("sample_comm_venc_start ch[%d] failed.\n", venc->VencChn);
+        WK_LOGE("sample_comm_venc_start ch[%d] failed.\n", venc->VencChn);
         goto EXIT_VI_VPSS_UNBIND;
     }
 
@@ -851,7 +853,7 @@ int wk_mpp_venc_set_IntraRefresh(ot_venc_chn VencChn)
     s32Ret = ss_mpi_venc_get_intra_refresh(VencChn, &stIntraRefresh);
     if (TD_SUCCESS != s32Ret)
     {
-        sample_print("Get Intra Refresh failed for %#x!\n", s32Ret);
+        WK_LOGE("Get Intra Refresh failed for %#x!\n", s32Ret);
         return s32Ret;
     }
 
@@ -859,16 +861,16 @@ int wk_mpp_venc_set_IntraRefresh(ot_venc_chn VencChn)
     stIntraRefresh.enable = TD_TRUE;
     stIntraRefresh.mode = enIntraRefreshMode;
     stIntraRefresh.refresh_num = (3000 + 15) >> 8;
-    printf("===== u32RefreshNum[%d]\n", stIntraRefresh.refresh_num);
+    WK_LOGD("===== u32RefreshNum[%d]\n", stIntraRefresh.refresh_num);
     stIntraRefresh.request_i_qp = 30;
     s32Ret = ss_mpi_venc_set_intra_refresh(VencChn, &stIntraRefresh);
     if (TD_SUCCESS != s32Ret)
     {
-        sample_print("Set Intra Refresh failed for %#x!\n", s32Ret);
+        WK_LOGE("Set Intra Refresh failed for %#x!\n", s32Ret);
         return s32Ret;
     }
 
-    sample_print("==ss_mpi_venc_set_intra_refresh [%d]\n ", s32Ret);
+    WK_LOGD("==ss_mpi_venc_set_intra_refresh [%d]\n ", s32Ret);
 
     return s32Ret;
 }
@@ -897,11 +899,11 @@ void wk_mpp_venc_setRcParam(ot_venc_chn VencChn)
     s32Ret = ss_mpi_venc_set_rc_param(VencChn, &stRcParam);
     if (TD_SUCCESS != s32Ret)
     {
-        sample_print("ss_mpi_venc_set_rc_param failed for %#x!\n", s32Ret);
+        WK_LOGE("ss_mpi_venc_set_rc_param failed for %#x!\n", s32Ret);
         return s32Ret;
     }
 
-    sample_print("==ss_mpi_venc_set_rc_param [%d]\n ", s32Ret);
+    WK_LOGD("==ss_mpi_venc_set_rc_param [%d]\n ", s32Ret);
 }
 
 
@@ -917,7 +919,7 @@ int wk_mpp_venc_stream_start(ot_venc_chn VencChn)
         s32Ret = WK_COMM_VENC_GetStreamStart(VencChn);
         if (TD_SUCCESS != s32Ret)
         {
-            sample_print("Venc Get GopAttr failed for %#x!\n", s32Ret);
+            WK_LOGE("Venc Get GopAttr failed for %#x!\n", s32Ret);
             sample_comm_venc_stop(VencChn);
         }
         break;
@@ -934,7 +936,7 @@ int wk_mpp_venc_stream_start(ot_venc_chn VencChn)
         s32Ret = WK_COMM_VENC_GetStreamStart(VencChn);
         if (TD_SUCCESS != s32Ret)
         {
-            sample_print("Venc Get GopAttr failed for %#x!\n", s32Ret);
+            WK_LOGE("Venc Get GopAttr failed for %#x!\n", s32Ret);
             sample_comm_venc_stop(VencChn);
         }
         break;
@@ -1036,35 +1038,35 @@ int wk_mpp_scene_start(int scenemode)
     ot_scene_video_mode stVideoMode;
 
     wk_scence_mode = 0; //scenemode;
-    printf("=========== wk_scence_mode[%d]\n", wk_scence_mode);
+    WK_LOGD("=========== wk_scence_mode[%d]\n", wk_scence_mode);
 
     inipath = "param/sensor_os04a10";
     s32ret = ot_scene_create_param(inipath, &stSceneParam, &stVideoMode);
     if (TD_SUCCESS != s32ret)
     {
-        printf("SCENETOOL_CreateParam failed\n");
+        WK_LOGE("SCENETOOL_CreateParam failed\n");
         return TD_FAILURE;
     }
     s32ret = ot_scene_init(&stSceneParam);
     if (TD_SUCCESS != s32ret)
     {
-        printf("ot_scene_init failed\n");
+        WK_LOGE("ot_scene_init failed\n");
         return TD_FAILURE;
     }
 
     s32ret = ot_scene_set_scene_mode(&(stVideoMode.video_mode[scenemode]));
     if (TD_SUCCESS != s32ret)
     {
-        printf("HI_SRDK_SCENEAUTO_Start failed\n");
+        WK_LOGE("HI_SRDK_SCENEAUTO_Start failed\n");
         return TD_FAILURE;
     }
 
     s32ret = ot_scene_pause(TD_FALSE);
     if (s32ret != TD_SUCCESS) {
-        printf("OT_SCENE_Resume failed\n");
+        WK_LOGE("OT_SCENE_Resume failed\n");
         return TD_FAILURE;
     }
-    printf("The sceneauto is started.\n");
+    WK_LOGD("The sceneauto is started.\n");
 
     return s32ret;
 }
@@ -1075,7 +1077,7 @@ int wk_mpp_scene_stop()
     s32ret = ot_scene_deinit();
     if (TD_SUCCESS != s32ret)
     {
-        printf("ot_scene_deinit failed\n");
+        WK_LOGE("ot_scene_deinit failed\n");
         return TD_FAILURE;
     }
 
@@ -1091,7 +1093,7 @@ void wk_mpp_set_CSCAttr(unsigned char param,unsigned char value)
 
     s32Ret = ss_mpi_isp_get_csc_attr(ViPipe, &nstCSCAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Get CSCAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Get CSCAttr failed for %#x!\n", s32Ret);
     }
 
     //输入value范围:[0-255]  需要转换为[0-100]
@@ -1119,7 +1121,7 @@ void wk_mpp_set_CSCAttr(unsigned char param,unsigned char value)
 
     s32Ret = ss_mpi_isp_set_csc_attr(ViPipe, &nstCSCAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Set CSCAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Set CSCAttr failed for %#x!\n", s32Ret);
     }
 }
 
@@ -1131,7 +1133,7 @@ void wk_mpp_set_ExposureAttr(unsigned char ntype, unsigned int value)
 
     s32Ret = ss_mpi_isp_get_exposure_attr(ViPipe, &stExposureAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Get ExposureAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Get ExposureAttr failed for %#x!\n", s32Ret);
     }
 
     switch(ntype)
@@ -1174,7 +1176,7 @@ void wk_mpp_set_ExposureAttr(unsigned char ntype, unsigned int value)
 
     s32Ret = ss_mpi_isp_set_exposure_attr(ViPipe, &stExposureAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Set ExposureAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Set ExposureAttr failed for %#x!\n", s32Ret);
     }
 }
 
@@ -1187,13 +1189,13 @@ void wk_mpp_set_WBAttr(unsigned char awbmode)
 
     s32Ret = ss_mpi_isp_get_wb_attr(ViPipe, &stWBAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Get WBAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Get WBAttr failed for %#x!\n", s32Ret);
         return;
     }
 
     s32Ret = ss_mpi_isp_get_awb_attr_ex(ViPipe, &stAWBEXAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Get AWBExAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Get AWBExAttr failed for %#x!\n", s32Ret);
         return;
     }
 
@@ -1262,13 +1264,13 @@ void wk_mpp_set_WBAttr(unsigned char awbmode)
 
     s32Ret = ss_mpi_isp_set_wb_attr(ViPipe, &stWBAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Set WBAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Set WBAttr failed for %#x!\n", s32Ret);
         return;
     }
 
     s32Ret = ss_mpi_isp_set_awb_attr_ex(ViPipe, &stAWBEXAttr);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ISP Set AWBExAttr failed for %#x!\n", s32Ret);
+        WK_LOGE("ISP Set AWBExAttr failed for %#x!\n", s32Ret);
         return;
     }
 }

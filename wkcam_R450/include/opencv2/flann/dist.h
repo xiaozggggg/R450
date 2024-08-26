@@ -47,7 +47,7 @@ typedef unsigned __int64 uint64_t;
 # include <Intrin.h>
 #endif
 
-#if defined(__ARM_NEON__) && !defined(__CUDACC__)
+#ifdef __ARM_NEON__
 # include "arm_neon.h"
 #endif
 
@@ -425,7 +425,7 @@ struct Hamming
     ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/ = -1) const
     {
         ResultType result = 0;
-#if defined(__ARM_NEON__) && !defined(__CUDACC__)
+#ifdef __ARM_NEON__
         {
             uint32x4_t bits = vmovq_n_u32(0);
             for (size_t i = 0; i < size; i += 16) {
@@ -462,9 +462,10 @@ struct Hamming
             }
         }
 #else // NO NEON and NOT GNUC
+        typedef unsigned long long pop_t;
         HammingLUT lut;
         result = lut(reinterpret_cast<const unsigned char*> (a),
-                     reinterpret_cast<const unsigned char*> (b), size);
+                     reinterpret_cast<const unsigned char*> (b), size * sizeof(pop_t));
 #endif
         return result;
     }
@@ -842,7 +843,7 @@ typename Distance::ResultType ensureSquareDistance( typename Distance::ResultTyp
 
 /*
  * ...and a template to ensure the user that he will process the normal distance,
- * and not squared distance, without losing processing time calling sqrt(ensureSquareDistance)
+ * and not squared distance, without loosing processing time calling sqrt(ensureSquareDistance)
  * that will result in doing actually sqrt(dist*dist) for L1 distance for instance.
  */
 template <typename Distance, typename ElementType>

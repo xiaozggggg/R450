@@ -30,7 +30,7 @@ wk_st_lk_middle* wk_st_lk_middle::wk_st_lk_get_instance()
 
 		u32ret = wk_st_lk_start(0, WK_VIDEO_CHANNEL_PREVIEW);
 		if(u32ret != TD_SUCCESS) {
-			printf("err: wk_st_lk_start error!\n");
+			WK_LOGE("err: wk_st_lk_start error!\n");
 			return nullptr;
 		}
 	}
@@ -48,7 +48,7 @@ td_s32 wk_st_lk_middle::wk_st_lk_destroy_instance()
 
 		u32ret = wk_st_lk_stop();
 		if(u32ret != TD_SUCCESS) {
-			printf("err: wk_st_lk_stop error!\n");
+			WK_LOGE("err: wk_st_lk_stop error!\n");
 		}		
 	} 
 	
@@ -104,7 +104,6 @@ td_s32 wk_st_lk_middle::wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_p
 	#endif 
 	return TD_SUCCESS;
 }
-
 
 
 td_bool wk_st_lk_middle::wk_result_export(wk_location_result_s::wk_ptr& _result)

@@ -13,7 +13,8 @@
 #include "wk_corner_info.h"
 #include "wk_st_lk_mng.h"
 #include "wk_st_lk_debug.h"
-
+#include "wk_log.h"
+#include "opencv/core.hpp"
 
 using namespace std; 
 

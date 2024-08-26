@@ -6,7 +6,6 @@
 
 #include "wk_corner_algorithm.h"
 
-
 // 是否把录像与拍照的ISP参数区分开 0:使用同一套参数 1:使用不同的参数
 #define SENSOR_ISP_SWITCH_MODE 1
 
@@ -181,7 +180,7 @@ bool OnInitCameraParams(void)
     }
 
     if(CameraParams.shutter_value < 0 || CameraParams.iso_value < 0){
-        printf("=============== param data error and reset =========== \n");
+        WK_LOGI("=============== param data error and reset =========== \n");
         CameraParams.aemode = 0;
         CameraParams.awbmode = 0;
         CameraParams.iso_value = 100;
@@ -198,19 +197,19 @@ bool OnInitCameraParams(void)
         SysSetConfig(SET_SYSTEM_CONFIG_COMM,0,(void*)&CameraParams);
     }
 
-    printf("CameraParams.aemode = [%d] \n",CameraParams.aemode);
-    printf("CameraParams.awbmode = [%d] \n",CameraParams.awbmode);
-    printf("CameraParams.iso_value = [%d] \n",CameraParams.iso_value);
-    printf("CameraParams.shutter_value = [%d] \n",CameraParams.shutter_value);
-    printf("CameraParams.ev_value = [%d] \n",CameraParams.ev_value);
-    printf("CameraParams.brightness = [%d] \n",CameraParams.brightness);
-    printf("CameraParams.contrast = [%d] \n",CameraParams.contrast);
-    printf("CameraParams.sharpness = [%d] \n",CameraParams.sharpness);
-    printf("CameraParams.saturation = [%d] \n",CameraParams.saturation);
-    printf("CameraParams.brightness_photo = [%d] \n",CameraParams.brightness_photo);
-    printf("CameraParams.contrast_photo = [%d] \n",CameraParams.contrast_photo);
-    printf("CameraParams.sharpness_photo = [%d] \n",CameraParams.sharpness_photo);
-    printf("CameraParams.saturation_photo = [%d] \n",CameraParams.saturation_photo);
+    WK_LOGD("CameraParams.aemode = [%d] \n",CameraParams.aemode);
+    WK_LOGD("CameraParams.awbmode = [%d] \n",CameraParams.awbmode);
+    WK_LOGD("CameraParams.iso_value = [%d] \n",CameraParams.iso_value);
+    WK_LOGD("CameraParams.shutter_value = [%d] \n",CameraParams.shutter_value);
+    WK_LOGD("CameraParams.ev_value = [%d] \n",CameraParams.ev_value);
+    WK_LOGD("CameraParams.brightness = [%d] \n",CameraParams.brightness);
+    WK_LOGD("CameraParams.contrast = [%d] \n",CameraParams.contrast);
+    WK_LOGD("CameraParams.sharpness = [%d] \n",CameraParams.sharpness);
+    WK_LOGD("CameraParams.saturation = [%d] \n",CameraParams.saturation);
+    WK_LOGD("CameraParams.brightness_photo = [%d] \n",CameraParams.brightness_photo);
+    WK_LOGD("CameraParams.contrast_photo = [%d] \n",CameraParams.contrast_photo);
+    WK_LOGD("CameraParams.sharpness_photo = [%d] \n",CameraParams.sharpness_photo);
+    WK_LOGD("CameraParams.saturation_photo = [%d] \n",CameraParams.saturation_photo);
 
     OnSetAeExposureInfo(WK_AE_EXPOSURE_MODE,CameraParams.aemode);
     OnSetAeExposureInfo(WK_AE_EXPOSURE_ISO,CameraParams.iso_value / 100);
@@ -243,11 +242,11 @@ int OnInitStreamParam(void)
         m_TagMain.nBitrate = 50*1024;
         SysSetConfig(SET_SYSTEM_RESET_MAINSTREAM_COMM,0,(void*)&m_TagMain);
     }
-    printf("m_TagMain.nWidth = [%d] \n",m_TagMain.nWidth);
-    printf("m_TagMain.nHeigth = [%d] \n",m_TagMain.nHeigth);
-    printf("m_TagMain.nEncodeMode = [%d] \n",m_TagMain.nEncodeMode);
-    printf("m_TagMain.nframe_rate = [%d] \n",m_TagMain.nframe_rate);
-    printf("m_TagMain.nBitrate = [%d] \n",m_TagMain.nBitrate);
+    WK_LOGD("m_TagMain.nWidth = [%d] \n",m_TagMain.nWidth);
+    WK_LOGD("m_TagMain.nHeigth = [%d] \n",m_TagMain.nHeigth);
+    WK_LOGD("m_TagMain.nEncodeMode = [%d] \n",m_TagMain.nEncodeMode);
+    WK_LOGD("m_TagMain.nframe_rate = [%d] \n",m_TagMain.nframe_rate);
+    WK_LOGD("m_TagMain.nBitrate = [%d] \n",m_TagMain.nBitrate);
 
     wk_mpp_venc_set_param(WK_VIDEO_CHANNEL_RECORD,PIC_3840X2160,m_TagMain.nframe_rate,m_TagMain.nBitrate);
  
@@ -260,11 +259,11 @@ int OnInitStreamParam(void)
         m_TagSecond.nBitrate = 1*1024;
         SysSetConfig(SET_SYSTEM_RESET_SECONDSTREAM_COMM,0,(void*)&m_TagSecond);
     }
-    printf("m_TagSecond.nWidth = [%d] \n",m_TagSecond.nWidth);
-    printf("m_TagSecond.nHeigth = [%d] \n",m_TagSecond.nHeigth);
-    printf("m_TagSecond.nEncodeMode = [%d] \n",m_TagSecond.nEncodeMode);
-    printf("m_TagSecond.nframe_rate = [%d] \n",m_TagSecond.nframe_rate);
-    printf("m_TagSecond.nBitrate = [%d] \n",m_TagSecond.nBitrate);
+    WK_LOGD("m_TagSecond.nWidth = [%d] \n",m_TagSecond.nWidth);
+    WK_LOGD("m_TagSecond.nHeigth = [%d] \n",m_TagSecond.nHeigth);
+    WK_LOGD("m_TagSecond.nEncodeMode = [%d] \n",m_TagSecond.nEncodeMode);
+    WK_LOGD("m_TagSecond.nframe_rate = [%d] \n",m_TagSecond.nframe_rate);
+    WK_LOGD("m_TagSecond.nBitrate = [%d] \n",m_TagSecond.nBitrate);
 
     wk_mpp_venc_set_payload(0); //0:h264 1:h265
 
@@ -293,10 +292,10 @@ void OnSwitchCameraStatus(int mode)
         OnSetCSCAttr(WK_CSC_SATURATION,CameraParams.saturation);
         OnSetCSCAttr(WK_CSC_SHARPNESS,CameraParams.sharpness);
         
-        printf("CameraParams.brightness = [%d] \n",CameraParams.brightness);
-        printf("CameraParams.contrast = [%d] \n",CameraParams.contrast);
-        printf("CameraParams.sharpness = [%d] \n",CameraParams.sharpness);
-        printf("CameraParams.saturation = [%d] \n",CameraParams.saturation);
+        WK_LOGD("CameraParams.brightness = [%d] \n",CameraParams.brightness);
+        WK_LOGD("CameraParams.contrast = [%d] \n",CameraParams.contrast);
+        WK_LOGD("CameraParams.sharpness = [%d] \n",CameraParams.sharpness);
+        WK_LOGD("CameraParams.saturation = [%d] \n",CameraParams.saturation);
     }
     else{
         OnSetCSCAttr(WK_CSC_BRIGTHNESS,CameraParams.brightness_photo);
@@ -304,10 +303,10 @@ void OnSwitchCameraStatus(int mode)
         OnSetCSCAttr(WK_CSC_SATURATION,CameraParams.saturation_photo);
         OnSetCSCAttr(WK_CSC_SHARPNESS,CameraParams.sharpness_photo);
         
-        printf("CameraParams.brightness_photo = [%d] \n",CameraParams.brightness_photo);
-        printf("CameraParams.contrast_photo = [%d] \n",CameraParams.contrast_photo);
-        printf("CameraParams.sharpness_photo = [%d] \n",CameraParams.sharpness_photo);
-        printf("CameraParams.saturation_photo = [%d] \n",CameraParams.saturation_photo);
+        WK_LOGD("CameraParams.brightness_photo = [%d] \n",CameraParams.brightness_photo);
+        WK_LOGD("CameraParams.contrast_photo = [%d] \n",CameraParams.contrast_photo);
+        WK_LOGD("CameraParams.sharpness_photo = [%d] \n",CameraParams.sharpness_photo);
+        WK_LOGD("CameraParams.saturation_photo = [%d] \n",CameraParams.saturation_photo);
     }
 
     wk_mpp_scene_start(mode);
@@ -316,15 +315,15 @@ void OnSwitchCameraStatus(int mode)
 
 bool OnReSetSecondStream(void* pCommPare)
 {
-    printf("-----------------OnReSetSecondStream-------------------\n");
+    WK_LOGD("-----------------OnReSetSecondStream-------------------\n");
     memcpy(&m_TagSecond,(char*)pCommPare,sizeof(tagSetStreamInfoStru));
     mSecondRestBit=true;
 
-    printf("m_TagSecond.nWidth = [%d] \n",m_TagSecond.nWidth);
-    printf("m_TagSecond.nHeigth = [%d] \n",m_TagSecond.nHeigth);
-    printf("m_TagSecond.nEncodeMode = [%d] \n",m_TagSecond.nEncodeMode);
-    printf("m_TagSecond.nframe_rate = [%d] \n",m_TagSecond.nframe_rate);
-    printf("m_TagSecond.nBitrate = [%d] \n",m_TagSecond.nBitrate);
+    WK_LOGD("m_TagSecond.nWidth = [%d] \n",m_TagSecond.nWidth);
+    WK_LOGD("m_TagSecond.nHeigth = [%d] \n",m_TagSecond.nHeigth);
+    WK_LOGD("m_TagSecond.nEncodeMode = [%d] \n",m_TagSecond.nEncodeMode);
+    WK_LOGD("m_TagSecond.nframe_rate = [%d] \n",m_TagSecond.nframe_rate);
+    WK_LOGD("m_TagSecond.nBitrate = [%d] \n",m_TagSecond.nBitrate);
 
     wk_mpp_venc_set_payload(0); //0:h264 1:h265
 
@@ -374,7 +373,7 @@ bool OnWriteSecondStreamConfig(void* pParam)
 
 bool OnReSetMainStream(void* pCommPare)
 {
-    printf("-----------------OnReSetMainStream-------------------\n");
+    WK_LOGD("-----------------OnReSetMainStream-------------------\n");
     memcpy(&m_TagMain,(char*)pCommPare,sizeof(tagSetStreamInfoStru));
     mMainRestBit=true;
 
@@ -469,7 +468,7 @@ bool OnWriteSysParamConfig(void* pParam)
     sprintf(buf,"%d",m_TagSys.saturation_photo);
     write_profile_string("AeAttr", "PhotoSat", buf,file);
 
-    printf("============== write isp param ==============\n");
+    WK_LOGD("============== write isp param ==============\n");
 
     return true;
 }
@@ -492,7 +491,7 @@ bool SysSetConfig_OnReSetMainStream(void* pCommPare)
         // if( !OnWriteMainStreamConfig(pCommPare) ){
         //     return false;
         // }
-        printf("====== OnReSetMainStream successful ======\n");
+        WK_LOGD("====== OnReSetMainStream successful ======\n");
     }else{
         return false;
     }
@@ -537,7 +536,7 @@ bool OnSteram_LoadConfigFile(const char* pszFILENAME)
         g_StreamConfig = iniparser_load(pszFILENAME);
         if (NULL == g_StreamConfig)
         {
-            printf("%s ini load failed\n", pszFILENAME);
+            WK_LOGE("%s ini load failed\n", pszFILENAME);
             return false;
         }
     }
@@ -555,7 +554,7 @@ bool OnGetSysParamConfig(char* pParam,int *Resize)
     memset(&m_TagSys,0,sizeof(CameraIspParams));
 
     if(stat("/root/ispconfig.ini", &sbuf) < 0) {
-        printf("Get file size failed.\n");
+        WK_LOGE("Get file size failed.\n");
         return false;
     } else {
         f_size = (int)sbuf.st_size;
@@ -627,7 +626,7 @@ bool OnGetSecondStream(char* pParam,int *Resize)
     memset(&m_TagSys,0,sizeof(tagSetStreamInfoStru));
 
     if(stat("/root/previewconfig.ini", &sbuf) < 0) {
-        printf("Get file size failed.\n");
+        WK_LOGE("Get file size failed.\n");
         return false;
     } else {
         f_size = (int)sbuf.st_size;
@@ -679,7 +678,7 @@ bool OnGetMainStream(char* pParam,int *Resize)
     memset(&m_TagSys,0,sizeof(tagSetStreamInfoStru));
 
     if(stat("/root/recordconfig.ini", &sbuf) < 0) {
-        printf("Get file size failed.\n");
+        WK_LOGE("Get file size failed.\n");
         return false;
     } else {
         f_size = (int)sbuf.st_size;

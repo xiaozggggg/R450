@@ -15,7 +15,6 @@
 #define CV_CPU_OPTIMIZATION_NAMESPACE cpu_baseline
 #define CV_CPU_OPTIMIZATION_NAMESPACE_BEGIN namespace cpu_baseline {
 #define CV_CPU_OPTIMIZATION_NAMESPACE_END }
-#define CV_CPU_BASELINE_MODE 1
 #endif
 
 
@@ -83,14 +82,6 @@
 #  include <immintrin.h>
 #  define CV_AVX2 1
 #endif
-#ifdef CV_CPU_COMPILE_AVX_512F
-#  include <immintrin.h>
-#  define CV_AVX_512F 1
-#endif
-#ifdef CV_CPU_COMPILE_AVX512_SKX
-#  include <immintrin.h>
-#  define CV_AVX512_SKX 1
-#endif
 #ifdef CV_CPU_COMPILE_FMA3
 #  define CV_FMA3 1
 #endif
@@ -108,16 +99,12 @@
 #  include <arm_neon.h>
 #endif
 
-#ifdef CV_CPU_COMPILE_VSX
+#if defined(__VSX__) && defined(__PPC64__) && defined(__LITTLE_ENDIAN__)
 #  include <altivec.h>
 #  undef vector
 #  undef pixel
 #  undef bool
 #  define CV_VSX 1
-#endif
-
-#ifdef CV_CPU_COMPILE_VSX3
-#  define CV_VSX3 1
 #endif
 
 #endif // CV_ENABLE_INTRINSICS && !CV_DISABLE_OPTIMIZATION && !__CUDACC__
@@ -127,13 +114,9 @@ struct VZeroUpperGuard {
 #ifdef __GNUC__
     __attribute__((always_inline))
 #endif
-    inline VZeroUpperGuard() { _mm256_zeroupper(); }
-#ifdef __GNUC__
-    __attribute__((always_inline))
-#endif
     inline ~VZeroUpperGuard() { _mm256_zeroupper(); }
 };
-#define __CV_AVX_GUARD VZeroUpperGuard __vzeroupper_guard; CV_UNUSED(__vzeroupper_guard);
+#define __CV_AVX_GUARD VZeroUpperGuard __vzeroupper_guard; (void)__vzeroupper_guard;
 #endif
 
 #ifdef __CV_AVX_GUARD
@@ -235,9 +218,6 @@ struct VZeroUpperGuard {
 #ifndef CV_AVX_512VL
 #  define CV_AVX_512VL 0
 #endif
-#ifndef CV_AVX512_SKX
-#  define CV_AVX512_SKX 0
-#endif
 
 #ifndef CV_NEON
 #  define CV_NEON 0
@@ -245,8 +225,4 @@ struct VZeroUpperGuard {
 
 #ifndef CV_VSX
 #  define CV_VSX 0
-#endif
-
-#ifndef CV_VSX3
-#  define CV_VSX3 0
 #endif

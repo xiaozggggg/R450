@@ -57,7 +57,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
                            (p->cam_ctrl_timestamps - wk_camera_state.takephoto_resp_timestamp) :
                            (wk_camera_state.takephoto_resp_timestamp - p->cam_ctrl_timestamps);
 				if(time_tag < 200){
-					printf("wk_camera_state.takephoto_resp_timestamp == p->cam_ctrl_timestamps:%u\n" ,p->cam_ctrl_timestamps);
+					WK_LOGD("wk_camera_state.takephoto_resp_timestamp == p->cam_ctrl_timestamps:%u\n" ,p->cam_ctrl_timestamps);
 					break;
 				}
 				wk_camera_state.takephoto_resp_timestamp = p->cam_ctrl_timestamps;
@@ -77,7 +77,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
                 }
                 else{
                 }
-                printf(" time_tag[%d] p->cam_ctrl_timestamps:%ld ctrl_type:%d sub_type:%d m_CapTag.CapMode:%d\n", 
+                WK_LOGD(" time_tag[%d] p->cam_ctrl_timestamps:%ld ctrl_type:%d sub_type:%d m_CapTag.CapMode:%d\n", 
                          time_tag, p->cam_ctrl_timestamps, p->cam_ctrl_type, p->cam_ctrl_sub_type, m_CapTag.CapMode);
 
                 m_CapTag.CapContinue = p->cam_ctrl_value1;
@@ -104,7 +104,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 			{
 				// 判断时间戳是不是和上次一致，是则忽略，并且回复上传一次的状态
 				if(p->cam_ctrl_timestamps - wk_camera_state.video_resp_timestamp < 2000){
-					printf("wk_camera_cmd_video_rec.trig_timestamps == p->cam_ctrl_timestamps:%d\n" ,p->cam_ctrl_timestamps);
+					WK_LOGD("wk_camera_cmd_video_rec.trig_timestamps == p->cam_ctrl_timestamps:%d\n" ,p->cam_ctrl_timestamps);
 					break;
 				}
 
@@ -162,7 +162,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
                        (p->trig_timestamps - wk_camera_state.video_resp_timestamp) :
                        (wk_camera_state.video_resp_timestamp - p->trig_timestamps);
 			if(time_tag < 2000){
-				printf("wk_camera_cmd_video_rec.trig_timestamps == p->trig_timestamps:%d\n", time_tag);
+				WK_LOGD("wk_camera_cmd_video_rec.trig_timestamps == p->trig_timestamps:%d\n", time_tag);
 				break;
 			}
 
@@ -281,19 +281,19 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
             if(m_TagSecond.nBitrate == tag.nBitrate){
                 break;
             }
-			printf("------------------------------------\n");
-			printf("tag.nEncodeMode:%d\n" ,tag.nEncodeMode);
-			printf("tag.nframe_rate:%d\n" ,tag.nframe_rate);
-			printf("tag.nrate_speed:%d\n" ,tag.nrate_speed);
-			printf("tag.nIFrameInter:%d\n" ,tag.nIFrameInter);
-			printf("tag.nBitrate:%d\n" ,tag.nBitrate);
-			printf("tag.nWidth:%d\n" ,tag.nWidth);
-			printf("tag.nHeigth:%d\n" ,tag.nHeigth);
-			printf("------------------------------------\n");
+			WK_LOGD("------------------------------------\n");
+			WK_LOGD("tag.nEncodeMode:%d\n" ,tag.nEncodeMode);
+			WK_LOGD("tag.nframe_rate:%d\n" ,tag.nframe_rate);
+			WK_LOGD("tag.nrate_speed:%d\n" ,tag.nrate_speed);
+			WK_LOGD("tag.nIFrameInter:%d\n" ,tag.nIFrameInter);
+			WK_LOGD("tag.nBitrate:%d\n" ,tag.nBitrate);
+			WK_LOGD("tag.nWidth:%d\n" ,tag.nWidth);
+			WK_LOGD("tag.nHeigth:%d\n" ,tag.nHeigth);
+			WK_LOGD("------------------------------------\n");
 			if( SysSetConfig(SET_SYSTEM_RESET_SECONDSTREAM_COMM,0,(void*)&tag) ){
-				printf("set preview param successful!!!\n");
+				WK_LOGD("set preview param successful!!!\n");
 			}else{
-				printf("set preview param failed!!!\n");
+				WK_LOGW("set preview param failed!!!\n");
 			}
 			memcpy(&m_TagSecond, (char *)&tag, sizeof(tagSetStreamInfoStru));
 			OnWriteSecondStreamConfig((void*)&tag);
@@ -302,37 +302,37 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_SHUTTER:{                 // 设置快门值
 			mavlink_wk_camera_cmd_shutter_t *p = (mavlink_wk_camera_cmd_shutter_t *)MessageBuf;
-			printf("p->shutter:%d\n" ,p->shutter);
+			WK_LOGD("p->shutter:%d\n" ,p->shutter);
 			if(OnSetAeExposureInfo(WK_AE_EXPOSURE_TIME,(unsigned int)p->shutter)){
-				printf("set shutter successful:%d!!!\n" ,p->shutter);
+				WK_LOGD("set shutter successful:%d!!!\n" ,p->shutter);
 			}else{
-				printf("set shutter failed:%d!!!\n" ,p->shutter);
+				WK_LOGW("set shutter failed:%d!!!\n" ,p->shutter);
 			}
 			break;}
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_ISO:{                     // 设置 ISO
 			mavlink_wk_camera_cmd_iso_t *p = (mavlink_wk_camera_cmd_iso_t *)MessageBuf;
-			printf("p->iso:%d\n" ,p->iso);
+			WK_LOGD("p->iso:%d\n" ,p->iso);
 			if(OnSetAeExposureInfo(WK_AE_EXPOSURE_ISO,(unsigned int)((p->iso)/100))){
-				printf("set iso successful:%d!!!\n" ,p->iso);
+				WK_LOGD("set iso successful:%d!!!\n" ,p->iso);
 			}else{
-				printf("set iso failed:%d!!!\n" ,p->iso);
+				WK_LOGW("set iso failed:%d!!!\n" ,p->iso);
 			}
 			break;}
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_EV_MODE:{                 // 设置 EV_MODE
 			mavlink_wk_camera_cmd_ev_mode_t *p = (mavlink_wk_camera_cmd_ev_mode_t *)MessageBuf;
-			printf("------------- p->ev_mode:%d\n");
+			WK_LOGD("------------- p->ev_mode:%d\n");
 			if(OnSetAeExposureInfo(WK_AE_EXPOSURE_MODE,(unsigned int)(p->ev_mode))){
-				printf("set exposure mode successful:%d!!!\n" ,p->ev_mode);
+				WK_LOGD("set exposure mode successful:%d!!!\n" ,p->ev_mode);
 			}else{
-				printf("set exposure mode failed:%d!!!\n" ,p->ev_mode);
+				WK_LOGW("set exposure mode failed:%d!!!\n" ,p->ev_mode);
 			}
 			break;}
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_EV_VALUE:{                // 设置 EV_VALUE
 			mavlink_wk_camera_cmd_ev_value_t *p = (mavlink_wk_camera_cmd_ev_value_t *)MessageBuf;
-			printf("p->ev_value:%d\n" ,p->ev_value);
+			WK_LOGD("p->ev_value:%d\n" ,p->ev_value);
             int tempEv = p->ev_value - 132 + DEFAULT_EV_VALUE;
             OnSetCSCAttr(WK_CSC_BRIGTHNESS, tempEv);
 			// if(OnSetAeExposureInfo(WK_AE_EXPOSURE_TARGETCOMP,(unsigned int)p->ev_value)){
@@ -344,51 +344,51 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_CSC:{                    // 设置 CSC
 			mavlink_wk_camera_cmd_csc_t *p = (mavlink_wk_camera_cmd_csc_t *)MessageBuf;
-			printf("set Brightness[%d] \n",p->csc_luma);
+			WK_LOGD("set Brightness[%d] \n",p->csc_luma);
 			if( !OnSetCSCAttr(WK_CSC_BRIGTHNESS,p->csc_luma) ){
-				printf("set brightness failed \n");
+				WK_LOGW("set brightness failed \n");
 			}
 
-			printf("set Contrast[%d] \n",p->csc_contrast);
+			WK_LOGD("set Contrast[%d] \n",p->csc_contrast);
 			if( !OnSetCSCAttr(WK_CSC_CONTRAST,p->csc_contrast) ){
-				printf("set Contrast failed \n");
+				WK_LOGW("set Contrast failed \n");
 			}
 
-			printf("set Saturation[%d] \n",p->csc_aturation);
+			WK_LOGD("set Saturation[%d] \n",p->csc_aturation);
 			if( !OnSetCSCAttr(WK_CSC_SATURATION,p->csc_aturation) ){
-				printf("set Saturation failed \n");
+				WK_LOGW("set Saturation failed \n");
 			}
 
-			printf("set Sharpness[%d] \n",p->csc_hue);
+			WK_LOGD("set Sharpness[%d] \n",p->csc_hue);
 			if( !OnSetCSCAttr(WK_CSC_SHARPNESS,p->csc_hue) ){
-				printf("set Sharpness failed \n");
+				WK_LOGW("set Sharpness failed \n");
 			}
 			break;}
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_CAP_PARAM:{               // 设置 拍照参数
 			mavlink_wk_camera_cmd_cap_param_t *p = (mavlink_wk_camera_cmd_cap_param_t *)MessageBuf;
-			printf("------------------------------------\n");
-			printf("m_CapTag.CapMode:%d\n" ,p->cap_mode);
-			printf("m_CapTag.CapContinue:%d\n" ,p->cap_continues);
-			printf("m_CapTag.CapRation:%d\n" ,p->cap_rotation);
-			printf("m_CapTag.CapResolution:%d\n" ,p->cap_resolution);
-			printf("m_CapTag.CapSave:%d\n" ,p->cap_save_format);
-			printf("------------------------------------\n");
+			WK_LOGD("------------------------------------\n");
+			WK_LOGD("m_CapTag.CapMode:%d\n" ,p->cap_mode);
+			WK_LOGD("m_CapTag.CapContinue:%d\n" ,p->cap_continues);
+			WK_LOGD("m_CapTag.CapRation:%d\n" ,p->cap_rotation);
+			WK_LOGD("m_CapTag.CapResolution:%d\n" ,p->cap_resolution);
+			WK_LOGD("m_CapTag.CapSave:%d\n" ,p->cap_save_format);
+			WK_LOGD("------------------------------------\n");
 			m_CapTag.CapMode = p->cap_mode;
 			m_CapTag.CapContinue = p->cap_continues;
             m_CapTag.CapRation = p->cap_rotation;
             m_CapTag.CapResolution = p->cap_resolution;
             m_CapTag.CapSave = p->cap_save_format;
-			printf("set capture param successful!!! \n");
+			WK_LOGD("set capture param successful!!! \n");
 			break;}
 
 		case MAVLINK_MSG_ID_WK_CAMERA_CMD_AWB_MODE:{     // 设置 白平衡模式
 			mavlink_wk_camera_cmd_awb_mode_t *p = (mavlink_wk_camera_cmd_awb_mode_t *)MessageBuf;
-			printf("p->awb_mode:%d\n" ,p->awb_mode);
+			WK_LOGD("p->awb_mode:%d\n" ,p->awb_mode);
 			if( OnSetAwbAttr(p->awb_mode) ){
-				printf("set awb successful!!!\n");
+				WK_LOGD("set awb successful!!!\n");
 			}else{
-				printf("set awb failed!!!\n");
+				WK_LOGW("set awb failed!!!\n");
 			}
 			break;}
 
@@ -487,21 +487,21 @@ void mavlink_decode(unsigned char byte)
                 mavlink_wk_camera_cmd_csc_t wk_camera_cmd_csc;
                 mavlink_msg_wk_camera_cmd_csc_decode(&wkmsg, &wk_camera_cmd_csc);
                 MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_WK_CAMERA_CMD_CSC ,(char *)&wk_camera_cmd_csc);
-                printf("------------------- recv mavlink csc!!!\n");
+                WK_LOGD("------------------- recv mavlink csc!!!\n");
                 break;}
 
             case MAVLINK_MSG_ID_WK_CAMERA_CMD_CAP_PARAM:{     // 设置 拍照参数
                 mavlink_wk_camera_cmd_cap_param_t wk_camera_cmd_cap_param;
                 mavlink_msg_wk_camera_cmd_cap_param_decode(&wkmsg, &wk_camera_cmd_cap_param);
                 MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_WK_CAMERA_CMD_CAP_PARAM ,(char *)&wk_camera_cmd_cap_param);
-                printf("------------------- recv mavlink cap param!!!\n");
+                WK_LOGD("------------------- recv mavlink cap param!!!\n");
                 break;}
 
             case MAVLINK_MSG_ID_WK_CAMERA_CMD_AWB_MODE:{     // 设置 白平衡模式
                 mavlink_wk_camera_cmd_awb_mode_t wk_camera_cmd_awb_mode;
                 mavlink_msg_wk_camera_cmd_awb_mode_decode(&wkmsg, &wk_camera_cmd_awb_mode);
                 MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_WK_CAMERA_CMD_AWB_MODE ,(char *)&wk_camera_cmd_awb_mode);
-                printf("------------------- recv mavlink awb mode!!!\n");
+                WK_LOGD("------------------- recv mavlink awb mode!!!\n");
                 break;}
 
             default:{

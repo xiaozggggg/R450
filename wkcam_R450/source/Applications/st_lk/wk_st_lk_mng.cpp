@@ -48,7 +48,7 @@ td_bool wk_st_lk_get_points_num_max_min(td_u16* _max, td_u16* _min)
 td_bool wk_st_lk_register_get_frame_cb(pfun_wk_get_frame_cb _cb)
 {
 	if(_cb == NULL) {
-		printf("param is _cb null\n");
+		WK_LOGE("param is _cb null\n");
 		return TD_FALSE;
 	}
 
@@ -116,17 +116,17 @@ td_bool wk_st_set_ctrl_param(td_u16 _quality_level, td_u16 _max_points_num, td_u
 	wk_st_lk_mng_info_s* pmng = &g_st_lk_mng_info;
 
 	if(_quality_level < 1 || _quality_level > 255){
-		printf("fail: param illegal, quality_level [1,255]\n");
+		WK_LOGE("fail: param illegal, quality_level [1,255]\n");
 		return TD_FALSE;
 	}
 
 	if(_max_points_num < 1 || _max_points_num > 500){
-		printf("fail: param illegal, max_points_num [1,500]\n");
+		WK_LOGE("fail: param illegal, max_points_num [1,500]\n");
 		return TD_FALSE;
 	}
 
 	if(_min_points_interval < 1 || _min_points_interval > 255){
-		printf("fail: param illegal, min_points_interval [1,255]\n");
+		WK_LOGE("fail: param illegal, min_points_interval [1,255]\n");
 		return TD_FALSE;
 	}
 	
@@ -144,7 +144,7 @@ td_s32 wk_st_get_points(ot_video_frame_info *_frame, wk_st_points_s* _points)
 	wk_st_lk_mng_info_s* pmng = &g_st_lk_mng_info;
 
 	if(_frame == NULL || _points == NULL) {
-		printf("fail: wk_st_get_points param illegal\n");
+		WK_LOGE("fail: wk_st_get_points param illegal\n");
 		return TD_FAILURE;
 	}
 
@@ -170,17 +170,17 @@ td_bool wk_lk_set_ctrl_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps)
 	wk_st_lk_mng_info_s* pmng = &g_st_lk_mng_info;
 
 	if(_min_eig_val < 1 || _min_eig_val > 255){
-		printf("fail: param illegal, _min_eig_val [1,255]\n");
+		WK_LOGE("fail: param illegal, _min_eig_val [1,255]\n");
 		return TD_FALSE;
 	}
 
 	if(_iter_cnt < 1 || _iter_cnt > 20){
-		printf("fail: param illegal, _iter_cnt [1,20]\n");
+		WK_LOGE("fail: param illegal, _iter_cnt [1,20]\n");
 		return TD_FALSE;
 	}
 
 	if(_eps < 1 || _eps > 255){
-		printf("fail: param illegal, min_points_interval [1,255]\n");
+		WK_LOGE("fail: param illegal, min_points_interval [1,255]\n");
 		return TD_FALSE;
 	}
 	
@@ -199,7 +199,7 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 	wk_st_lk_mng_info_s* pmng = &g_st_lk_mng_info;
 
 	if(_info == NULL || _points == NULL) {
-		printf("fail: wk_st_get_points param illegal\n");
+		WK_LOGE("fail: wk_st_get_points param illegal\n");
 		return TD_FAILURE;
 	}
 
@@ -229,7 +229,7 @@ void _wk_st_lk_get_frame_cb_handle(ot_vpss_grp grp, ot_vpss_chn chn, ot_video_fr
 	wk_corner_video_frame_s::wk_ptr frame_ptr(new wk_corner_video_frame_s);
 
 	if(_frame == NULL) {
-		printf("param is _frame null\n");
+		WK_LOGE("param is _frame null\n");
 		return;
 	}
 	
@@ -283,7 +283,7 @@ td_s32 wk_st_lk_start(ot_vpss_grp _grp, ot_vpss_chn _chn)
 	wk_st_lk_mng_info_s* pinfo = &g_st_lk_mng_info;
 
 	if(pinfo->b_proc_running == TD_TRUE) {
-		printf("info: wk_st_lk_start already init!\n");
+		WK_LOGE("info: wk_st_lk_start already init!\n");
 		return TD_SUCCESS;
 	}
 
@@ -291,7 +291,7 @@ td_s32 wk_st_lk_start(ot_vpss_grp _grp, ot_vpss_chn _chn)
 	_wk_st_lk_set_default_param(&pinfo->st_lk_param);
 	s32ret = wk_ive_st_lk_init(&pinfo->st_lk_infor, &pinfo->st_lk_param);
 	if(s32ret != TD_SUCCESS) {
-		printf("err: initial _wk_st_lk_proc create error, %d\n", s32ret);
+		WK_LOGE("err: initial _wk_st_lk_proc create error, %d\n", s32ret);
 		goto st_lk_init_err;
 	}
 	
@@ -302,11 +302,11 @@ td_s32 wk_st_lk_start(ot_vpss_grp _grp, ot_vpss_chn _chn)
 	pinfo->b_proc_running = TD_TRUE;
 	s32ret = pthread_create(&pinfo->proc_id, NULL, _wk_st_lk_proc, pinfo);
 	if(s32ret < 0){
-		printf("err: initial _wk_st_lk_proc create error, %d\n", s32ret);
+		WK_LOGE("err: initial _wk_st_lk_proc create error, %d\n", s32ret);
 		goto frame_init_err;
 	}
 
-	printf("info: wk_st_lk_app_start ok!\n");
+	WK_LOGI("info: wk_st_lk_app_start ok!\n");
 	return TD_SUCCESS;
 	
 frame_init_err:
@@ -323,7 +323,7 @@ td_s32 wk_st_lk_stop()
 	wk_st_lk_mng_info_s* pinfo = &g_st_lk_mng_info;
 
 	if(pinfo->b_proc_running == TD_FALSE) {
-		printf("info: wk_st_lk_app none init!\n");
+		WK_LOGE("info: wk_st_lk_app none init!\n");
 		return TD_SUCCESS;
 	}
 	
@@ -331,7 +331,7 @@ td_s32 wk_st_lk_stop()
 	if(pinfo->proc_id != 0){
 		s32ret = pthread_join(pinfo->proc_id, NULL);
 	    if (s32ret != 0) {
-	        printf("err: join _wk_st_lk_get_frame_proc join error\r\n");
+	        WK_LOGE("err: join _wk_st_lk_get_frame_proc join error\r\n");
 	        return s32ret;
 	    }			
 		pinfo->proc_id = 0;
@@ -340,7 +340,7 @@ td_s32 wk_st_lk_stop()
 	wk_ive_st_lk_uninit(&pinfo->st_lk_infor);
 	memset(&pinfo->st_lk_infor, 0, sizeof(wk_ive_st_lk_info));
 
-	printf("info: wk_st_lk_app_stop ok!\n");
+	WK_LOGI("info: wk_st_lk_app_stop ok!\n");
 	return TD_SUCCESS;
 }
 
@@ -354,6 +354,7 @@ td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
     uint8_t msgbuff[MAVLINK_MAX_PACKET_LEN];
     mavlink_wk_camera_visual_intertial_odometry_data_t wk_location_result;
 
+	memset(&wk_location_result, 0, sizeof(mavlink_wk_camera_visual_intertial_odometry_data_t));
     wk_location_result.x = _result->x;
     wk_location_result.y = _result->y;
 	wk_location_result.z = _result->z;
@@ -364,7 +365,7 @@ td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
 	wk_location_result.corner = _result->corner_num;
 	wk_location_result.timestamp = _result->frame->pts;
 	
-//    printf("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
+//    WK_LOGD("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
 //         wk_location_result.x, wk_location_result.y, wk_location_result.z, 
 //    	 wk_location_result.quaternion[0], wk_location_result.quaternion[1], wk_location_result.quaternion[2], wk_location_result.quaternion[3],
 //         wk_location_result.width, wk_location_result.height, 
@@ -374,21 +375,21 @@ td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
     length = mavlink_msg_to_send_buffer(msgbuff,&msg);
 
 #if 0
-		mavlink_message_t wkmsg;
-		mavlink_status_t  wkstatus;
-		for(int ifor=0; ifor<length; ifor++) {
-			if (mavlink_parse_char(0, msgbuff[ifor], &wkmsg, &wkstatus)) {
-				if(wkmsg.msgid == MAVLINK_MSG_ID_WK_CAMERA_VISUAL_INTERTIAL_ODOMETRY_DATA){
-					mavlink_wk_camera_visual_intertial_odometry_data_t wk_result;
-					mavlink_msg_wk_camera_visual_intertial_odometry_data_decode(&wkmsg, &wk_result);
-					printf("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
-						 wk_result.x, wk_result.y, wk_result.z, 
-						 wk_result.quaternion[0], wk_result.quaternion[1], wk_result.quaternion[2], wk_result.quaternion[3],
-						 wk_result.width, wk_result.height, 
-						 wk_result.ave_lun, wk_result.corner, wk_result.timestamp);
-				}
+	mavlink_message_t wkmsg;
+	mavlink_status_t  wkstatus;
+	for(int ifor=0; ifor<length; ifor++) {
+		if (mavlink_parse_char(0, msgbuff[ifor], &wkmsg, &wkstatus)) {
+			if(wkmsg.msgid == MAVLINK_MSG_ID_WK_CAMERA_VISUAL_INTERTIAL_ODOMETRY_DATA){
+				mavlink_wk_camera_visual_intertial_odometry_data_t wk_result;
+				mavlink_msg_wk_camera_visual_intertial_odometry_data_decode(&wkmsg, &wk_result);
+				WK_LOGD("x[%f] y[%f] z[%f] q0[%f] q1[%f] q2[%f] q3[%f] W[%d] H[%d] ave_lun[%d] corner[%d] timestamp[%ld]\n",
+					 wk_result.x, wk_result.y, wk_result.z, 
+					 wk_result.quaternion[0], wk_result.quaternion[1], wk_result.quaternion[2], wk_result.quaternion[3],
+					 wk_result.width, wk_result.height, 
+					 wk_result.ave_lun, wk_result.corner, wk_result.timestamp);
 			}
 		}
+	}
 #endif
 
     CamSendHandle((char *)msgbuff,length);

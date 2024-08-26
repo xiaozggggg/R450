@@ -19,6 +19,7 @@
 
 #include "iniparser.h"
 #include <sample_comm.h>
+#include "wk_log.h"
 
 #define   NOTFOUND (-1)
 

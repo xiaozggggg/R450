@@ -106,7 +106,7 @@ void* sendFrameThread(void* parg)
                 fwrite(pdat->buf, pdat->length, 1, pVideoFile);
                 frame_count++;
                 if(frame_count > 9000){
-                    printf("============ write h265 finish\n");
+                    WK_LOGD("============ write h265 finish\n");
                     fclose(pVideoFile);
                     pVideoFile = NULL;
                 }
@@ -165,7 +165,7 @@ void sendFrameThread(xop::RtspServer* rtspServer, xop::MediaSessionId sessionId)
                 fwrite(pdat->buf, pdat->length, 1, pVideoFile);
                 frame_count++;
                 if(frame_count > 9000){
-                    printf("============ write h265 finish\n");
+                    WK_LOGD("============ write h265 finish\n");
                     fclose(pVideoFile);
                     pVideoFile = NULL;
                 }
@@ -211,7 +211,7 @@ void setRtspStop(bool status)
 #if SRT_SERVER
 void * thread_video_rtsp_srv_entry(void * parg)
 {	
-    printf(" ############################## start srt server ############################## \n");
+    WK_LOGI(" ############################## start srt server ############################## \n");
 
     // pSrtServer = new SrtLiveServer("192.168.4.80", 9600);
     pSrtServer = new SrtLiveServer("192.168.1.235", 8600);
@@ -224,16 +224,16 @@ void * thread_video_rtsp_srv_entry(void * parg)
 #else
 void * thread_video_rtsp_srv_entry(void * parg)
 {	
-    printf(" ############################## start rtsp server ############################## \n");
+    WK_LOGI(" ############################## start rtsp server ############################## \n");
 
     //////////////////////////////////////////////
     std::string ip;
     char IpAddress[16] = {0};
 	if( getLocalIpAddress((char *)"wlan0" ,(char *)IpAddress) ){ //wireless wlan0 有线：eth0
-		printf("getLocalIpAddress successful!\n");
+		WK_LOGD("getLocalIpAddress successful!\n");
         ip = IpAddress;
 	}else{
-		printf("getLocalIpAddress failed!\n");
+		WK_LOGE("getLocalIpAddress failed!\n");
         ip = "192.168.1.235";
 	}
 
@@ -278,10 +278,10 @@ bool thread_video_preview_init(void)
 
 #if SAVE_VIDEO_FILE
     sprintf(mp4path, "/mnt/sdcard/VID_test.h265");
-    printf("create h265 file %s \r\n", mp4path);
+    WK_LOGD("create h265 file %s \r\n", mp4path);
     pVideoFile = fopen(mp4path, "wb");
     if (!pVideoFile){
-        printf("open file[%s] failed!\n",mp4path);
+        WK_LOGW("open file[%s] failed!\n",mp4path);
         return -1;
     }
 #endif
@@ -290,7 +290,7 @@ bool thread_video_preview_init(void)
     pthread_t tid_rtsp;
     if (pthread_create(&tid_rtsp,NULL,thread_video_rtsp_srv_entry,NULL) != 0)
     {
-        printf("err:initial video priview rtsp server thread error\r\n");
+        WK_LOGE("err:initial video priview rtsp server thread error\r\n");
         return false;
     }
 
@@ -298,7 +298,7 @@ bool thread_video_preview_init(void)
     pthread_t tid_srt_server;
     if (pthread_create(&tid_srt_server,NULL,sendFrameThread,NULL) != 0)
     {
-        printf("err:initial sendFrameThread error\r\n");
+        WK_LOGE("err:initial sendFrameThread error\r\n");
         return false;
     }
 #endif

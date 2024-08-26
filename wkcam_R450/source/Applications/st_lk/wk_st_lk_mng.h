@@ -17,7 +17,7 @@
 #include "wk_ive_st_lk_interface.h"
 #include "wk_st_lk_debug.h"
 #include <thread_comm.h>
-
+#include "wk_log.h"
 
 #ifdef __cplusplus
 extern "C" {
