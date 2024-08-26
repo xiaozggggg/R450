@@ -105,6 +105,82 @@ td_s32 wk_st_lk_middle::wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_p
 	return TD_SUCCESS;
 }
 
+td_s32 wk_st_lk_middle::wk_log_mat(cv::Mat _mat)
+{
+	td_char* str = NULL, *tmp = NULL;
+	std::vector<cv::Mat> mv;
+
+	if(_mat.channels() > 1){
+		cv::split(_mat, mv); 
+	}
+	
+	tmp = str = (td_char*)malloc(4*1024);
+	for(td_u32 kfor=0; kfor<_mat.channels(); kfor++)
+	{
+		for(td_u32 ifor=0; ifor<mv[kfor].cols; ifor++)
+		{
+			for(td_u32 jfor=0; jfor<mv[kfor].rows; jfor++)
+			{
+				switch (_mat.type())
+				{
+					case CV_8UC1:
+					case CV_8UC2:
+					case CV_8UC3:
+					case CV_8UC4:
+						str += sprintf(str, "%d ", mv[kfor].at<unsigned char>(ifor, jfor));
+						break;
+					case CV_8SC1:
+					case CV_8SC2:
+					case CV_8SC3:
+					case CV_8SC4:
+						str += sprintf(str, "%d ", mv[kfor].at<char>(ifor, jfor));
+						break;
+					case CV_16UC1:
+					case CV_16UC2:
+					case CV_16UC3:
+					case CV_16UC4:
+						str += sprintf(str, "%d ", mv[kfor].at<unsigned short>(ifor, jfor));
+						break;
+					case CV_16SC1:
+					case CV_16SC2:
+					case CV_16SC3:
+					case CV_16SC4:
+						str += sprintf(str, "%d ", mv[kfor].at<short>(ifor, jfor));
+						break;
+					case CV_32SC1:
+					case CV_32SC2:
+					case CV_32SC3:
+					case CV_32SC4:
+						str += sprintf(str, "%d ", mv[kfor].at<int>(ifor, jfor));
+						break;
+					case CV_32FC1:
+					case CV_32FC2:
+					case CV_32FC3:
+					case CV_32FC4:
+						str += sprintf(str, "%.2f ", mv[kfor].at<float>(ifor, jfor));
+						break;
+					case CV_64FC1:
+					case CV_64FC2:
+					case CV_64FC3:
+					case CV_64FC4:
+						str += sprintf(str, "%.2f ", mv[kfor].at<double>(ifor, jfor));
+						break;
+				}
+			}
+			*str = '\n';
+			str++;
+		}
+		str += sprintf(str, "%s", "---------------\n");
+	}
+	*str = '\0'; 
+	
+	WK_LOGD("Mat -- rows = %d, cols = %d\n%s", _mat.rows, _mat.cols, tmp);
+	
+	free(tmp);
+	return TD_SUCCESS;
+}
+
+
 
 td_bool wk_st_lk_middle::wk_result_export(wk_location_result_s::wk_ptr& _result)
 {

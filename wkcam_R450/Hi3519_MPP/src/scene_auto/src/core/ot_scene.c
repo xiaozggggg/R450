@@ -187,12 +187,11 @@ static td_s32 scene_set_main_pipe_state(const ot_scene_mode *scene_mode)
     g_scene_state.main_pipe_num = main_pipe_cnt;
 
     for (i = 0; i < g_scene_state.main_pipe_num; i++) {
-        scene_logd("The mainpipe is %u.", g_scene_state.main_pipe[i].main_pipe_hdl);
+        scene_logd("The mainpipe is %u.\n", g_scene_state.main_pipe[i].main_pipe_hdl);
         for (j = 0; j < g_scene_state.main_pipe[i].sub_pipe_num; j++) {
-            scene_logd("The subpipe in mainpipe %d is %u.", g_scene_state.main_pipe[i].main_pipe_hdl,
+            scene_logd("The subpipe in mainpipe %d is %u.\n", g_scene_state.main_pipe[i].main_pipe_hdl,
                 g_scene_state.main_pipe[i].sub_pipe_hdl[j]);
         }
-        scene_logd("\n");
     }
     return TD_SUCCESS;
 }

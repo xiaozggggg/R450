@@ -442,7 +442,7 @@ td_s32 sample_comm_isp_sensor_regiter_callback(ot_isp_dev isp_dev, sample_sns_ty
     //sns_obj = sample_comm_isp_get_sns_obj(sns_type);
     sns_obj = SAMPLE_COMM_ISP_GetSnsObj(sns_type);
     if (sns_obj == TD_NULL) {
-        printf("sensor %d not exist!\n", sns_type);
+        sample_print_err("sensor %d not exist!\n", sns_type);
         return TD_FAILURE;
     }
 
@@ -459,18 +459,18 @@ td_s32 sample_comm_isp_sensor_regiter_callback(ot_isp_dev isp_dev, sample_sns_ty
         if (sns_type == GST_412C_SLAVE_THERMO_T3_384_288_30FPS_14BIT) {
             ret = sns_obj->pfn_register_callback(isp_dev, &thermo_lib, &awb_lib);
             if (ret != TD_SUCCESS) {
-                printf("sensor_register_callback failed with %#x!\n", ret);
+                sample_print_err("sensor_register_callback failed with %#x!\n", ret);
                 return ret;
             }
         } else {
             ret = sns_obj->pfn_register_callback(isp_dev, &ae_lib, &awb_lib);
             if (ret != TD_SUCCESS) {
-                printf("sensor_register_callback failed with %#x!\n", ret);
+                sample_print_err("sensor_register_callback failed with %#x!\n", ret);
                 return ret;
             }
         }
     } else {
-        printf("sensor_register_callback failed with TD_NULL!\n");
+        sample_print_err("sensor_register_callback failed with TD_NULL!\n");
     }
 
     g_sns_type[isp_dev] = sns_type;
@@ -489,7 +489,7 @@ td_s32 sample_comm_isp_sensor_unregiter_callback(ot_isp_dev isp_dev)
     //sns_obj = sample_comm_isp_get_sns_obj(g_sns_type[isp_dev]);
     sns_obj = SAMPLE_COMM_ISP_GetSnsObj(g_sns_type[isp_dev]);
     if (sns_obj == TD_NULL) {
-        printf("sensor %d not exist!\n", g_sns_type[isp_dev]);
+        sample_print_err("sensor %d not exist!\n", g_sns_type[isp_dev]);
         return TD_FAILURE;
     }
 
@@ -509,11 +509,11 @@ td_s32 sample_comm_isp_sensor_unregiter_callback(ot_isp_dev isp_dev)
             ret = sns_obj->pfn_un_register_callback(isp_dev, &ae_lib, &awb_lib);
         }
         if (ret != TD_SUCCESS) {
-            printf("sensor_unregister_callback failed with %#x!\n", ret);
+            sample_print_err("sensor_unregister_callback failed with %#x!\n", ret);
             return ret;
         }
     } else {
-        printf("sensor_unregister_callback failed with TD_NULL!\n");
+        sample_print_err("sensor_unregister_callback failed with TD_NULL!\n");
     }
 
     g_sns_type[isp_dev] = SNS_TYPE_BUTT;
@@ -532,7 +532,7 @@ td_s32 sample_comm_isp_bind_sns(ot_isp_dev isp_dev, sample_sns_type sns_type, td
     //sns_obj = sample_comm_isp_get_sns_obj(sns_type);
     sns_obj = SAMPLE_COMM_ISP_GetSnsObj(sns_type);
     if (sns_obj == TD_NULL) {
-        printf("sensor %d not exist!\n", sns_type);
+        sample_print_err("sensor %d not exist!\n", sns_type);
         return TD_FAILURE;
     }
 
@@ -547,11 +547,11 @@ td_s32 sample_comm_isp_bind_sns(ot_isp_dev isp_dev, sample_sns_type sns_type, td
     if (sns_obj->pfn_set_bus_info != TD_NULL) {
         ret = sns_obj->pfn_set_bus_info(isp_dev, sns_bus_info);
         if (ret != TD_SUCCESS) {
-            printf("set sensor bus info failed with %#x!\n", ret);
+            sample_print_err("set sensor bus info failed with %#x!\n", ret);
             return ret;
         }
     } else {
-        printf("not support set sensor bus info!\n");
+        sample_print_err("not support set sensor bus info!\n");
         return TD_FAILURE;
     }
 
@@ -568,7 +568,7 @@ td_s32 sample_comm_isp_thermo_lib_callback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_thermo_register(isp_dev, &thermo_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_thermo_register failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_thermo_register failed with %#x!\n", ret);
         return ret;
     }
 
@@ -585,7 +585,7 @@ td_s32 sample_comm_isp_thermo_lib_uncallback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_thermo_unregister(isp_dev, &thermo_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_thermo_unregister failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_thermo_unregister failed with %#x!\n", ret);
         return ret;
     }
 
@@ -602,7 +602,7 @@ td_s32 sample_comm_isp_ae_lib_callback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_ae_register(isp_dev, &ae_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_ae_register failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_ae_register failed with %#x!\n", ret);
         return ret;
     }
 
@@ -619,7 +619,7 @@ td_s32 sample_comm_isp_ae_lib_uncallback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_ae_unregister(isp_dev, &ae_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_ae_unregister failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_ae_unregister failed with %#x!\n", ret);
         return ret;
     }
 
@@ -636,7 +636,7 @@ td_s32 sample_comm_isp_awb_lib_callback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_awb_register(isp_dev, &awb_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_awb_register failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_awb_register failed with %#x!\n", ret);
         return ret;
     }
 
@@ -653,7 +653,7 @@ td_s32 sample_comm_isp_awb_lib_uncallback(ot_isp_dev isp_dev)
     sample_check_eok_return(ret, TD_FAILURE);
     ret = ss_mpi_awb_unregister(isp_dev, &awb_lib);
     if (ret != TD_SUCCESS) {
-        printf("ss_mpi_awb_unregister failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_awb_unregister failed with %#x!\n", ret);
         return ret;
     }
 
@@ -677,10 +677,10 @@ static void *sample_comm_isp_thread(td_void *param)
     }
     prctl(PR_SET_NAME, thread_name, 0, 0, 0);
 
-    printf("ISP Dev %d running !\n", isp_dev);
+    sample_print_info("ISP Dev %d running !\n", isp_dev);
     ret = ss_mpi_isp_run(isp_dev);
     if (ret != TD_SUCCESS) {
-        printf("OT_MPI_ISP_Run failed with %#x!\n", ret);
+        sample_print_err("OT_MPI_ISP_Run failed with %#x!\n", ret);
         return NULL;
     }
 
@@ -694,7 +694,7 @@ td_s32 sample_comm_isp_run(ot_isp_dev isp_dev)
 
     ret = pthread_create(&g_isp_pid[isp_dev], thread_attr, sample_comm_isp_thread, (td_void*)(td_uintptr_t)isp_dev);
     if (ret != 0) {
-        printf("create isp running thread failed!, error: %d\r\n", ret);
+        sample_print_err("create isp running thread failed!, error: %d\r\n", ret);
     }
 
     if (thread_attr != TD_NULL) {

@@ -13,13 +13,13 @@ static td_s32 _wk_st_lk_draw_points_send_venc(ot_video_frame_info *_pframe)
 	td_s32 s32ret = TD_FAILURE;
 
 	if(_pframe == NULL) {
-		sample_print("_pframe failed, is null!.\n");
+		sample_print_err("_pframe failed, is null!.\n");
 		return s32ret;
 	}
 
     s32ret = ss_mpi_venc_send_frame(WK_VIDEO_CHANNEL_PREVIEW, _pframe, -1);
     if (s32ret != TD_SUCCESS){
-        sample_print("ss_mpi_venc_send_frame failed, s32Ret:0x%x\n", s32ret);
+        sample_print_err("ss_mpi_venc_send_frame failed, s32Ret:0x%x\n", s32ret);
 		return s32ret;
     }
 	
@@ -39,7 +39,7 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, ot_
 	ot_svp_point_s25q7  ponits[1024] = {0};
 
 	if(_frame == NULL || _points == NULL){
-		printf("vgs draw ponits param error!\n");
+		sample_print_err("vgs draw ponits param error!\n");
 		return ret;
 	}
 
@@ -66,7 +66,7 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, ot_
 		
 	    ret = ss_mpi_vgs_begin_job(&vgs_handle);
 		if(ret != TD_SUCCESS) {
-			printf("ss_mpi_vgs_begin_job error(%#x)\n", ret);
+			sample_print_err("ss_mpi_vgs_begin_job error(%#x)\n", ret);
 			return ret;
 		}
 
@@ -89,13 +89,13 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, ot_
 		
 		ret = ss_mpi_vgs_add_cover_task(vgs_handle, &vgs_task, vgs_add_cover, ifor);
 		if(ret != TD_SUCCESS) {
-			printf("ss_mpi_vgs_add_cover_task error(%#x)\n", ret);
+			sample_print_err("ss_mpi_vgs_add_cover_task error(%#x)\n", ret);
 			goto vgs_draw_ponits_fail;
 		}
 
 		ret = ss_mpi_vgs_end_job(vgs_handle);
 	    if (ret != TD_SUCCESS) {
-			printf("ss_mpi_vgs_end_job error(%#x)\n", ret);
+			sample_print_err("ss_mpi_vgs_end_job error(%#x)\n", ret);
 			goto vgs_draw_ponits_fail;
 	    }
 	}

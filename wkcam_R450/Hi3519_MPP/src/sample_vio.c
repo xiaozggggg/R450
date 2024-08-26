@@ -157,7 +157,7 @@ td_void sample_vio_init_mem_share(td_void)
     ot_vb_common_pools_id pools_id = {0};
 
     if (ss_mpi_vb_get_common_pool_id(&pools_id) != TD_SUCCESS) {
-        sample_print("get common pool_id failed!\n");
+        sample_print_err("get common pool_id failed!\n");
         return;
     }
     for (i = 0; i < pools_id.pool_cnt; ++i) {
@@ -810,7 +810,7 @@ static td_s32 sample_vio_switch_mode(td_void)
     } else if (sns_type == SC850SL_MIPI_8M_30FPS_10BIT_WDR2TO1) {
         sns_type = SC850SL_MIPI_8M_30FPS_12BIT;
     } else {
-        printf("not support other sensor:%d switch wdr_mode\n", sns_type);
+        sample_print_err("not support other sensor:%d switch wdr_mode\n", sns_type);
         return TD_FAILURE;
     }
 
@@ -880,7 +880,7 @@ static td_s32 sample_vio_run_be_switch_mode(td_void)
     } else if (sns_type == SC850SL_MIPI_8M_30FPS_10BIT_WDR2TO1) {
         sns_type = SC850SL_MIPI_8M_30FPS_12BIT;
     } else {
-        printf("not support other sensor:%d switch wdr_mode\n", sns_type);
+        sample_print_err("not support other sensor:%d switch wdr_mode\n", sns_type);
         sample_comm_sys_exit();
         return TD_FAILURE;
     }
@@ -899,7 +899,7 @@ static td_void sample_vio_restart_get_venc_stream(ot_venc_chn venc_chn[], td_u32
     for (i = 0; i < chn_num; i++) {
         start_param.recv_pic_num = -1;
         if ((ret = ss_mpi_venc_start_chn(venc_chn[i], &start_param)) != TD_SUCCESS) {
-            sample_print("ss_mpi_venc_start_recv_pic failed with%#x! \n", ret);
+            sample_print_err("ss_mpi_venc_start_recv_pic failed with%#x! \n", ret);
             return;
         }
     }
@@ -915,7 +915,7 @@ static td_void sample_vio_do_fpn_calibrate_and_correction(ot_vi_pipe vi_pipe)
     sample_comm_venc_stop_get_stream(chn_num);
     sample_comm_vi_fpn_calibrate(vi_pipe, &g_calibration_cfg);
 
-    printf("please enter any key to enable fpn correction!\n");
+    sample_print("please enter any key to enable fpn correction!\n");
     sample_get_char();
 
     sample_vio_restart_get_venc_stream(venc_chn, chn_num);
@@ -963,7 +963,7 @@ static td_void sample_vio_set_dis_en(ot_vi_pipe vi_pipe, ot_vi_chn vi_chn, td_bo
     dis_cfg.mode          = OT_DIS_MODE_6_DOF_GME;
     ret = ss_mpi_vi_set_chn_dis_cfg(vi_pipe, vi_chn, &dis_cfg);
     if (ret != TD_SUCCESS) {
-        sample_print("set dis config failed.ret:0x%x !\n", ret);
+        sample_print_err("set dis config failed.ret:0x%x !\n", ret);
     }
 
     dis_attr.enable               = enable;
@@ -977,7 +977,7 @@ static td_void sample_vio_set_dis_en(ot_vi_pipe vi_pipe, ot_vi_chn vi_chn, td_bo
     dis_attr.strength             = 1024;     /* 1024 sample strength  */
     ret = ss_mpi_vi_set_chn_dis_attr(vi_pipe, vi_chn, &dis_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set dis attr failed.ret:0x%x !\n", ret);
+        sample_print_err("set dis attr failed.ret:0x%x !\n", ret);
     }
 }
 
@@ -998,18 +998,18 @@ static td_void sample_vio_set_ldc_en(ot_vpss_grp grp, td_bool enable)
 
     ret = ss_mpi_vpss_set_grp_ldc(grp, &ldc_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set ldc attr failed.ret:0x%x !\n", ret);
+        sample_print_err("set ldc attr failed.ret:0x%x !\n", ret);
     }
 }
 
 static td_void sample_vio_switch_ldc_dis_en(ot_vi_pipe vi_pipe, ot_vi_chn vi_chn, td_u32 width, td_u32 height)
 {
-    printf("please enter any key to enable dis!\n");
+    sample_print("please enter any key to enable dis!\n");
     sample_get_char();
 
     sample_vio_set_dis_en(vi_pipe, vi_chn, TD_TRUE);
 
-    printf("please enter any key to disable dis!\n");
+    sample_print("please enter any key to disable dis!\n");
     sample_get_char();
 
     sample_vio_set_dis_en(vi_pipe, vi_chn, TD_FALSE);
@@ -1042,12 +1042,12 @@ static td_s32 sample_vio_dis_3dnr(td_void)
 
 static td_void sample_vio_switch_3dnr_ldc_en(ot_vi_pipe vi_pipe)
 {
-    printf("please enter any key to enable ldc!\n");
+    sample_print("please enter any key to enable ldc!\n");
     sample_get_char();
 
     sample_vio_set_ldc_en(vi_pipe, TD_TRUE);
 
-    printf("please enter any key to disable ldc!\n");
+    sample_print("please enter any key to disable ldc!\n");
     sample_get_char();
 
     sample_vio_set_ldc_en(vi_pipe, TD_FALSE);
@@ -1084,39 +1084,39 @@ static td_void sample_vio_switch_low_delay(ot_vi_pipe vi_pipe, ot_vi_chn vi_chn)
     low_delay_info.line_cnt = 300; /* 300: low delay line cnt */
     low_delay_info.one_buf_en = TD_FALSE;
 
-    printf("please enter any key to enable pipe low delay!\n");
+    sample_print("please enter any key to enable pipe low delay!\n");
     sample_get_char();
 
     ret = ss_mpi_vi_set_pipe_low_delay(vi_pipe, &low_delay_info);
     if (ret != TD_SUCCESS) {
-        sample_print("enable pipe low delay failed!\n");
+        sample_print_err("enable pipe low delay failed!\n");
     }
 
-    printf("please enter any key to disable pipe low delay!\n");
+    sample_print("please enter any key to disable pipe low delay!\n");
     sample_get_char();
 
     low_delay_info.enable = TD_FALSE;
     ret = ss_mpi_vi_set_pipe_low_delay(vi_pipe, &low_delay_info);
     if (ret != TD_SUCCESS) {
-        sample_print("disable pipe low delay failed!\n");
+        sample_print_err("disable pipe low delay failed!\n");
     }
 
-    printf("please enter any key to enable chn low delay!\n");
+    sample_print("please enter any key to enable chn low delay!\n");
     sample_get_char();
 
     low_delay_info.enable = TD_TRUE;
     ret = ss_mpi_vi_set_chn_low_delay(vi_pipe, vi_chn, &low_delay_info);
     if (ret != TD_SUCCESS) {
-        sample_print("enable chn low delay failed!\n");
+        sample_print_err("enable chn low delay failed!\n");
     }
 
-    printf("please enter any key to disable chn low delay!\n");
+    sample_print("please enter any key to disable chn low delay!\n");
     sample_get_char();
 
     low_delay_info.enable = TD_FALSE;
     ret = ss_mpi_vi_set_chn_low_delay(vi_pipe, vi_chn, &low_delay_info);
     if (ret != TD_SUCCESS) {
-        sample_print("disable chn low delay failed!\n");
+        sample_print_err("disable chn low delay failed!\n");
     }
 }
 
@@ -1152,27 +1152,27 @@ static td_void sample_switch_user_pic(ot_vi_pipe vi_pipe)
     for (user_pic_type = VI_USER_PIC_FRAME; user_pic_type <= VI_USER_PIC_BGCOLOR; user_pic_type++) {
         ret = sample_common_vi_load_user_pic(vi_pipe, user_pic_type, &user_frame_info);
         if (ret != TD_SUCCESS) {
-            sample_print("load user pic failed!\n");
+            sample_print_err("load user pic failed!\n");
             return;
         }
 
         ret = ss_mpi_vi_set_pipe_user_pic(vi_pipe, &user_frame_info.frame_info);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vi_set_pipe_user_pic failed!\n");
+            sample_print_err("ss_mpi_vi_set_pipe_user_pic failed!\n");
         }
 
-        printf("Enter any key to enable user pic!\n");
+        sample_print("Enter any key to enable user pic!\n");
         sample_get_char();
         ret = ss_mpi_vi_enable_pipe_user_pic(vi_pipe);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vi_enable_pipe_user_pic failed!\n");
+            sample_print_err("ss_mpi_vi_enable_pipe_user_pic failed!\n");
         }
 
-        printf("Enter any key to disable user pic!\n");
+        sample_print("Enter any key to disable user pic!\n");
         sample_get_char();
         ret = ss_mpi_vi_disable_pipe_user_pic(vi_pipe);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vi_disable_pipe_user_pic failed!\n");
+            sample_print_err("ss_mpi_vi_disable_pipe_user_pic failed!\n");
         }
 
         sleep(1);
@@ -1355,20 +1355,20 @@ static td_s32 sample_vio_msg_proc_vb_pool_share(td_s32 pid)
     ot_vb_common_pools_id pools_id = {0};
 
     if (ss_mpi_vb_get_common_pool_id(&pools_id) != TD_SUCCESS) {
-        sample_print("get common pool_id failed!\n");
+        sample_print_err("get common pool_id failed!\n");
         return TD_FAILURE;
     }
 
     for (i = 0; i < pools_id.pool_cnt; ++i) {
         if (ss_mpi_vb_pool_share(pools_id.pool[i], pid) != TD_SUCCESS) {
-            sample_print("vb pool share failed!\n");
+            sample_print_err("vb pool share failed!\n");
             return TD_FAILURE;
         }
     }
 #endif
     ret = sample_comm_vi_get_isp_run_state(isp_states, OT_VI_MAX_PIPE_NUM);
     if (ret != TD_SUCCESS) {
-        sample_print("get isp states fail\n");
+        sample_print_err("get isp states fail\n");
         return TD_FAILURE;
     }
 
@@ -1378,7 +1378,7 @@ static td_s32 sample_vio_msg_proc_vb_pool_share(td_s32 pid)
         }
         ret = ss_mpi_isp_mem_share(i, pid);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_isp_mem_share vi_pipe %u, pid %d fail\n", i, pid);
+            sample_print_err("ss_mpi_isp_mem_share vi_pipe %u, pid %d fail\n", i, pid);
         }
     }
 
@@ -1396,14 +1396,14 @@ static td_void sample_vio_msg_proc_vb_pool_unshare(td_s32 pid)
         for (i = 0; i < pools_id.pool_cnt; ++i) {
             ret = ss_mpi_vb_pool_unshare(pools_id.pool[i], pid);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vb_pool_unshare vi_pipe %u, pid %d fail\n", pools_id.pool[i], pid);
+                sample_print_err("ss_mpi_vb_pool_unshare vi_pipe %u, pid %d fail\n", pools_id.pool[i], pid);
             }
         }
     }
 #endif
     ret = sample_comm_vi_get_isp_run_state(isp_states, OT_VI_MAX_PIPE_NUM);
     if (ret != TD_SUCCESS) {
-        sample_print("get isp states fail\n");
+        sample_print_err("get isp states fail\n");
         return;
     }
 
@@ -1413,7 +1413,7 @@ static td_void sample_vio_msg_proc_vb_pool_unshare(td_s32 pid)
         }
         ret = ss_mpi_isp_mem_unshare(i, pid);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_isp_mem_unshare vi_pipe %u, pid %d fail\n", i, pid);
+            sample_print_err("ss_mpi_isp_mem_unshare vi_pipe %u, pid %d fail\n", i, pid);
         }
     }
 }
@@ -1450,7 +1450,7 @@ static td_s32 sample_vio_ipc_msg_proc(const sample_ipc_msg_req_buf *msg_req_buf,
             break;
         }
         default: {
-            printf("unsupported msg type(%ld)!\n", msg_req_buf->msg_type);
+            sample_print_err("unsupported msg type(%ld)!\n", msg_req_buf->msg_type);
             return TD_FAILURE;
         }
     }

@@ -52,6 +52,8 @@ extern "C" {
 //walkera
 #include "VideoList.h"
 
+#include "wk_log.h"
+
 #define WK_MAX_VENC_CHN     4
 #define MAX_SENSOR_NUM      3
 #define ISP_MAX_DEV_NUM     4
@@ -140,20 +142,19 @@ extern "C" {
 
 #define sample_pause() \
     do { \
-        printf("---------------press enter key to exit!---------------\n"); \
+        WK_LOGD("---------------press enter key to exit!---------------\n"); \
         getchar(); \
     } while (0)
 
-#define sample_print(fmt...) \
-    do { \
-        printf("[%s]-%d: ", __FUNCTION__, __LINE__); \
-        printf(fmt); \
-    } while (0)
+
+#define sample_print 			WK_LOGD
+#define sample_print_info     	WK_LOGI
+#define sample_print_err     	WK_LOGE
 
 #define check_null_ptr_return(ptr) \
     do { \
         if ((ptr) == TD_NULL) { \
-            printf("func:%s,line:%d, NULL pointer\n", __FUNCTION__, __LINE__); \
+            WK_LOGW("NULL pointer"); \
             return TD_FAILURE; \
         } \
     } while (0)
@@ -162,9 +163,7 @@ extern "C" {
     do { \
         td_s32 ret_ = (express); \
         if (ret_ != TD_SUCCESS) { \
-            printf("\033[0;31m%s chn %d failed at %s: LINE: %d with %#x!\033[0;39m\n", \
-                   (name), (chn), __FUNCTION__, __LINE__, ret_); \
-            fflush(stdout); \
+            WK_LOGW("%s chn %d failed with %#x!", name, chn, ret_); \
             return ret_; \
         } \
     } while (0)
@@ -173,8 +172,7 @@ extern "C" {
     do { \
         td_s32 ret_ = (express); \
         if (ret_ != TD_SUCCESS) { \
-            printf("\033[0;31m%s failed at %s: LINE: %d with %#x!\033[0;39m\n", \
-                   (name), __FUNCTION__, __LINE__, ret_); \
+            WK_LOGW("%s failed with %#x!", name, ret_); \
             return ret_; \
         } \
     } while (0)
@@ -182,7 +180,7 @@ extern "C" {
 #define sample_check_eok_return(ret, err_code) \
     do { \
         if ((ret) != EOK) { \
-            printf("%s:%d:strncpy_s failed.\n", __FUNCTION__, __LINE__); \
+            WK_LOGW("strncpy_s failed"); \
             return (err_code); \
         } \
     } while (0)

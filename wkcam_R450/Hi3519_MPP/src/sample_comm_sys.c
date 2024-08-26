@@ -170,12 +170,12 @@ td_s32 sample_sys_get_reg(td_u64 addr, td_u32 *value)
 td_s32 sample_comm_sys_get_pic_size(ot_pic_size pic_size, ot_size *size)
 {
     if (size == TD_NULL) {
-        sample_print("null ptr arg!\n");
+        sample_print_err("null ptr arg!\n");
         return TD_FAILURE;
     }
 
     if (pic_size >= PIC_BUTT) {
-        sample_print("illegal pic_size!\n");
+        sample_print_err("illegal pic_size!\n");
         return TD_FAILURE;
     }
 
@@ -215,7 +215,7 @@ static td_s32 sample_comm_sys_set_module_mem_config(td_u32 mod)
         for (j = 0; j < max_chn_num; ++j) {
             mpp_chn.chn_id = j;
             if (ss_mpi_sys_set_mem_cfg(&mpp_chn, mmz_name) != TD_SUCCESS) {
-                sample_print("ss_mpi_sys_set_mem_cfg ERR!\n");
+                sample_print_err("ss_mpi_sys_set_mem_cfg ERR!\n");
                 return TD_FAILURE;
             }
         }
@@ -248,25 +248,25 @@ td_s32 sample_comm_sys_vb_init(const ot_vb_cfg *vb_cfg)
     ss_mpi_vb_exit();
 
     if (vb_cfg == TD_NULL) {
-        sample_print("input parameter is null, it is invalid!\n");
+        sample_print_err("input parameter is null, it is invalid!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vb_set_cfg(vb_cfg);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_set_conf failed!\n");
+        sample_print_err("ss_mpi_vb_set_conf failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vb_init();
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_init failed!\n");
+        sample_print_err("ss_mpi_vb_init failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_sys_init();
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_sys_init failed!\n");
+        sample_print_err("ss_mpi_sys_init failed!\n");
         ss_mpi_vb_exit();
         return TD_FAILURE;
     }
@@ -284,32 +284,32 @@ td_s32 sample_comm_sys_init_with_vb_supplement(const ot_vb_cfg *vb_conf, td_u32 
     ss_mpi_vb_exit();
 
     if (vb_conf == TD_NULL) {
-        sample_print("input parameter is null, it is invalid!\n");
+        sample_print_err("input parameter is null, it is invalid!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vb_set_cfg(vb_conf);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_set_conf failed!\n");
+        sample_print_err("ss_mpi_vb_set_conf failed!\n");
         return TD_FAILURE;
     }
 
     supplement_conf.supplement_cfg = supplement_config;
     ret = ss_mpi_vb_set_supplement_cfg(&supplement_conf);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_set_supplement_conf failed!\n");
+        sample_print_err("ss_mpi_vb_set_supplement_conf failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vb_init();
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_init failed!\n");
+        sample_print_err("ss_mpi_vb_init failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_sys_init();
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_sys_init failed!\n");
+        sample_print_err("ss_mpi_sys_init failed!\n");
         return TD_FAILURE;
     }
 

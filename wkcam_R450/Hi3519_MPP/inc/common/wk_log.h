@@ -29,8 +29,8 @@ extern "C" {
 #define CLR_CLR         "\033[0m"       	/* 恢复颜色 */
 #define CLR_BLACK       "\033[30m"      	/* 黑色字 */
 #define CLR_RED         "\033[1;32;31m"     /* 红色字 */
-#define CLR_LIGHT_RED	"\033[1;31m"		/*  高亮红 */
-#define CLR_GREEN       "\033[1;32;32m"     /* 绿色字 */
+#define CLR_LIGHT_RED	"\033[1;31m"		/* 高亮红 */
+#define CLR_GREEN       "\033[0;32m"   		/* 绿色字 */
 #define CLR_YELLOW      "\033[1;33m"      	/* 黄色字 */
 #define CLR_BLUE        "\033[1;32;34m"     /* 蓝色字 */
 #define CLR_PURPLE      "\033[1;35m"      	/* 紫色字 */

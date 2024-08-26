@@ -1,5 +1,6 @@
 #include "wk_corner_algorithm.h"
 
+#include "core.hpp"
 
 wk_corner_video_frame_s::wk_ptr prev_frame;
 wk_st_points_s::wk_ptr prev_pionts_test(new wk_st_points_s);
@@ -71,6 +72,12 @@ int middle_test()
 	wk_st_lk_middle* middle = wk_st_lk_middle::wk_st_lk_get_instance();
 
 	middle->wk_register_get_frame_cb(fun_wk_get_frame_cb);
+
+
+	td_char data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+	cv::Mat mat3(2, 2, CV_8UC3, data);
+	middle->wk_log_mat(mat3);
+
 
 	return 0;
 }

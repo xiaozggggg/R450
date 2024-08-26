@@ -134,18 +134,18 @@ static td_s32 sample_common_vpss_start_chn(ot_vpss_grp grp, const td_bool *chn_e
             // printf("====== chn_attr pixel_format[%d]\n", chn_attr[vpss_chn].pixel_format);
             ret = ss_mpi_vpss_set_chn_attr(grp, vpss_chn, &chn_attr[vpss_chn]);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_set_chn_attr failed with %#x\n", ret);
+                sample_print_err("ss_mpi_vpss_set_chn_attr failed with %#x\n", ret);
                 goto disable_chn;
             }
             /* set chn0 wrap fmu mode first, then enable chn */
             ret = sample_common_vpss_set_chn_fmu_mode(grp, vpss_chn, chn0_wrap);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_set_chn_fmu_mode failed with %#x\n", ret);
+                sample_print_err("ss_mpi_vpss_set_chn_fmu_mode failed with %#x\n", ret);
                 goto disable_chn;
             }
             ret = ss_mpi_vpss_enable_chn(grp, vpss_chn);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_enable_chn failed with %#x\n", ret);
+                sample_print_err("ss_mpi_vpss_enable_chn failed with %#x\n", ret);
                 goto disable_chn;
             }
         }
@@ -158,7 +158,7 @@ disable_chn:
             vpss_chn = i;
             ret = ss_mpi_vpss_disable_chn(grp, vpss_chn);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_disable_chn failed with %#x!\n", ret);
+                sample_print_err("ss_mpi_vpss_disable_chn failed with %#x!\n", ret);
             }
         }
     }
@@ -171,20 +171,20 @@ td_s32 sample_common_vpss_start(ot_vpss_grp grp, const ot_vpss_grp_attr *grp_att
     td_s32 ret;
 
     if (vpss_chn_attr->chn_array_size < OT_VPSS_MAX_PHYS_CHN_NUM) {
-        sample_print("array size(%u) of chn_enable and chn_attr need >= %u!\n",
+        sample_print_err("array size(%u) of chn_enable and chn_attr need >= %u!\n",
             vpss_chn_attr->chn_array_size, OT_VPSS_MAX_PHYS_CHN_NUM);
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vpss_create_grp(grp, grp_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_create_grp(grp:%d) failed with %#x!\n", grp, ret);
+        sample_print_err("ss_mpi_vpss_create_grp(grp:%d) failed with %#x!\n", grp, ret);
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vpss_start_grp(grp);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_start_grp failed with %#x\n", ret);
+        sample_print_err("ss_mpi_vpss_start_grp failed with %#x\n", ret);
         goto destroy_grp;
     }
 
@@ -199,12 +199,12 @@ td_s32 sample_common_vpss_start(ot_vpss_grp grp, const ot_vpss_grp_attr *grp_att
 stop_grp:
     ret = ss_mpi_vpss_stop_grp(grp);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_stop_grp failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_vpss_stop_grp failed with %#x!\n", ret);
     }
 destroy_grp:
     ret = ss_mpi_vpss_destroy_grp(grp);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_destroy_grp failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_vpss_destroy_grp failed with %#x!\n", ret);
     }
     return TD_FAILURE;
 }
@@ -216,7 +216,7 @@ td_s32 sample_common_vpss_stop(ot_vpss_grp grp, const td_bool *chn_enable, td_u3
     ot_vpss_chn vpss_chn;
 
     if (chn_array_size < OT_VPSS_MAX_PHYS_CHN_NUM) {
-        sample_print("array size(%u) of chn_enable need > %u!\n", chn_array_size, OT_VPSS_MAX_PHYS_CHN_NUM);
+        sample_print_err("array size(%u) of chn_enable need > %u!\n", chn_array_size, OT_VPSS_MAX_PHYS_CHN_NUM);
         return TD_FAILURE;
     }
 
@@ -225,19 +225,19 @@ td_s32 sample_common_vpss_stop(ot_vpss_grp grp, const td_bool *chn_enable, td_u3
             vpss_chn = i;
             ret = ss_mpi_vpss_disable_chn(grp, vpss_chn);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_disable_chn failed with %#x!\n", ret);
+                sample_print_err("ss_mpi_vpss_disable_chn failed with %#x!\n", ret);
             }
         }
     }
 
     ret = ss_mpi_vpss_stop_grp(grp);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_stop_grp failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_vpss_stop_grp failed with %#x!\n", ret);
     }
 
     ret = ss_mpi_vpss_destroy_grp(grp);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vpss_destroy_grp failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_vpss_destroy_grp failed with %#x!\n", ret);
     }
 
     return TD_SUCCESS;
@@ -257,7 +257,7 @@ td_s32 SAMPLE_COMM_VPSS_SetRawFilename(char *filename)
 
     prawfile = fopen(filename, "ab");
     if (NULL == prawfile){
-        sample_print("open file %s fail !\n", filename);
+        sample_print_err("open file %s fail !\n", filename);
         sRet = -1;
     }
 
@@ -389,16 +389,16 @@ static td_s32 SAMPLE_VGS_GetFrameVb(const sample_vb_base_info *pstVbInfo, const 
 
     pstVgsVbInfo->vb_handle = ss_mpi_vb_get_blk(OT_VB_INVALID_POOL_ID, pstVbCalConfig->vb_size, TD_NULL);
     pstVgsVbInfo->vb_size = pstVbCalConfig->vb_size;
-    sample_print("ss_mpi_vb_get_blk BlkId=[%d] BlkSize[%d] \n", pstVgsVbInfo->vb_handle, pstVgsVbInfo->vb_size);
+    sample_print_info("ss_mpi_vb_get_blk BlkId=[%d] BlkSize[%d] \n", pstVgsVbInfo->vb_handle, pstVgsVbInfo->vb_size);
     if (OT_VB_INVALID_POOL_ID == pstVgsVbInfo->vb_handle){
-        sample_print("ss_mpi_vb_get_blk failed!\n");
+        sample_print_err("ss_mpi_vb_get_blk failed!\n");
         return TD_FAILURE;
     }
     pstVgsVbInfo->vb_used = TD_TRUE;
 
     phys_addr = ss_mpi_vb_handle_to_phys_addr(pstVgsVbInfo->vb_handle);
     if (0 == phys_addr){
-        sample_print("ss_mpi_vb_phys_addr_to_handle failed!.\n");
+        sample_print_err("ss_mpi_vb_phys_addr_to_handle failed!.\n");
         ss_mpi_vb_release_blk(pstVgsVbInfo->vb_handle);
         return TD_FAILURE;
     }
@@ -406,7 +406,7 @@ static td_s32 SAMPLE_VGS_GetFrameVb(const sample_vb_base_info *pstVbInfo, const 
     pstVgsVbInfo->virt_addr = (td_u8 *)ss_mpi_sys_mmap(phys_addr, pstVbCalConfig->vb_size);
     if (TD_NULL == pstVgsVbInfo->virt_addr)
     {
-        sample_print("HI_MPI_SYS_Mmap failed!.\n");
+        sample_print_err("HI_MPI_SYS_Mmap failed!.\n");
         ss_mpi_vb_release_blk(pstVgsVbInfo->vb_handle);
         return TD_FAILURE;
     }
@@ -461,16 +461,16 @@ static td_s32 SAMPLE_VGS_COMMON_FUNCTION(SAMPLE_VGS_FUNC_PARAM *pParam)
     *************************************************/
     s32Ret = ss_mpi_vpss_get_chn_frame(0, OT_VPSS_CHN0, &stVgsTaskAttr.img_in, 50);
     if(s32Ret != TD_SUCCESS){
-        sample_print("ss_mpi_vpss_get_chn_frame failed, s32Ret:0x%x\n", s32Ret);
+        sample_print_err("ss_mpi_vpss_get_chn_frame failed, s32Ret:0x%x\n", s32Ret);
         goto EXIT2;
     }
 
     //不进行缩放，直接发送到VENC进行编码
     if(pParam->bScale == TD_FALSE){
-        sample_print("VGS no scale send to venc start \n");
+        sample_print_err("VGS no scale send to venc start \n");
         s32Ret = ss_mpi_venc_send_frame(WK_VIDEO_CHANNEL_SNAP, &stVgsTaskAttr.img_in, 10000);
         if (s32Ret != TD_SUCCESS){
-            sample_print("ss_mpi_venc_send_frame failed, s32Ret:0x%x", s32Ret);
+            sample_print_err("ss_mpi_venc_send_frame failed, s32Ret:0x%x", s32Ret);
         }
 
         ss_mpi_vpss_release_chn_frame(0, OT_VPSS_CHN0, &stVgsTaskAttr.img_in);
@@ -489,10 +489,10 @@ static td_s32 SAMPLE_VGS_COMMON_FUNCTION(SAMPLE_VGS_FUNC_PARAM *pParam)
     /************************************************
     step3:  Create VGS job
     *************************************************/
-    sample_print("VGS scale task start \n");
+    sample_print_info("VGS scale task start \n");
     s32Ret = ss_mpi_vgs_begin_job(&hHandle);
     if (s32Ret != TD_SUCCESS){
-        sample_print("ss_mpi_vgs_begin_job failed, s32Ret:0x%x", s32Ret);
+        sample_print_err("ss_mpi_vgs_begin_job failed, s32Ret:0x%x", s32Ret);
         goto EXIT3;
     }
 
@@ -503,7 +503,7 @@ static td_s32 SAMPLE_VGS_COMMON_FUNCTION(SAMPLE_VGS_FUNC_PARAM *pParam)
     if (s32Ret != TD_SUCCESS)
     {
         ss_mpi_vgs_cancel_job(hHandle);
-        sample_print("ss_mpi_vgs_add_scale_task failed, s32Ret:0x%x\n", s32Ret);
+        sample_print_err("ss_mpi_vgs_add_scale_task failed, s32Ret:0x%x\n", s32Ret);
         goto EXIT3;
     }
 
@@ -514,17 +514,17 @@ static td_s32 SAMPLE_VGS_COMMON_FUNCTION(SAMPLE_VGS_FUNC_PARAM *pParam)
     if (s32Ret != TD_SUCCESS)
     {
         ss_mpi_vgs_cancel_job(hHandle);
-        sample_print("ss_mpi_vgs_cancel_job failed, s32Ret:0x%x\n", s32Ret);
+        sample_print_err("ss_mpi_vgs_cancel_job failed, s32Ret:0x%x\n", s32Ret);
         goto EXIT3;
     }
 
     /************************************************
     step6:  Send Frame to Venc(encode to JPEG)
     *************************************************/
-    sample_print("VGS no scale send to venc start \n");
+    sample_print_info("VGS no scale send to venc start \n");
     s32Ret = ss_mpi_venc_send_frame(WK_VIDEO_CHANNEL_SNAP, &stVgsTaskAttr.img_out, 10000);
     if (s32Ret != TD_SUCCESS){
-        sample_print("ss_mpi_venc_send_frame failed, s32Ret:0x%x", s32Ret);
+        sample_print_err("ss_mpi_venc_send_frame failed, s32Ret:0x%x", s32Ret);
     }
 
     /************************************************
@@ -597,7 +597,7 @@ td_s32 SAMPLE_VGS_Scale(td_u8 stScaleOpt)
 
     s32Ret = SAMPLE_VGS_COMMON_FUNCTION(&stVgsFuncParam);
     if (s32Ret != TD_SUCCESS){
-        sample_print("VGS Sample %d failed, s32Ret:0x%x\n", stVgsFuncParam.s32SampleNum, s32Ret);
+        sample_print_err("VGS Sample %d failed, s32Ret:0x%x\n", stVgsFuncParam.s32SampleNum, s32Ret);
     }
 
     return s32Ret;

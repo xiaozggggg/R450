@@ -127,7 +127,7 @@ static td_s32 read_jpg_file_pos(FILE *fp_jpg, td_char *psz_file, td_s32 size, td
 
     if (fread(psz_file, size, 1, fp_jpg) <= 0) {
         (td_void)fclose(fp_jpg);
-        printf("fread jpeg src fail!\n");
+        sample_print_err("fread jpeg src fail!\n");
         return TD_FAILURE;
     }
 
@@ -161,12 +161,12 @@ static td_s32 read_jpg_file_pos(FILE *fp_jpg, td_char *psz_file, td_s32 size, td
     }
 
     if (*endpos - *startpos <= 0) {
-        printf("get .thm 11 fail!\n");
+        sample_print_err("get .thm 11 fail!\n");
         return TD_FAILURE;
     }
 
     if (*endpos - *startpos >= size) {
-        printf("NO DCF info, get .thm 22 fail!\n");
+        sample_print_err("NO DCF info, get .thm 22 fail!\n");
         return TD_FAILURE;
     }
 
@@ -177,18 +177,18 @@ static td_s32 cpy_jpg_file_by_pos(td_char *psz_file, td_s32 startpos, td_s32 end
 {
     td_char *temp = psz_file + startpos;
     if (MAX_THM_SIZE < (endpos - startpos)) {
-        printf("thm is too large than MAX_THM_SIZE, get .thm 33 fail!\n");
+        sample_print_err("thm is too large than MAX_THM_SIZE, get .thm 33 fail!\n");
         return TD_FAILURE;
     }
 
     td_char *c_dst_buf = (td_char *)malloc(endpos - startpos);
     if (c_dst_buf == TD_NULL) {
-        printf("memory malloc fail!\n");
+        sample_print_err("memory malloc fail!\n");
         return TD_FAILURE;
     }
 
     if (memcpy_s(c_dst_buf, endpos - startpos, temp, endpos - startpos) != EOK) {
-        printf("call memcpy_s error\n");
+        sample_print_err("call memcpy_s error\n");
         free(c_dst_buf);
         return TD_FAILURE;
     }
@@ -210,13 +210,13 @@ static td_s32 file_trans_get_thm_from_jpg(td_char *jpg_path, td_u8 len, td_u32 *
     td_char real_path[PATH_MAX];
 
     if (realpath(jpg_path, real_path) == TD_NULL) {
-        printf("file %s error!\n", real_path);
+        sample_print_err("file %s error!\n", real_path);
         return TD_FAILURE;
     }
 
     fp_jpg = fopen(real_path, "rb");
     if (fp_jpg == TD_NULL) {
-        printf("file %s not exist!\n", real_path);
+        sample_print_err("file %s not exist!\n", real_path);
         return TD_FAILURE;
     } else {
         fd = fileno(fp_jpg);
@@ -225,14 +225,14 @@ static td_s32 file_trans_get_thm_from_jpg(td_char *jpg_path, td_u8 len, td_u32 *
         psz_file = (td_char *)malloc(stat_info.size);
         if ((psz_file == TD_NULL) || (stat_info.size < 6)) { /* 6: algo num */
             fclose(fp_jpg);
-            printf("memory malloc fail!\n");
+            sample_print_err("memory malloc fail!\n");
             return TD_FAILURE;
         }
 
         ret = read_jpg_file_pos(fp_jpg, psz_file, stat_info.size, &startpos, &endpos);
         if (ret != TD_SUCCESS) {
             free(psz_file);
-            printf("read_jpg_file_pos fail!\n");
+            sample_print_err("read_jpg_file_pos fail!\n");
             return TD_FAILURE;
         }
     }
@@ -240,7 +240,7 @@ static td_s32 file_trans_get_thm_from_jpg(td_char *jpg_path, td_u8 len, td_u32 *
     ret = cpy_jpg_file_by_pos(psz_file, startpos, endpos);
     if (ret != TD_SUCCESS) {
         free(psz_file);
-        printf("cpy_jpg_file_by_pos fail!\n");
+        sample_print_err("cpy_jpg_file_by_pos fail!\n");
         return TD_FAILURE;
     }
 
@@ -309,39 +309,39 @@ static td_s32 file_trans_get_thm_from_jpg(td_char *jpg_path, td_u8 len, td_u32 *
     td_char real_path[PATH_MAX];
 
     if ((len > FILE_NAME_LEN) || realpath(jpg_path, real_path) == TD_NULL) {
-        printf("file %s error!\n", jpg_path);
+        sample_print_err("file %s error!\n", jpg_path);
         return TD_FAILURE;
     }
 
     fp_jpg = fopen(real_path, "rb");
     if (fp_jpg == TD_NULL) {
-        printf("file %s not exist!\n", real_path);
+        sample_print_err("file %s not exist!\n", real_path);
         return TD_FAILURE;
     } else {
         file_trans_set_tembuf(fp_jpg, &stat_info, &startpos, &endpos);
     }
 
     if (endpos - startpos <= 0) {
-        printf("get .thm 11 fail!\n");
+        sample_print_err("get .thm 11 fail!\n");
         fclose(fp_jpg);
         return TD_FAILURE;
     }
 
     if (endpos - startpos > MAX_THM_SIZE) {
-        printf("thm is too large than MAX_THM_SIZE, get .thm 22 fail!\n");
+        sample_print_err("thm is too large than MAX_THM_SIZE, get .thm 22 fail!\n");
         fclose(fp_jpg);
         return TD_FAILURE;
     }
 
     if (endpos - startpos >= stat_info.st_size) {
-        printf("NO DCF info, get .thm 33 fail!\n");
+        sample_print_err("NO DCF info, get .thm 33 fail!\n");
         fclose(fp_jpg);
         return TD_FAILURE;
     }
 
     td_char *c_dst_buf = (td_char *)malloc(endpos - startpos);
     if (c_dst_buf == TD_NULL) {
-        printf("memory malloc fail!\n");
+        sample_print_err("memory malloc fail!\n");
         fclose(fp_jpg);
         return TD_FAILURE;
     }
@@ -350,7 +350,7 @@ static td_s32 file_trans_get_thm_from_jpg(td_char *jpg_path, td_u8 len, td_u32 *
     *dst_size = fread(c_dst_buf, 1, endpos - startpos, fp_jpg);
     if (*dst_size != (td_u32)(endpos - startpos)) {
         free(c_dst_buf);
-        printf("fread fail!\n");
+        sample_print_err("fread fail!\n");
         fclose(fp_jpg);
         return TD_FAILURE;
     }
@@ -378,7 +378,7 @@ td_s32 sample_comm_venc_mem_config(td_void)
         /* venc */
         ret = ss_mpi_sys_set_mem_cfg(&mpp_chn_venc, pc_mmz_name);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_sys_set_mem_config with %#x!\n", ret);
+            sample_print_err("ss_mpi_sys_set_mem_config with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -405,7 +405,7 @@ td_s32 sample_comm_venc_get_file_postfix(ot_payload_type payload, td_char *file_
             return TD_FAILURE;
         }
     } else {
-        sample_print("payload type err!\n");
+        sample_print_err("payload type err!\n");
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -441,7 +441,7 @@ td_s32 sample_comm_venc_get_gop_attr(ot_venc_gop_mode gop_mode, ot_venc_gop_attr
             break;
 
         default:
-            sample_print("not support the gop mode !\n");
+            sample_print_err("not support the gop mode !\n");
             return TD_FAILURE;
     }
 
@@ -464,13 +464,13 @@ td_s32 sample_comm_venc_get_dcf_info(td_char *src_jpg_path, td_u32 src_len, td_c
 
     rtn_val = file_trans_get_thm_from_jpg(jpg_src_path, FILE_NAME_LEN, &dst_size);
     if ((rtn_val != TD_SUCCESS) || (dst_size == 0)) {
-        printf("fail to get thm\n");
+        sample_print_err("fail to get thm\n");
         return TD_FAILURE;
     }
 
     FILE *fp_thm = fopen(jpg_des_path, "w");
     if (fp_thm == TD_NULL) {
-        printf("file to create file %s\n", jpg_des_path);
+        sample_print_err("file to create file %s\n", jpg_des_path);
         return TD_FAILURE;
     }
 
@@ -482,7 +482,7 @@ td_s32 sample_comm_venc_get_dcf_info(td_char *src_jpg_path, td_u32 src_len, td_c
     while (writen_size < dst_size) {
         rtn_val = fwrite(g_dst_buf + writen_size, 1, dst_size, fp_thm);
         if (rtn_val <= 0) {
-            printf("fail to write file, rtn=%d\n", rtn_val);
+            sample_print_err("fail to write file, rtn=%d\n", rtn_val);
             break;
         }
 
@@ -530,7 +530,7 @@ static td_s32 sample_comm_venc_phys_addr_retrace(FILE *fd, ot_venc_stream_buf_in
 
         ret = fwrite((td_void *)(td_uintptr_t)src_phys_addr, stream->pack[i].len - stream->pack[i].offset, 1, fd);
         if (ret >= 0) {
-            sample_print("fwrite err %d\n", ret);
+            sample_print_err("fwrite err %d\n", ret);
             return ret;
         }
     } else {
@@ -540,13 +540,13 @@ static td_s32 sample_comm_venc_phys_addr_retrace(FILE *fd, ot_venc_stream_buf_in
         ret = fwrite((td_void *)(td_uintptr_t)(stream->pack[i].phys_addr + stream->pack[i].offset),
             left - stream->pack[i].offset, 1, fd);
         if (ret < 0) {
-            sample_print("fwrite err %d\n", ret);
+            sample_print_err("fwrite err %d\n", ret);
             return ret;
         }
 
         ret = fwrite((td_void *)(td_uintptr_t)stream_buf->phys_addr[j], stream->pack[i].len - left, 1, fd);
         if (ret < 0) {
-            sample_print("fwrite err %d\n", ret);
+            sample_print_err("fwrite err %d\n", ret);
             return ret;
         }
     }
@@ -579,7 +579,7 @@ td_s32 sample_comm_venc_save_stream_phys_addr(FILE *fd, ot_venc_stream_buf_info 
             ret = fwrite((td_void *)(td_uintptr_t)(stream->pack[i].phys_addr + stream->pack[i].offset),
                 stream->pack[i].len - stream->pack[i].offset, 1, fd);
             if (ret < 0) {
-                sample_print("fwrite err %d\n", ret);
+                sample_print_err("fwrite err %d\n", ret);
                 return ret;
             }
         }
@@ -597,13 +597,13 @@ td_s32 sample_comm_venc_close_reencode(ot_venc_chn venc_chn)
 
     ret = ss_mpi_venc_get_chn_attr(venc_chn, &chn_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("GetChnAttr failed!\n");
+        sample_print_err("GetChnAttr failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_venc_get_rc_param(venc_chn, &rc_param);
     if (ret != TD_SUCCESS) {
-        sample_print("GetRcParam failed!\n");
+        sample_print_err("GetRcParam failed!\n");
         return TD_FAILURE;
     }
 
@@ -621,7 +621,7 @@ td_s32 sample_comm_venc_close_reencode(ot_venc_chn venc_chn)
 
     ret = ss_mpi_venc_set_rc_param(venc_chn, &rc_param);
     if (ret != TD_SUCCESS) {
-        sample_print("SetRcParam failed!\n");
+        sample_print_err("SetRcParam failed!\n");
         return TD_FAILURE;
     }
 
@@ -832,7 +832,7 @@ static td_void sample_comm_venc_h264_cvbr_param_init(ot_venc_chn_attr *venc_chn_
     h264_cvbr.short_term_stats_time = stats_time;
 
     sample_comm_venc_set_h264_cvbr_bit_rate(venc_chn_attr, &h264_cvbr, frame_rate, size);
-    OT_PRINT("======= h264_cbr.bit_rate[%d]\n", h264_cvbr.long_term_max_bit_rate);
+    sample_print("======= h264_cbr.bit_rate[%d]\n", h264_cvbr.long_term_max_bit_rate);
 
     venc_chn_attr->rc_attr.h264_cvbr = h264_cvbr;
 }
@@ -1019,7 +1019,7 @@ static td_void sample_comm_venc_h264_cbr_param_init(ot_venc_chn_attr *venc_chn_a
     h264_cbr.src_frame_rate = wk_frame_rate; /* input (vi) frame rate */
     h264_cbr.dst_frame_rate = frame_rate;    /* target frame rate */
     h264_cbr.bit_rate = bitrate; //          /* 4096: 4M 1920, 1080: FHD */
-    OT_PRINT("======= h264_cbr.bit_rate[%d] frame_rate[%d]\n", h264_cbr.bit_rate, h264_cbr.dst_frame_rate);
+    sample_print("======= h264_cbr.bit_rate[%d] frame_rate[%d]\n", h264_cbr.bit_rate, h264_cbr.dst_frame_rate);
 
     venc_chn_attr->rc_attr.h264_cbr = h264_cbr;
 }
@@ -1068,11 +1068,11 @@ static td_s32 sample_comm_venc_mjpeg_param_init(ot_venc_chn_attr *venc_chn_attr,
         sample_comm_venc_mjpeg_cbr_param_init(venc_chn_attr, stats_time, frame_rate);
     } else if ((rc_mode == SAMPLE_RC_VBR) || (rc_mode == SAMPLE_RC_AVBR)) {
         if (rc_mode == SAMPLE_RC_AVBR) {
-            sample_print("mjpege not support AVBR, so change rcmode to VBR!\n");
+            sample_print_info("mjpege not support AVBR, so change rcmode to VBR!\n");
         }
         sample_comm_venc_mjpeg_vbr_param_init(venc_chn_attr, stats_time, frame_rate);
     } else {
-        sample_print("can't support other mode(%d) in this version!\n", rc_mode);
+        sample_print_info("can't support other mode(%d) in this version!\n", rc_mode);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -1103,7 +1103,7 @@ static td_s32 sample_comm_venc_h264_param_init(ot_venc_chn_attr *chn_attr, sampl
     } else if (rc_mode == SAMPLE_RC_QPMAP) {
         sample_comm_venc_h264_qpmap_param_init(chn_attr, gop, frame_rate, stats_time);
     } else {
-        sample_print("%s,%d,rc_mode(%d) not support\n", __FUNCTION__, __LINE__, rc_mode);
+        sample_print_err("%s,%d,rc_mode(%d) not support\n", __FUNCTION__, __LINE__, rc_mode);
         return TD_FAILURE;
     }
     chn_attr->venc_attr.h264_attr.rcn_ref_share_buf_en = chn_param->is_rcn_ref_share_buf;
@@ -1135,7 +1135,7 @@ static td_s32 sample_comm_venc_h265_param_init(ot_venc_chn_attr *chn_attr, sampl
     } else if (rc_mode == SAMPLE_RC_QPMAP) {
         sample_comm_venc_h265_qpmap_param_init(chn_attr, gop, frame_rate, stats_time);
     } else {
-        sample_print("%s,%d,rc_mode(%d) not support\n", __FUNCTION__, __LINE__, rc_mode);
+        sample_print_err("%s,%d,rc_mode(%d) not support\n", __FUNCTION__, __LINE__, rc_mode);
         return TD_FAILURE;
     }
     chn_attr->venc_attr.h265_attr.rcn_ref_share_buf_en = chn_param->is_rcn_ref_share_buf;
@@ -1155,7 +1155,7 @@ static td_void sample_comm_venc_set_gop_attr(ot_payload_type type, ot_venc_chn_a
             if (chn_attr->venc_attr.profile == 0) {
                 chn_attr->venc_attr.profile = 1;
 
-                sample_print("H.264 base profile not support BIPREDB, so change profile to main profile!\n");
+                sample_print_err("H.264 base profile not support BIPREDB, so change profile to main profile!\n");
             }
         }
     }
@@ -1207,7 +1207,7 @@ static td_s32 sample_comm_venc_channel_param_init(sample_comm_venc_chn_param *ch
             break;
 
         default:
-            sample_print("can't support this type (%d) in this version!\n", type);
+            sample_print_err("can't support this type (%d) in this version!\n", type);
             return OT_ERR_VENC_NOT_SUPPORT;
     }
 
@@ -1224,29 +1224,29 @@ td_s32 sample_comm_venc_create(ot_venc_chn venc_chn, sample_comm_venc_chn_param 
 
     if (size != -1) {
         if (sample_comm_sys_get_pic_size(size, &chn_param->venc_size) != TD_SUCCESS) {
-            sample_print("get picture size failed!\n");
+            sample_print_err("get picture size failed!\n");
             return TD_FAILURE;
         }
     }
 
     /* step 1:  create venc channel */
     if ((ret = sample_comm_venc_channel_param_init(chn_param, &venc_chn_attr)) != TD_SUCCESS) {
-        sample_print("venc_channel_param_init failed!\n");
+        sample_print_err("venc_channel_param_init failed!\n");
         return ret;
     }
 
-    OT_PRINT("========== crete_chn venc_chn_attr type[%d] gop[%d]\n",
+    sample_print("========== crete_chn venc_chn_attr type[%d] gop[%d]\n",
             venc_chn_attr.venc_attr.type, 
             venc_chn_attr.rc_attr.h264_cbr.gop);
-    OT_PRINT("========== crete_chn venc_chn_attr src_framerate[%d] dst_framerate[%d]\n",
+    sample_print("========== crete_chn venc_chn_attr src_framerate[%d] dst_framerate[%d]\n",
             venc_chn_attr.rc_attr.h264_cbr.src_frame_rate, 
             venc_chn_attr.rc_attr.h264_cbr.dst_frame_rate);
-    OT_PRINT("========== crete_chn venc_chn_attr width[%d] height[%d]\n",
+    sample_print("========== crete_chn venc_chn_attr width[%d] height[%d]\n",
             venc_chn_attr.venc_attr.max_pic_width, 
             venc_chn_attr.venc_attr.max_pic_height);
 
     if ((ret = ss_mpi_venc_create_chn(venc_chn, &venc_chn_attr)) != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_create_chn [%d] failed with %#x! ===\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_create_chn [%d] failed with %#x! ===\n", venc_chn, ret);
         return ret;
     }
 
@@ -1286,13 +1286,13 @@ td_s32 sample_comm_venc_start(ot_venc_chn venc_chn, sample_comm_venc_chn_param *
 
     /* step 1: create encode chnl */
     if ((ret = sample_comm_venc_create(venc_chn, chn_param)) != TD_SUCCESS) {
-        sample_print("sample_comm_venc_create failed with%#x! \n", ret);
+        sample_print_err("sample_comm_venc_create failed with%#x! \n", ret);
         return TD_FAILURE;
     }
     /* step 2:  start recv venc pictures */
     start_param.recv_pic_num = -1;
     if ((ret = ss_mpi_venc_start_chn(venc_chn, &start_param)) != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_start_recv_pic failed with%#x! \n", ret);
+        sample_print_err("ss_mpi_venc_start_recv_pic failed with%#x! \n", ret);
         return TD_FAILURE;
     }
 
@@ -1307,13 +1307,13 @@ td_s32 sample_comm_venc_stop(ot_venc_chn venc_chn)
     /* stop venc chn */
     ret = ss_mpi_venc_stop_chn(venc_chn);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_stop_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_stop_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
     }
 
     /* distroy venc channel */
     ret = ss_mpi_venc_destroy_chn(venc_chn);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -1346,20 +1346,20 @@ td_s32 sample_comm_venc_snap_start(ot_venc_chn venc_chn, ot_size *size, td_bool 
 
     ret = ss_mpi_venc_create_chn(venc_chn, &venc_chn_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_create_chn [%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_create_chn [%d] failed with %#x!\n", venc_chn, ret);
         return ret;
     }
 
     ret = ss_mpi_venc_set_jpeg_enc_mode(venc_chn, OT_VENC_JPEG_ENC_SNAP);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_set_jpeg_enc_mode faild with%#x!\n", ret);
+        sample_print_err("ss_mpi_venc_set_jpeg_enc_mode faild with%#x!\n", ret);
         return TD_FAILURE;
     }
 
     start_param.recv_pic_num = -1;
     ret = ss_mpi_venc_start_chn(venc_chn, &start_param);
     if (ret != TD_SUCCESS) {
-        sample_print("mpi_venc_start_chn faild with%#x!\n", ret);
+        sample_print_err("mpi_venc_start_chn faild with%#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -1378,14 +1378,14 @@ td_s32 sample_comm_venc_photo_start(ot_venc_chn venc_chn, ot_size *size, td_bool
 
     ret = ss_mpi_venc_create_chn(venc_chn, &venc_chn_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_create_chn [%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_create_chn [%d] failed with %#x!\n", venc_chn, ret);
         return ret;
     }
 
     start_param.recv_pic_num = -1;
     ret = ss_mpi_venc_start_chn(venc_chn, &start_param);
     if (ret != TD_SUCCESS) {
-        sample_print("mpi_venc_start_chn faild with%#x!\n", ret);
+        sample_print_err("mpi_venc_start_chn faild with%#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -1398,12 +1398,12 @@ td_s32 sample_comm_venc_snap_stop(ot_venc_chn venc_chn)
     td_s32 ret;
     ret = ss_mpi_venc_stop_chn(venc_chn);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_stop_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_stop_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
         return TD_FAILURE;
     }
     ret = ss_mpi_venc_destroy_chn(venc_chn);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
+        sample_print_err("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", venc_chn, ret);
         return TD_FAILURE;
     }
 
@@ -1422,19 +1422,19 @@ static td_s32 sample_comm_save_snap_stream(ot_venc_stream *stream, td_bool save_
     }
     fd = open(stream_file, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) {
-        sample_print("open file err\n");
+        sample_print_err("open file err\n");
         return TD_FAILURE;
     }
 
     file = fdopen(fd, "wb");
     if (file == NULL) {
-        sample_print("fdopen err\n");
+        sample_print_err("fdopen err\n");
         return TD_FAILURE;
     }
 
     ret = sample_comm_venc_save_stream(file, stream);
     if (ret != TD_SUCCESS) {
-        sample_print("save snap picture failed!\n");
+        sample_print_err("save snap picture failed!\n");
         goto CLOSE_FILE;
     }
 
@@ -1446,7 +1446,7 @@ static td_s32 sample_comm_save_snap_stream(ot_venc_stream *stream, td_bool save_
 
         ret = sample_comm_venc_get_dcf_info(stream_file, FILE_NAME_LEN, file_dcf, FILE_NAME_LEN);
         if (ret != TD_SUCCESS) {
-            sample_print("save thm picture failed!\n");
+            sample_print_err("save thm picture failed!\n");
             goto CLOSE_FILE;
         }
     }
@@ -1474,36 +1474,36 @@ static td_s32 sample_comm_get_snap_stream(ot_venc_chn venc_chn, td_bool save_jpg
 
     ret = ss_mpi_venc_query_status(venc_chn, &stat);
     if (ret != TD_SUCCESS) {
-        sample_print("query_status failed with %#x!\n", ret);
+        sample_print_err("query_status failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
     if (stat.cur_packs == 0) {
-        sample_print("NOTE: Current frame is NULL!\n");
+        sample_print_err("NOTE: Current frame is NULL!\n");
         return TD_SUCCESS;
     }
     stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
     if (stream.pack == NULL) {
-        sample_print("malloc memory failed!\n");
+        sample_print_err("malloc memory failed!\n");
         return TD_FAILURE;
     }
     stream.pack_cnt = stat.cur_packs;
     ret = ss_mpi_venc_get_stream(venc_chn, &stream, -1);
     if (ret != TD_SUCCESS) {
-        sample_print("get_stream failed with %#x!\n", ret);
+        sample_print_err("get_stream failed with %#x!\n", ret);
         goto FREE_RES;
     }
     if (save_jpg || save_thm) {
         ret = sample_comm_save_snap_stream(&stream, save_jpg, save_thm);
         if (ret != TD_SUCCESS) {
-            sample_print("save_snap_stream failed!\n");
+            sample_print_err("save_snap_stream failed!\n");
             goto FREE_RES;
         }
     }
 
     ret = ss_mpi_venc_release_stream(venc_chn, &stream);
     if (ret != TD_SUCCESS) {
-        sample_print("release_stream failed with %#x!\n", ret);
+        sample_print_err("release_stream failed with %#x!\n", ret);
         goto FREE_RES;
     }
 
@@ -1530,7 +1530,7 @@ td_s32 sample_comm_venc_snap_process(ot_venc_chn venc_chn, td_u32 snap_cnt, td_b
     ***************************************** */
     venc_fd = ss_mpi_venc_get_fd(venc_chn);
     if (venc_fd < 0) {
-        sample_print("venc_get_fd faild with%#x!\n", venc_fd);
+        sample_print_err("venc_get_fd faild with%#x!\n", venc_fd);
         return TD_FAILURE;
     }
 
@@ -1541,10 +1541,10 @@ td_s32 sample_comm_venc_snap_process(ot_venc_chn venc_chn, td_u32 snap_cnt, td_b
         timeout_val.tv_usec = 0;
         ret = select(venc_fd + 1, &read_fds, NULL, NULL, &timeout_val);
         if (ret < 0) {
-            sample_print("snap select failed!\n");
+            sample_print_err("snap select failed!\n");
             return TD_FAILURE;
         } else if (ret == 0) {
-            sample_print("snap time out!\n");
+            sample_print_err("snap time out!\n");
             return TD_FAILURE;
         } else {
             if (FD_ISSET(venc_fd, &read_fds)) {
@@ -1568,7 +1568,7 @@ td_s32 sample_comm_venc_save_jpeg(ot_venc_chn venc_chn, td_u32 snap_cnt)
     ***************************************** */
     venc_fd = ss_mpi_venc_get_fd(venc_chn);
     if (venc_fd < 0) {
-        sample_print("venc_get_fd faild with%#x!\n", venc_fd);
+        sample_print_err("venc_get_fd faild with%#x!\n", venc_fd);
         return TD_FAILURE;
     }
     for (i = 0; i < snap_cnt; i++) {
@@ -1578,10 +1578,10 @@ td_s32 sample_comm_venc_save_jpeg(ot_venc_chn venc_chn, td_u32 snap_cnt)
         timeout_val.tv_usec = 0;
         ret = select(venc_fd + 1, &read_fds, NULL, NULL, &timeout_val);
         if (ret < 0) {
-            sample_print("snap select failed!\n");
+            sample_print_err("snap select failed!\n");
             return TD_FAILURE;
         } else if (ret == 0) {
-            sample_print("snap time out!\n");
+            sample_print_err("snap time out!\n");
             return TD_FAILURE;
         } else {
             if (FD_ISSET(venc_fd, &read_fds)) {
@@ -1614,12 +1614,12 @@ static td_s32 sample_comm_alloc_qpmap_skipweight_memory(sample_venc_qpmap_sendfr
         ret = ss_mpi_sys_mmz_alloc((td_phys_addr_t *)&phys_addr, (td_void **)&vir_addr, TD_NULL, TD_NULL,
             addr_info->qpmap_size[i] * QPMAP_BUF_NUM);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_sys_mmz_alloc err:0x%x", ret);
+            sample_print_err("ss_mpi_sys_mmz_alloc err:0x%x", ret);
             return ret;
         }
         for (j = 0; (i < VENC_QPMAP_MAX_CHN) && (j < QPMAP_BUF_NUM); j++) {
             if ((j > 0) && (addr_info->qpmap_size[i] > (UINT_MAX / j))) {
-                sample_print("(j * addr_info->qpmap_size[%d]) upper limit of the multiplie\n", i);
+                sample_print_info("(j * addr_info->qpmap_size[%d]) upper limit of the multiplie\n", i);
                 ss_mpi_sys_mmz_free(phys_addr, vir_addr);
                 return TD_FAILURE;
             } else {
@@ -1632,12 +1632,12 @@ static td_s32 sample_comm_alloc_qpmap_skipweight_memory(sample_venc_qpmap_sendfr
         ret = ss_mpi_sys_mmz_alloc((td_phys_addr_t *)&phys_addr, (td_void **)&vir_addr, TD_NULL, TD_NULL,
             addr_info->skip_weight_size[i] * QPMAP_BUF_NUM);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_sys_mmz_alloc err:0x%x", ret);
+            sample_print_err("ss_mpi_sys_mmz_alloc err:0x%x", ret);
             return ret;
         }
         for (j = 0; (i < VENC_QPMAP_MAX_CHN) && (j < QPMAP_BUF_NUM); j++) {
             if ((j > 0) && (addr_info->skip_weight_size[i] > (UINT_MAX / j))) {
-                sample_print("(j * addr_info->skip_weight_size[%d]) upper limit of the multiplie\n", i);
+                sample_print_info("(j * addr_info->skip_weight_size[%d]) upper limit of the multiplie\n", i);
                 ss_mpi_sys_mmz_free(phys_addr, vir_addr);
                 return TD_FAILURE;
             } else {
@@ -1677,11 +1677,11 @@ static td_s32 sample_comm_qpmap_send_frame_ex(sample_venc_qpmap_sendframe_para *
 
     ret = ss_mpi_venc_send_frame_ex(para->venc_chn[index], frame_info, -1);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_send_frame_ex err:0x%x\n", ret);
+        sample_print_err("ss_mpi_venc_send_frame_ex err:0x%x\n", ret);
 
         ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[index], video_frame);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
+            sample_print_err("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
             return SAMPLE_RETURN_GOTO;
         }
         return SAMPLE_RETURN_BREAK;
@@ -1696,13 +1696,13 @@ static ot_venc_user_frame_info* sample_comm_malloc_frame_martix(td_s32 chn_num, 
     size_t malloc_size = sizeof(ot_venc_user_frame_info) * chn_num * buf_num;
 
     if (chn_num == 0 || buf_num == 0) {
-        sample_print("malloc_size error, chn_num %d, buf_num %d\n", chn_num, buf_num);
+        sample_print_err("malloc_size error, chn_num %d, buf_num %d\n", chn_num, buf_num);
         return TD_NULL;
     }
 
     frame_info = malloc(malloc_size);
     if (frame_info == NULL) {
-        sample_print("malloc error\n");
+        sample_print_err("malloc error\n");
         return TD_NULL;
     }
 
@@ -1731,7 +1731,7 @@ static td_s32 sample_comm_qpmap_send_frame_start(sample_venc_qpmap_sendframe_par
 
             if ((ret = ss_mpi_vpss_get_chn_frame(para->vpss_grp, para->vpss_chn[i],
                 video_frame, 1000)) != TD_SUCCESS) { /* 1000 is a number */
-                sample_print("OT_MPI_VPSS_GetChnFrame err:0x%x\n", ret);
+                sample_print_err("OT_MPI_VPSS_GetChnFrame err:0x%x\n", ret);
                 continue;
             }
 
@@ -1754,7 +1754,7 @@ static td_s32 sample_comm_qpmap_send_frame_start(sample_venc_qpmap_sendframe_par
             }
 
             if ((ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[i], video_frame)) != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
+                sample_print_err("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
                 goto FREE;
             }
 
@@ -1779,7 +1779,7 @@ td_void *sample_comm_qpmap_send_frame_proc(td_void *p)
     para = (sample_venc_qpmap_sendframe_para *)p;
 
     if (para->cnt > VENC_QPMAP_MAX_CHN) {
-        sample_print("Current func'sample_comm_qpmap_send_frame_proc' not support Venc channal num(%d) > %d\n",
+        sample_print_err("Current func'sample_comm_qpmap_send_frame_proc' not support Venc channal num(%d) > %d\n",
             para->cnt, VENC_QPMAP_MAX_CHN);
         return TD_NULL;
     }
@@ -1792,14 +1792,14 @@ td_void *sample_comm_qpmap_send_frame_proc(td_void *p)
     for (i = 0; (i < para->cnt) && (i < OT_VPSS_MAX_PHYS_CHN_NUM); i++) {
         ret = ss_mpi_vpss_get_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_get_chn_attr err:0x%x", ret);
+            sample_print_err("ss_mpi_vpss_get_chn_attr err:0x%x", ret);
             goto error;
         }
 
         vpss_chn_attr.depth = 3; /* 3 is a number */
         ret = ss_mpi_vpss_set_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_set_chn_attr err:0x%x", ret);
+            sample_print_err("ss_mpi_vpss_set_chn_attr err:0x%x", ret);
             goto error;
         }
     }
@@ -1813,14 +1813,14 @@ error:
         if (addr_info.qpmap_phys_addr[i][0] != 0) {
             ret = ss_mpi_sys_mmz_free(addr_info.qpmap_phys_addr[i][0], addr_info.qpmap_vir_addr[i][0]);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_sys_mmz_free err:0x%x", ret);
+                sample_print_err("ss_mpi_sys_mmz_free err:0x%x", ret);
             }
         }
 
         if (addr_info.skip_weight_phys_addr[i][0] != 0) {
             ret = ss_mpi_sys_mmz_free(addr_info.skip_weight_phys_addr[i][0], addr_info.skip_weight_vir_addr[i][0]);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_sys_mmz_free err:0x%x", ret);
+                sample_print_err("ss_mpi_sys_mmz_free err:0x%x", ret);
             }
         }
     }
@@ -1884,7 +1884,7 @@ static td_void sample_venc_process_jpeg_roi_middle(td_u8 **wp, td_u32 write_byte
             value |= value << SAMPLE_VENC_ONE_BLOCK_BITS;
         }
         if (memset_s(*wp, write_byte, value, write_byte) != EOK) {
-            printf("call memset_s error\n");
+            sample_print_err("call memset_s error\n");
         }
         *wp = *wp + write_byte;
     }
@@ -1939,11 +1939,11 @@ static td_s32 sample_comm_venc_send_frame_ex(sample_venc_roimap_frame_para *para
 
     ret = ss_mpi_venc_send_frame_ex(para->venc_chn[index], &frame_info[index], -1);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_send_frame_ex err: 0x%x\n", ret);
+        sample_print_err("ss_mpi_venc_send_frame_ex err: 0x%x\n", ret);
 
         ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[index], video_frame);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_release_chn_frame err: 0x%x", ret);
+            sample_print_err("ss_mpi_vpss_release_chn_frame err: 0x%x", ret);
             return SAMPLE_RETURN_GOTO;
         }
         return SAMPLE_RETURN_BREAK;
@@ -1964,7 +1964,7 @@ static td_s32 sample_comm_venc_send_roimap_frame_start(sample_venc_roimap_frame_
             ret = ss_mpi_vpss_get_chn_frame(para->vpss_grp, para->vpss_chn[i],
                 video_frame, 1000); /* 1000 is a number */
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_get_chn_frame err: 0x%x\n", ret);
+                sample_print_err("ss_mpi_vpss_get_chn_frame err: 0x%x\n", ret);
                 continue;
             }
 
@@ -1980,7 +1980,7 @@ static td_s32 sample_comm_venc_send_roimap_frame_start(sample_venc_roimap_frame_
 
             ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[i], video_frame);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_release_chn_frame err: 0x%x", ret);
+                sample_print_err("ss_mpi_vpss_release_chn_frame err: 0x%x", ret);
                 return SAMPLE_RETURN_GOTO;
             }
         }
@@ -1997,14 +1997,14 @@ static td_s32 sample_comm_set_vpss_buffer_depth(sample_venc_roimap_frame_para *p
     for (i = 0; (i < para->cnt) && (i < OT_VPSS_MAX_PHYS_CHN_NUM); i++) {
         ret = ss_mpi_vpss_get_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_get_chn_attr err: 0x%x", ret);
+            sample_print_err("ss_mpi_vpss_get_chn_attr err: 0x%x", ret);
             return SAMPLE_RETURN_GOTO;
         }
 
         vpss_chn_attr.depth = 3; // 3 : depth
         ret = ss_mpi_vpss_set_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_set_chn_attr err: 0x%x", ret);
+            sample_print_err("ss_mpi_vpss_set_chn_attr err: 0x%x", ret);
             return SAMPLE_RETURN_GOTO;
         }
     }
@@ -2033,7 +2033,7 @@ td_void *sample_comm_send_roimap_frame_proc(td_void *p)
     sample_venc_roimap_frame_para *para = (sample_venc_roimap_frame_para *)p;
 
     if (para->cnt > SAMPLE_VENC_ROIMAP_MAX_CHN) {
-        sample_print("Current not support venc channal num(%d) > %d\n", para->cnt, SAMPLE_VENC_ROIMAP_MAX_CHN);
+        sample_print_err("Current not support venc channal num(%d) > %d\n", para->cnt, SAMPLE_VENC_ROIMAP_MAX_CHN);
         return TD_NULL;
     }
 
@@ -2047,7 +2047,7 @@ td_void *sample_comm_send_roimap_frame_proc(td_void *p)
         /* alloc roimap memory */
         ret = ss_mpi_sys_mmz_alloc(&phys_addr, (td_void **)&virt_addr, TD_NULL, TD_NULL, roimap_size[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_sys_mmz_alloc err: 0x%x", ret);
+            sample_print_err("ss_mpi_sys_mmz_alloc err: 0x%x", ret);
             goto error;
         }
 
@@ -2058,7 +2058,7 @@ td_void *sample_comm_send_roimap_frame_proc(td_void *p)
             init_level |= (init_level << 4); /* 4 is a number */
         }
         if (memset_s(roimap_virt_addr[i], roimap_size[i], init_level, roimap_size[i]) != EOK) {
-            printf("call memset_s error\n");
+            sample_print_err("call memset_s error\n");
         }
         sample_venc_process_jpeg_roi(roimap_virt_addr[i], &para->roi_attr[i].rect, para->roi_attr[i].level,
             roimap_stride[i]);
@@ -2074,7 +2074,7 @@ error:
         if (roimap_phys_addr[i] != 0) {
             ret = ss_mpi_sys_mmz_free(roimap_phys_addr[i], roimap_virt_addr[i]);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_sys_mmz_free err: 0x%x", ret);
+                sample_print_err("ss_mpi_sys_mmz_free err: 0x%x", ret);
             }
         }
     }
@@ -2109,7 +2109,7 @@ static td_s32 sample_comm_set_file_name(td_s32 index, ot_venc_chn venc_chn,
     }
 
     if (realpath(stream_proc_info->file_name[index], stream_proc_info->real_file_name[index]) == TD_NULL) {
-        sample_print("chn[%d] stream file path error\n", venc_chn);
+        sample_print_err("chn[%d] stream file path error\n", venc_chn);
         return TD_FAILURE;
     }
 
@@ -2160,7 +2160,7 @@ static td_s32 sample_comm_set_name_save_stream(sample_comm_venc_stream_proc_info
         ot_venc_chn venc_chn = para->venc_chn[i];
         ret = ss_mpi_venc_get_chn_attr(venc_chn, &venc_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_venc_get_chn_attr chn[%d] failed with %#x!\n", venc_chn, ret);
+            sample_print_err("ss_mpi_venc_get_chn_attr chn[%d] failed with %#x!\n", venc_chn, ret);
             return SAMPLE_RETURN_NULL;
         }
         payload_type[i] = venc_chn_attr.venc_attr.type;
@@ -2168,7 +2168,7 @@ static td_s32 sample_comm_set_name_save_stream(sample_comm_venc_stream_proc_info
         ret = sample_comm_venc_get_file_postfix(payload_type[i], stream_proc_info->file_postfix,
             sizeof(stream_proc_info->file_postfix));
         if (ret != TD_SUCCESS) {
-            sample_print("sample_comm_venc_get_file_postfix [%d] failed with %#x!\n",
+            sample_print_err("sample_comm_venc_get_file_postfix [%d] failed with %#x!\n",
                 venc_chn_attr.venc_attr.type, ret);
             return SAMPLE_RETURN_NULL;
         }
@@ -2181,7 +2181,7 @@ static td_s32 sample_comm_set_name_save_stream(sample_comm_venc_stream_proc_info
 
             stream_proc_info->file[i] = fopen(stream_proc_info->real_file_name[i], "wb");
             if (!stream_proc_info->file[i]) {
-                sample_print("open file[%s] failed!\n", stream_proc_info->real_file_name[i]);
+                sample_print_err("open file[%s] failed!\n", stream_proc_info->real_file_name[i]);
                 return SAMPLE_RETURN_NULL;
             }
             fd = fileno(stream_proc_info->file[i]);
@@ -2190,7 +2190,7 @@ static td_s32 sample_comm_set_name_save_stream(sample_comm_venc_stream_proc_info
         /* set venc fd. */
         stream_proc_info->venc_fd[i] = ss_mpi_venc_get_fd(i);
         if (stream_proc_info->venc_fd[i] < 0) {
-            sample_print("ss_mpi_venc_get_fd failed with %#x!\n", stream_proc_info->venc_fd[i]);
+            sample_print_err("ss_mpi_venc_get_fd failed with %#x!\n", stream_proc_info->venc_fd[i]);
             return SAMPLE_RETURN_NULL;
         }
 
@@ -2200,7 +2200,7 @@ static td_s32 sample_comm_set_name_save_stream(sample_comm_venc_stream_proc_info
 
         ret = ss_mpi_venc_get_stream_buf_info(i, &stream_buf_info[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
             return SAMPLE_RETURN_FAILURE;
         }
     }
@@ -2241,11 +2241,11 @@ static td_s32 sample_comm_save_h265_to_heic(td_s32 index, const sample_comm_venc
         heif_handle handle = NULL;
         td_s32 ret = sample_heif_create(index, stream_proc_info, &handle);
         if (ret != 0) {
-            sample_print("HeifCreate error ret:%d\n", ret);
+            sample_print_err("HeifCreate error ret:%d\n", ret);
         }
         td_u8 *data_buffer = (td_u8 *)malloc(total_len);
         if (data_buffer == NULL) {
-            sample_print("malloc error\n");
+            sample_print_err("malloc error\n");
             heif_destroy(handle);
             return SAMPLE_RETURN_NULL;
         }
@@ -2253,7 +2253,7 @@ static td_s32 sample_comm_save_h265_to_heic(td_s32 index, const sample_comm_venc
         for (i = 0; i < stream->pack_cnt; i++) {
             if (memcpy_s(data_buffer + write_len, total_len - write_len,
                 stream->pack[i].addr + stream->pack[i].offset, stream->pack[i].len - stream->pack[i].offset) != EOK) {
-                sample_print("memcpy_s failed\n");
+                sample_print_err("memcpy_s failed\n");
             }
             write_len += stream->pack[i].len;
         }
@@ -2283,7 +2283,7 @@ static td_s32 sample_comm_save_frame_to_file(td_s32 index, sample_comm_venc_stre
         }
         if (realpath(stream_proc_info->file_name[index], stream_proc_info->real_file_name[index]) == TD_NULL) {
             free(stream->pack);
-            sample_print("chn[%d] stream file path error\n", stream_proc_info->venc_chn);
+            sample_print_err("chn[%d] stream file path error\n", stream_proc_info->venc_chn);
             return SAMPLE_RETURN_NULL;
         }
 
@@ -2295,7 +2295,7 @@ static td_s32 sample_comm_save_frame_to_file(td_s32 index, sample_comm_venc_stre
         stream_proc_info->file[index] = fopen(stream_proc_info->real_file_name[index], "wb");
         if (!stream_proc_info->file[index]) {
             free(stream->pack);
-            sample_print("open file err!\n");
+            sample_print_err("open file err!\n");
             return SAMPLE_RETURN_NULL;
         }
         fd = fileno(stream_proc_info->file[index]);
@@ -2314,7 +2314,7 @@ static td_s32 sample_comm_save_frame_to_file(td_s32 index, sample_comm_venc_stre
     if (ret != TD_SUCCESS) {
         free(stream->pack);
         stream->pack = TD_NULL;
-        sample_print("save stream failed!\n");
+        sample_print_err("save stream failed!\n");
         return SAMPLE_RETURN_BREAK;
     }
 
@@ -2330,23 +2330,23 @@ static td_s32 sample_comm_get_stream_from_one_channl(sample_comm_venc_stream_pro
 
     /* step 2.1 : query how many packs in one-frame stream. */
     if (memset_s(&stream, sizeof(stream), 0, sizeof(stream)) != EOK) {
-        printf("call memset_s error\n");
+        sample_print_err("call memset_s error\n");
     }
 
     ret = ss_mpi_venc_query_status(index, &stat);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", index, ret);
+        sample_print_err("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", index, ret);
         return SAMPLE_RETURN_BREAK;
     }
 
     if (stat.cur_packs == 0) {
-        sample_print("NOTE: current  frame is TD_NULL!\n");
+        sample_print_err("NOTE: current  frame is TD_NULL!\n");
         return SAMPLE_RETURN_CONTINUE;
     }
     /* step 2.3 : malloc corresponding number of pack nodes. */
     stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
     if (stream.pack == TD_NULL) {
-        sample_print("malloc stream pack failed!\n");
+        sample_print_err("malloc stream pack failed!\n");
         return SAMPLE_RETURN_BREAK;
     }
 
@@ -2356,7 +2356,7 @@ static td_s32 sample_comm_get_stream_from_one_channl(sample_comm_venc_stream_pro
     if (ret != TD_SUCCESS) {
         free(stream.pack);
         stream.pack = TD_NULL;
-        sample_print("ss_mpi_venc_get_stream failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_venc_get_stream failed with %#x!\n", ret);
         return SAMPLE_RETURN_BREAK;
     }
 
@@ -2368,7 +2368,7 @@ static td_s32 sample_comm_get_stream_from_one_channl(sample_comm_venc_stream_pro
     /* step 2.6 : release stream */
     ret = ss_mpi_venc_release_stream(index, &stream);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_release_stream failed!\n");
+        sample_print_err("ss_mpi_venc_release_stream failed!\n");
         free(stream.pack);
         stream.pack = TD_NULL;
         return SAMPLE_RETURN_BREAK;
@@ -2445,10 +2445,10 @@ td_void *sample_comm_venc_get_venc_stream_proc(td_void *p)
         timeout_val.tv_usec = 0;
         ret = select(stream_proc_info->maxfd + 1, &read_fds, TD_NULL, TD_NULL, &timeout_val);
         if (ret < 0) {
-            sample_print("select failed!\n");
+            sample_print_err("select failed!\n");
             break;
         } else if (ret == 0) {
-            sample_print("get venc stream time out, exit thread\n");
+            sample_print_info("get venc stream time out, exit thread\n");
             continue;
         } else {
             sample_comm_fd_isset(stream_proc_info, &read_fds, stream_buf_info, payload_type, para);
@@ -2497,7 +2497,7 @@ td_void sample_comm_venc_set_region(td_u64 time, ot_venc_chn venc_chn, ot_venc_s
     }
     ret = ss_mpi_venc_send_svc_region(venc_chn, pst_svc_rect);
     if (ret != TD_SUCCESS) {
-        sample_print("Set ss_mpi_venc_send_svc_region failed for %#x chn =%d\n", ret, venc_chn);
+        sample_print_err("Set ss_mpi_venc_send_svc_region failed for %#x chn =%d\n", ret, venc_chn);
     }
 }
 td_void sample_comm_venc_set_svc_param(ot_venc_chn venc_chn, ot_venc_svc_param *pst_svc_param)
@@ -2507,7 +2507,7 @@ td_void sample_comm_venc_set_svc_param(ot_venc_chn venc_chn, ot_venc_svc_param *
     td_u32 qp_p[SAMPLE_VENC_NUM] = {4, 58, 94, 2, 0}; // 4 58 94 2 0 : fg P frame qp
     ret = ss_mpi_venc_get_svc_param(venc_chn, pst_svc_param);
     if (ret != TD_SUCCESS) {
-        sample_print("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
+        sample_print_err("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
     }
     pst_svc_param->fg_protect_adaptive_en = TD_TRUE;
     pst_svc_param->activity_region.qpmap_value_i = 0;
@@ -2523,7 +2523,7 @@ td_void sample_comm_venc_set_svc_param(ot_venc_chn venc_chn, ot_venc_svc_param *
     }
     ret = ss_mpi_venc_set_svc_param(venc_chn, pst_svc_param);
     if (ret != TD_SUCCESS) {
-        sample_print("Set ss_mpi_venc_set_svc_param failed for %#x!\n", ret);
+        sample_print_err("Set ss_mpi_venc_set_svc_param failed for %#x!\n", ret);
     }
 }
 
@@ -2538,19 +2538,19 @@ td_void *sample_comm_venc_rateauto_stream_proc(td_void *p)
     ot_video_frame_info video_frame;
     prctl(PR_SET_NAME, "get_venc_rateauto_stream", 0, 0, 0);
     if (para->cnt >= OT_VENC_MAX_CHN_NUM) {
-        sample_print("input count invalid\n");
+        sample_print_err("input count invalid\n");
         return TD_NULL;
     }
     for (i = 0; (i < para->cnt) && (i < OT_VENC_MAX_CHN_NUM); i++) {
         ret = ss_mpi_vpss_get_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_get_chn_attr err: 0x%x", ret);
+            sample_print_err("ss_mpi_vpss_get_chn_attr err: 0x%x", ret);
         }
 
         vpss_chn_attr.depth = 3; /* 3 is a number */
         ret = ss_mpi_vpss_set_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr);
         if (ret == TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_set_chn_attr err: 0x%x", ret);
+            sample_print_err("ss_mpi_vpss_set_chn_attr err: 0x%x", ret);
         }
     }
 
@@ -2558,18 +2558,18 @@ td_void *sample_comm_venc_rateauto_stream_proc(td_void *p)
         for (i = 0; (i < para->cnt) && (i < OT_VENC_MAX_CHN_NUM); i++) {
             ret = ss_mpi_vpss_get_chn_frame(para->vpss_grp, para->vpss_chn[i], &video_frame, QUERY_SLEEP);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_get_chn_frame err:0x%x venc_chn = %d\n", ret, para->venc_chn[i]);
+                sample_print_err("ss_mpi_vpss_get_chn_frame err:0x%x venc_chn = %d\n", ret, para->venc_chn[i]);
                 continue;
             }
             ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[i], &video_frame);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_release_chn_frame err:0x%x\n", ret);
+                sample_print_err("ss_mpi_vpss_release_chn_frame err:0x%x\n", ret);
                 return TD_NULL;
             }
 
             ret = ss_mpi_venc_enable_svc(para->venc_chn[i], TD_TRUE);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_enable_svc failed for %#x!\n", ret);
+                sample_print_err("Set ss_mpi_venc_enable_svc failed for %#x!\n", ret);
                 return TD_NULL;
             }
             sample_comm_venc_set_region(video_frame.video_frame.pts, para->venc_chn[i], &svc_rect_info);
@@ -2586,7 +2586,7 @@ static td_s32 sample_comm_set_file_name_svc_t(sample_comm_venc_stream_proc_info 
         return TD_FAILURE;
     }
     if (realpath(stream_proc_info->file_name[index], stream_proc_info->real_file_name[index]) == TD_NULL) {
-        printf("file path error\n");
+        sample_print_err("file path error\n");
         return TD_FAILURE;
     }
     if (snprintf_s(stream_proc_info->real_file_name[index], FILE_NAME_LEN, FILE_NAME_LEN - 1,
@@ -2610,7 +2610,7 @@ static td_s32 sample_comm_set_name_save_stream_svc_t(sample_comm_venc_stream_pro
         stream_proc_info->venc_chn = i;
         ret = ss_mpi_venc_get_chn_attr(stream_proc_info->venc_chn, &venc_chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_venc_get_chn_attr chn[%d] failed with %#x!\n", stream_proc_info->venc_chn, ret);
+            sample_print_err("ss_mpi_venc_get_chn_attr chn[%d] failed with %#x!\n", stream_proc_info->venc_chn, ret);
             return SAMPLE_RETURN_NULL;
         }
         payload_type[i] = venc_chn_attr.venc_attr.type;
@@ -2618,7 +2618,7 @@ static td_s32 sample_comm_set_name_save_stream_svc_t(sample_comm_venc_stream_pro
         ret = sample_comm_venc_get_file_postfix(payload_type[i], stream_proc_info->file_postfix,
             sizeof(stream_proc_info->file_postfix));
         if (ret != TD_SUCCESS) {
-            sample_print("sample_comm_venc_get_file_postfix [%d] failed with %#x!\n",
+            sample_print_err("sample_comm_venc_get_file_postfix [%d] failed with %#x!\n",
                          venc_chn_attr.venc_attr.type, ret);
             return SAMPLE_RETURN_NULL;
         }
@@ -2630,7 +2630,7 @@ static td_s32 sample_comm_set_name_save_stream_svc_t(sample_comm_venc_stream_pro
 
             stream_proc_info->file[i + cnt] = fopen(stream_proc_info->real_file_name[i + cnt], "wb");
             if (!stream_proc_info->file[i + cnt]) {
-                sample_print("open file[%s] failed!\n", stream_proc_info->real_file_name[i + cnt]);
+                sample_print_err("open file[%s] failed!\n", stream_proc_info->real_file_name[i + cnt]);
                 return SAMPLE_RETURN_NULL;
             }
             fd = fileno(stream_proc_info->file[i + cnt]);
@@ -2640,7 +2640,7 @@ static td_s32 sample_comm_set_name_save_stream_svc_t(sample_comm_venc_stream_pro
         /* set venc fd. */
         stream_proc_info->venc_fd[i] = ss_mpi_venc_get_fd(i);
         if (stream_proc_info->venc_fd[i] < 0) {
-            sample_print("ss_mpi_venc_get_fd failed with %#x!\n", stream_proc_info->venc_fd[i]);
+            sample_print_err("ss_mpi_venc_get_fd failed with %#x!\n", stream_proc_info->venc_fd[i]);
             return SAMPLE_RETURN_NULL;
         }
         if (stream_proc_info->maxfd <= stream_proc_info->venc_fd[i]) {
@@ -2648,7 +2648,7 @@ static td_s32 sample_comm_set_name_save_stream_svc_t(sample_comm_venc_stream_pro
         }
         ret = ss_mpi_venc_get_stream_buf_info(i, &stream_buf_info[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
             return SAMPLE_RETURN_FAILURE;
         }
     }
@@ -2701,7 +2701,7 @@ static td_void sample_comm_save_frame_to_file_svc_t(td_s32 index, sample_comm_ve
         if (ret != TD_SUCCESS) {
             free(stream->pack);
             stream->pack = TD_NULL;
-            sample_print("save stream failed!\n");
+            sample_print_err("save stream failed!\n");
             break;
         }
     }
@@ -2716,22 +2716,22 @@ static td_s32 sample_comm_get_stream_from_one_channl_svc_t(sample_comm_venc_stre
 
     /* step 2.1 : query how many packs in one-frame stream. */
     if (memset_s(&stream, sizeof(stream), 0, sizeof(stream)) != EOK) {
-        printf("call memset_s error\n");
+        sample_print_err("call memset_s error\n");
     }
     ret = ss_mpi_venc_query_status(index, &stat);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_query chn[%d] failed with %#x!\n", index, ret);
+        sample_print_err("ss_mpi_venc_query chn[%d] failed with %#x!\n", index, ret);
         return SAMPLE_RETURN_BREAK;
     }
 
     if (stat.cur_packs == 0) {
-        sample_print("NOTE: current  frame is TD_NULL!\n");
+        sample_print_err("NOTE: current  frame is TD_NULL!\n");
         return SAMPLE_RETURN_CONTINUE;
     }
     /* step 2.3 : malloc corresponding number of pack nodes. */
     stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
     if (stream.pack == TD_NULL) {
-        sample_print("malloc stream pack failed!\n");
+        sample_print_err("malloc stream pack failed!\n");
         return SAMPLE_RETURN_BREAK;
     }
     /* step 2.4 : call mpi to get one-frame stream */
@@ -2740,7 +2740,7 @@ static td_s32 sample_comm_get_stream_from_one_channl_svc_t(sample_comm_venc_stre
     if (ret != TD_SUCCESS) {
         free(stream.pack);
         stream.pack = TD_NULL;
-        sample_print("ss_mpi_venc_get_stream failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_venc_get_stream failed with %#x!\n", ret);
         return SAMPLE_RETURN_BREAK;
     }
     /* step 2.5 : save frame to file */
@@ -2816,10 +2816,10 @@ td_void *sample_comm_venc_get_venc_stream_proc_svc_t(td_void *p)
         timeout_val.tv_usec = 0;
         ret = select(stream_proc_info->maxfd + 1, &read_fds, TD_NULL, TD_NULL, &timeout_val);
         if (ret < 0) {
-            sample_print("select failed!\n");
+            sample_print_err("select failed!\n");
             break;
         } else if (ret == 0) {
-            sample_print("get venc stream time out, exit thread\n");
+            sample_print_info("get venc stream time out, exit thread\n");
             continue;
         } else {
             sample_comm_fd_isset_svc_t(stream_proc_info, &read_fds, stream_buf_info, OT_VENC_MAX_CHN_NUM);
@@ -2839,7 +2839,7 @@ FREE:
 td_void sample_comm_venc_set_save_heif(td_bool save_heif)
 {
     g_para.save_heif = save_heif;
-    sample_print("set save heif flag: %d!\n", save_heif);
+    sample_print_err("set save heif flag: %d!\n", save_heif);
 }
 
 /* start get venc stream process thread */
@@ -2850,7 +2850,7 @@ td_s32 sample_comm_venc_start_get_stream(ot_venc_chn *venc_chn, td_s32 cnt)
     g_para.thread_start = TD_TRUE;
     g_para.cnt = cnt;
     if (cnt >= OT_VENC_MAX_CHN_NUM) {
-        sample_print("input count invalid\n");
+        sample_print_err("input count invalid\n");
         return TD_FAILURE;
     }
     for (i = 0; (i < cnt) && (i < OT_VENC_MAX_CHN_NUM); i++) {
@@ -2882,7 +2882,7 @@ td_s32 sample_comm_venc_start_get_stream_svc_t(td_s32 cnt)
 {
     /* step 1:  check & prepare save-file & venc-fd */
     if (cnt >= OT_VENC_MAX_CHN_NUM) {
-        sample_print("input count invalid\n");
+        sample_print_err("input count invalid\n");
         return TD_FAILURE;
     }
 
@@ -2902,7 +2902,7 @@ td_s32 sample_comm_venc_stop_get_stream(td_s32 chn_num)
 
     for (i = 0; i < chn_num; i++) {
         if (ss_mpi_venc_stop_chn(i) != TD_SUCCESS) {
-            sample_print("chn %d ss_mpi_venc_stop_recv_pic failed!\n", i);
+            sample_print_err("chn %d ss_mpi_venc_stop_recv_pic failed!\n", i);
             return TD_FAILURE;
         }
     }
@@ -2946,11 +2946,11 @@ static td_s32 sample_comm_venc_mosaic_map_send_frame_ex(sample_venc_send_frame_p
 
     ret = ss_mpi_venc_send_frame_ex(para->venc_chn[index], frame_info, -1);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_send_frame_ex err:0x%x\n", ret);
+        sample_print_err("ss_mpi_venc_send_frame_ex err:0x%x\n", ret);
 
         ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[index], video_frame);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
+            sample_print_err("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
             return SAMPLE_RETURN_GOTO;
         }
         return SAMPLE_RETURN_BREAK;
@@ -2978,7 +2978,7 @@ static td_s32 sample_comm_venc_mosaic_map_send_frame_start(sample_venc_send_fram
             ret = ss_mpi_vpss_get_chn_frame(para->vpss_grp, para->vpss_chn[i], video_frame,
                 1000); /* 1000 is a timeout para */
             if (ret != TD_SUCCESS) {
-                sample_print("\n OT_MPI_VPSS_GetChnFrame err:0x%x\n", ret);
+                sample_print_err("\n OT_MPI_VPSS_GetChnFrame err:0x%x\n", ret);
                 continue;
             }
 
@@ -3001,7 +3001,7 @@ static td_s32 sample_comm_venc_mosaic_map_send_frame_start(sample_venc_send_fram
 
             ret = ss_mpi_vpss_release_chn_frame(para->vpss_grp, para->vpss_chn[i], video_frame);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
+                sample_print_err("ss_mpi_vpss_release_chn_frame err:0x%x", ret);
                 goto FREE;
             }
 
@@ -3024,7 +3024,7 @@ static td_void sample_comm_venc_mosaic_map_free_mmz(sample_comm_venc_mosaic_fram
         if (addr_info->map_phys_addr[i] != 0) {
             ret = ss_mpi_sys_mmz_free(addr_info->map_phys_addr[i], addr_info->map_vir_addr[i]);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_sys_mmz_free err:0x%x", ret);
+                sample_print_err("ss_mpi_sys_mmz_free err:0x%x", ret);
             }
         }
     }
@@ -3082,7 +3082,7 @@ td_void *sample_comm_venc_mosaic_map_send_frame_proc(td_void *p)
 
         ss_mpi_venc_get_chn_attr((ot_venc_chn)i, &chn_attr);
         if (snprintf_s(map_name, MAX_MMZ_NAME_LEN, MAX_MMZ_NAME_LEN - 1, "mosaic_map:%d", i) < 0) {
-            sample_print("config mosaic_map:%d failed\n", i);
+            sample_print_err("config mosaic_map:%d failed\n", i);
             return TD_NULL;
         }
 
@@ -3093,7 +3093,7 @@ td_void *sample_comm_venc_mosaic_map_send_frame_proc(td_void *p)
         ret = ss_mpi_sys_mmz_alloc(&addr_info.map_phys_addr[i], &addr_info.map_vir_addr[i], map_name,
                                    TD_NULL, map_size);
         if (ret != TD_SUCCESS) {
-            sample_print("alloc mosaic map:%d failed.\n", i);
+            sample_print_err("alloc mosaic map:%d failed.\n", i);
             goto error;
         }
 
@@ -3106,18 +3106,18 @@ td_void *sample_comm_venc_mosaic_map_send_frame_proc(td_void *p)
     for (i = 0; (i < para->cnt) && (i < OT_VPSS_MAX_PHYS_CHN_NUM); i++) {
         ot_vpss_chn_attr vpss_chn_attr;
         if (ss_mpi_vpss_get_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr) != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_get_chn_attr err");
+            sample_print_err("ss_mpi_vpss_get_chn_attr err");
             goto error;
         }
         vpss_chn_attr.depth = 3; /* 3 is a number */
         if (ss_mpi_vpss_set_chn_attr(para->vpss_grp, para->vpss_chn[i], &vpss_chn_attr) != TD_SUCCESS) {
-            sample_print("ss_mpi_vpss_set_chn_attr err");
+            sample_print_err("ss_mpi_vpss_set_chn_attr err");
             goto error;
         }
     }
 
     if (sample_comm_venc_mosaic_map_send_frame_start(para, addr_info) != TD_SUCCESS) {
-        sample_print("free mosaic:%d map failed.\n", i);
+        sample_print_err("free mosaic:%d map failed.\n", i);
         goto error;
     }
 
@@ -3162,29 +3162,29 @@ td_s32 sample_comm_venc_stop_rateauto(ot_venc_chn chn[], td_s32 cnt)
             venc_chn = chn[i];
             ret = ss_mpi_venc_enable_svc(venc_chn, TD_TRUE);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_enable_svc failed for %#x chn =%d\n", ret, venc_chn);
+                sample_print_err("Set ss_mpi_venc_enable_svc failed for %#x chn =%d\n", ret, venc_chn);
             }
             if (memset_s(&svc_rect_info, sizeof(ot_venc_svc_rect_info), 0, sizeof(ot_venc_svc_rect_info)) != EOK) {
-                printf("call memset_s error\n");
+                sample_print_err("call memset_s error\n");
             }
             ret = ss_mpi_venc_send_svc_region(venc_chn, &svc_rect_info);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_send_svc_region failed for %#x chn =%d\n", ret, venc_chn);
+                sample_print_err("Set ss_mpi_venc_send_svc_region failed for %#x chn =%d\n", ret, venc_chn);
             }
             ret = ss_mpi_venc_get_svc_param(venc_chn, &svc_param);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
+                sample_print_err("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
             }
             if (memset_s(&svc_param, sizeof(ot_venc_svc_param), 0, sizeof(ot_venc_svc_param)) != EOK) {
-                printf("call memset_s error\n");
+                sample_print_err("call memset_s error\n");
             }
             ret = ss_mpi_venc_set_svc_param(venc_chn, &svc_param);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
+                sample_print_err("Set ss_mpi_venc_set_svc_param failed for %#x chn =%d\n", ret, venc_chn);
             }
             ret = ss_mpi_venc_enable_svc(venc_chn, TD_FALSE);
             if (ret != TD_SUCCESS) {
-                sample_print("Set ss_mpi_venc_enable_svc failed for %#x chn =%d\n", ret, venc_chn);
+                sample_print_err("Set ss_mpi_venc_enable_svc failed for %#x chn =%d\n", ret, venc_chn);
             }
         }
     }
@@ -3205,27 +3205,27 @@ td_s32 sample_comm_venc_plan_to_semi(td_u8 *u, td_s32 u_stride, td_u8 *v, td_s32
 
     tmp_u = malloc(size);
     if (tmp_u == TD_NULL) {
-        printf("malloc buf failed\n");
+        sample_print_err("malloc buf failed\n");
         return TD_FAILURE;
     }
     ptu = tmp_u;
 
     tmp_v = malloc(size);
     if (tmp_v == TD_NULL) {
-        printf("malloc buf failed\n");
+        sample_print_err("malloc buf failed\n");
         free(tmp_u);
         return TD_FAILURE;
     }
     ptv = tmp_v;
 
     if (memcpy_s(tmp_u, size, u, size) != EOK) {
-        printf("call memcpy_s error\n");
+        sample_print_err("call memcpy_s error\n");
         free(tmp_u);
         free(tmp_v);
         return TD_FAILURE;
     }
     if (memcpy_s(tmp_v, size, v, size) != EOK) {
-        printf("call memcpy_s error\n");
+        sample_print_err("call memcpy_s error\n");
         free(tmp_u);
         free(tmp_v);
         return TD_FAILURE;
@@ -3251,7 +3251,7 @@ td_s32 WK_COMM_VENC_GetStreamStart(ot_venc_chn venc_chn)
     /* set venc fd. */
     WkVencFd[venc_chn] = ss_mpi_venc_get_fd(venc_chn);
     if (WkVencFd[venc_chn] < 0) {
-        sample_print("ss_mpi_venc_get_fd failed with %#x!\n", WkVencFd[venc_chn]);
+        sample_print_err("ss_mpi_venc_get_fd failed with %#x!\n", WkVencFd[venc_chn]);
         return TD_FAILURE;
     }
     s32Ret = TD_SUCCESS;
@@ -3302,7 +3302,7 @@ td_void *WK_COMM_VENC_GetPreviewStreamProc(td_void *p)
 
     ret = ss_mpi_venc_get_stream_buf_info(venc_chn, &stream_buf_info);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
         return TD_NULL;
         //return TD_FAILURE;
     }
@@ -3316,32 +3316,32 @@ td_void *WK_COMM_VENC_GetPreviewStreamProc(td_void *p)
         timeout_val.tv_usec = 0;
         ret = select(maxfd + 1, &read_fds, TD_NULL, TD_NULL, &timeout_val);
         if (ret < 0) {
-            sample_print("select failed!\n");
+            sample_print_err("select failed!\n");
             break;
         } else if (ret == 0) {
-            sample_print("get venc stream time out, exit thread  venc-ch%d\n", venc_chn);
+            sample_print_info("get venc stream time out, exit thread  venc-ch%d\n", venc_chn);
             continue;
         } else {
             if(FD_ISSET(venc_fd, &read_fds)) {            
                 /* step 2.1 : query how many packs in one-frame stream. */
                 if (memset_s(&stream, sizeof(stream), 0, sizeof(stream)) != EOK) {
-                    printf("call memset_s error\n");
+                    sample_print_err("call memset_s error\n");
                 }
 
                 ret = ss_mpi_venc_query_status(venc_chn, &stat);
                 if (ret != TD_SUCCESS) {
-                    sample_print("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", venc_chn, ret);
+                    sample_print_err("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", venc_chn, ret);
                     continue;
                 }
 
                 if (stat.cur_packs == 0) {
-                    sample_print("NOTE: current  frame is TD_NULL!\n");
+                    sample_print_err("NOTE: current  frame is TD_NULL!\n");
                     continue;
                 }
                 /* step 2.3 : malloc corresponding number of pack nodes. */
                 stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
                 if (stream.pack == TD_NULL) {
-                    sample_print("malloc stream pack failed!\n");
+                    sample_print_err("malloc stream pack failed!\n");
                     break;
                 }
                 /* step 2.4 : call mpi to get one-frame stream */
@@ -3350,7 +3350,7 @@ td_void *WK_COMM_VENC_GetPreviewStreamProc(td_void *p)
                 if (ret != TD_SUCCESS) {
                     free(stream.pack);
                     stream.pack = TD_NULL;
-                    sample_print("ss_mpi_venc_get_stream failed with %#x!\n", ret);
+                    sample_print_err("ss_mpi_venc_get_stream failed with %#x!\n", ret);
                     break;
                 }
 
@@ -3367,7 +3367,7 @@ td_void *WK_COMM_VENC_GetPreviewStreamProc(td_void *p)
                 /* step 2.6 : release stream */
                 ret = ss_mpi_venc_release_stream(venc_chn, &stream);
                 if (ret != TD_SUCCESS) {
-                    sample_print("ss_mpi_venc_release_stream failed!\n");
+                    sample_print_err("ss_mpi_venc_release_stream failed!\n");
                     free(stream.pack);
                     stream.pack = TD_NULL;
                     break;
@@ -3433,32 +3433,32 @@ td_s32 WK_COMM_VENC_GetRecordStreamHandle(int *rec_frame_length, int check_idr)
     timeout_val.tv_usec = 0;
     ret = select(maxfd + 1, &read_fds, TD_NULL, TD_NULL, &timeout_val);
     if (ret < 0) {
-        sample_print("select failed!\n");
+        sample_print_err("select failed!\n");
         return TD_FAILURE;
     } else if (ret == 0) {
-        sample_print("get venc[%d] stream time out, exit thread\n", wk_stPara.venc_chn[WK_VIDEO_CHANNEL_RECORD]);
+        sample_print_err("get venc[%d] stream time out, exit thread\n", wk_stPara.venc_chn[WK_VIDEO_CHANNEL_RECORD]);
         return TD_FAILURE;
     } else {
         if(FD_ISSET(WkVencFd[WK_VIDEO_CHANNEL_RECORD], &read_fds)) {            
             /* step 2.1 : query how many packs in one-frame stream. */
             if (memset_s(&stream, sizeof(stream), 0, sizeof(stream)) != EOK) {
-                printf("call memset_s error\n");
+                sample_print_err("call memset_s error\n");
             }
 
             ret = ss_mpi_venc_query_status(wk_stPara.venc_chn[WK_VIDEO_CHANNEL_RECORD], &stat);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_venc_query_status chn[0] failed with %#x!\n", ret);
+                sample_print_err("ss_mpi_venc_query_status chn[0] failed with %#x!\n", ret);
                 return TD_FAILURE;
             }
 
             if (stat.cur_packs == 0) {
-                sample_print("NOTE: current  frame is TD_NULL!\n");
+                sample_print_err("NOTE: current  frame is TD_NULL!\n");
                 return TD_FAILURE;
             }
             /* step 2.3 : malloc corresponding number of pack nodes. */
             stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
             if (stream.pack == TD_NULL) {
-                sample_print("malloc stream pack failed!\n");
+                sample_print_err("malloc stream pack failed!\n");
                 return TD_FAILURE;
             }
             /* step 2.4 : call mpi to get one-frame stream */
@@ -3467,7 +3467,7 @@ td_s32 WK_COMM_VENC_GetRecordStreamHandle(int *rec_frame_length, int check_idr)
             if (ret != TD_SUCCESS) {
                 free(stream.pack);
                 stream.pack = TD_NULL;
-                sample_print("ss_mpi_venc_get_stream failed with %#x!\n", ret);
+                sample_print_err("ss_mpi_venc_get_stream failed with %#x!\n", ret);
                 return TD_FAILURE;
             }
 
@@ -3488,7 +3488,7 @@ td_s32 WK_COMM_VENC_GetRecordStreamHandle(int *rec_frame_length, int check_idr)
                 }
 
                 if(u32framelength>=MAX_IDR_FRAME_SIZE){
-                    printf("--------- 000 frame size=%d ---------\n",u32framelength);
+                    sample_print_err("--------- 000 frame size=%d ---------\n",u32framelength);
                     ss_mpi_venc_release_stream(wk_stPara.venc_chn[WK_VIDEO_CHANNEL_RECORD], &stream);
                     free(stream.pack);
                     stream.pack = NULL;
@@ -3502,7 +3502,7 @@ td_s32 WK_COMM_VENC_GetRecordStreamHandle(int *rec_frame_length, int check_idr)
                 // 把固定间隔的I帧写入文件             
                 if(mIdrFrameCount >= check_idr){
                     if(check_idr > 2){
-                        printf("---------write file --> stStream.u32PackCount=[%d] IDR Frame=[%d]---------\n", stream.pack_cnt, u32framelength);
+                        sample_print("---------write file --> stStream.u32PackCount=[%d] IDR Frame=[%d]---------\n", stream.pack_cnt, u32framelength);
                     }
 
                     wk_stPara.RecordCallback(mMainVideoBuf, u32framelength);
@@ -3517,7 +3517,7 @@ td_s32 WK_COMM_VENC_GetRecordStreamHandle(int *rec_frame_length, int check_idr)
             /* step 2.6 : release stream */
             ret = ss_mpi_venc_release_stream(wk_stPara.venc_chn[WK_VIDEO_CHANNEL_RECORD], &stream);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_venc_release_stream failed!\n");
+                sample_print_err("ss_mpi_venc_release_stream failed!\n");
                 free(stream.pack);
                 stream.pack = TD_NULL;
                 return TD_FAILURE;
@@ -3539,7 +3539,7 @@ td_s32 WK_COMM_VENC_GetIDR(ot_venc_chn VencChn)
 
     if(TD_SUCCESS != s32Ret)
     {
-        printf("ss_mpi_venc_request_idr err 0x%xn", s32Ret);
+        sample_print_err("ss_mpi_venc_request_idr err 0x%xn", s32Ret);
     }
 
     return s32Ret;
@@ -3580,17 +3580,17 @@ td_s32 WK_COMM_VENC_SnapStart(ot_venc_chn VencChn, ot_pic_size stSize)
 
     ret = ss_mpi_venc_create_chn(VencChn, &venc_chn_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_create_chn [%d] failed with %#x!\n", VencChn, ret);
+        sample_print_err("ss_mpi_venc_create_chn [%d] failed with %#x!\n", VencChn, ret);
         return ret;
     }
 
     ret = ss_mpi_venc_get_jpeg_param(VencChn, &stParamJpeg);
     if (TD_SUCCESS != ret)
     {
-        sample_print("HI_MPI_VENC_GetJpegParam err 0x%x\n",ret);
+        sample_print_err("HI_MPI_VENC_GetJpegParam err 0x%x\n",ret);
         return TD_FAILURE;
     }
-    OT_PRINT("GetJpegParam --> stParamJpeg.qfactor[%d]\n",stParamJpeg.qfactor);
+    sample_print("GetJpegParam --> stParamJpeg.qfactor[%d]\n",stParamJpeg.qfactor);
 
     if(WK_VIDEO_CHANNEL_SNAP == VencChn){
         stParamJpeg.qfactor = 98;
@@ -3598,7 +3598,7 @@ td_s32 WK_COMM_VENC_SnapStart(ot_venc_chn VencChn, ot_pic_size stSize)
         ret = ss_mpi_venc_set_jpeg_param(VencChn, &stParamJpeg);
         if (TD_SUCCESS != ret)
         {
-            sample_print("HI_MPI_VENC_SetJpegParam err 0x%x\n",ret);
+            sample_print_err("HI_MPI_VENC_SetJpegParam err 0x%x\n",ret);
             return TD_FAILURE;
         }
     }
@@ -3606,7 +3606,7 @@ td_s32 WK_COMM_VENC_SnapStart(ot_venc_chn VencChn, ot_pic_size stSize)
     start_param.recv_pic_num = -1;
     ret = ss_mpi_venc_start_chn(VencChn, &start_param);
     if (ret != TD_SUCCESS) {
-        sample_print("mpi_venc_start_chn faild with%#x!\n", ret);
+        sample_print_err("mpi_venc_start_chn faild with%#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -3624,7 +3624,7 @@ td_s32 WK_COMM_VENC_SnapStop(ot_venc_chn VencChn)
     s32Ret = ss_mpi_venc_destroy_chn(VencChn);
     if (TD_SUCCESS != s32Ret)
     {
-        sample_print("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", VencChn, s32Ret);
+        sample_print_err("ss_mpi_venc_destroy_chn vechn[%d] failed with %#x!\n", VencChn, s32Ret);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -3657,7 +3657,7 @@ td_s32 WK_COMM_VENC_SnapJpegHandle(ot_venc_chn VencChn, char *filepath)
     venc_fd = ss_mpi_venc_get_fd(wk_stPara.venc_chn[VencChn]);
     if (venc_fd < 0)
     {
-        sample_print("ss_mpi_venc_get_fd failed with %#x!\n", venc_fd);
+        sample_print_err("ss_mpi_venc_get_fd failed with %#x!\n", venc_fd);
         return TD_FAILURE;
     }
 
@@ -3667,7 +3667,7 @@ td_s32 WK_COMM_VENC_SnapJpegHandle(ot_venc_chn VencChn, char *filepath)
 
     ret = ss_mpi_venc_get_stream_buf_info(wk_stPara.venc_chn[VencChn], &stream_buf_info);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_venc_get_stream_buf_info failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -3679,32 +3679,32 @@ td_s32 WK_COMM_VENC_SnapJpegHandle(ot_venc_chn VencChn, char *filepath)
     timeout_val.tv_usec = 0;
     ret = select(maxfd + 1, &read_fds, TD_NULL, TD_NULL, &timeout_val);
     if (ret < 0) {
-        sample_print("select failed!\n");
+        sample_print_err("select failed!\n");
         return TD_FAILURE;
     } else if (ret == 0) {
-        sample_print("get venc stream time out, exit thread\n");
+        sample_print_err("get venc stream time out, exit thread\n");
         return TD_FAILURE;
     } else {
         if(FD_ISSET(venc_fd, &read_fds)) {            
             /* step 2.1 : query how many packs in one-frame stream. */
             if (memset_s(&stream, sizeof(stream), 0, sizeof(stream)) != EOK) {
-                printf("call memset_s error\n");
+                sample_print_err("call memset_s error\n");
             }
 
             ret = ss_mpi_venc_query_status(wk_stPara.venc_chn[VencChn], &stat);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", wk_stPara.venc_chn[VencChn], ret);
+                sample_print_err("ss_mpi_venc_query_status chn[%d] failed with %#x!\n", wk_stPara.venc_chn[VencChn], ret);
                 return TD_FAILURE;
             }
 
             if (stat.cur_packs == 0) {
-                sample_print("NOTE: current  frame is TD_NULL!\n");
+                sample_print_err("NOTE: current  frame is TD_NULL!\n");
                 return TD_FAILURE;
             }
             /* step 2.3 : malloc corresponding number of pack nodes. */
             stream.pack = (ot_venc_pack *)malloc(sizeof(ot_venc_pack) * stat.cur_packs);
             if (stream.pack == TD_NULL) {
-                sample_print("malloc stream pack failed!\n");
+                sample_print_err("malloc stream pack failed!\n");
                 return TD_FAILURE;
             }
             /* step 2.4 : call mpi to get one-frame stream */
@@ -3713,7 +3713,7 @@ td_s32 WK_COMM_VENC_SnapJpegHandle(ot_venc_chn VencChn, char *filepath)
             if (ret != TD_SUCCESS) {
                 free(stream.pack);
                 stream.pack = TD_NULL;
-                sample_print("ss_mpi_venc_get_stream failed with %#x!\n", ret);
+                sample_print_err("ss_mpi_venc_get_stream failed with %#x!\n", ret);
                 return TD_FAILURE;
             }
 
@@ -3721,12 +3721,12 @@ td_s32 WK_COMM_VENC_SnapJpegHandle(ot_venc_chn VencChn, char *filepath)
             FILE *fd = fopen(filepath, "wb");
             sample_comm_venc_save_stream(fd, &stream);
             fclose(fd);
-            printf("jpg: %s.\n", filepath);
+            sample_print("jpg: %s.\n", filepath);
 
             /* step 2.6 : release stream */
             ret = ss_mpi_venc_release_stream(wk_stPara.venc_chn[VencChn], &stream);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_venc_release_stream failed!\n");
+                sample_print_err("ss_mpi_venc_release_stream failed!\n");
                 free(stream.pack);
                 stream.pack = TD_NULL;
                 return TD_FAILURE;
@@ -3782,10 +3782,10 @@ td_void WK_COMM_VENC_SetDCFInfo(ot_vi_pipe ViPipe)
     s32Ret = ss_mpi_isp_set_dcf_info(ViPipe, &stIspDCF);
 
     if(s32Ret != TD_SUCCESS){
-        printf("ss_mpi_isp_set_dcf_info err for %#x!\n", s32Ret);
+        sample_print_err("ss_mpi_isp_set_dcf_info err for %#x!\n", s32Ret);
        
     }else {
-		printf("ss_mpi_isp_set_dcf_info  OK\n");;
+		sample_print_info("ss_mpi_isp_set_dcf_info  OK\n");;
 	}
 
     return;

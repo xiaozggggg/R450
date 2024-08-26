@@ -179,7 +179,7 @@ int wk_mpp_cfg_sns(char *path, wk_mpp_cfg_t *cfg, int cfg_num)
     char snsstr[64];
     sprintf(snsstr, "%s-%d-%d-%d-%d"
             , cfg->snsname, cfg->lane, cfg->wdr, cfg->res, cfg->fps);
-    WK_LOGD("[%s] --> snsstr[%s]\n",__func__,snsstr);
+    WK_LOGI("[%s] --> snsstr[%s]\n",__func__,snsstr);
 
     SAMPLE_MPP_SENSOR_T* sns = SAMPLE_MPP_SERSOR_GET(snsstr);
     if(!sns)
@@ -281,7 +281,7 @@ int wk_mpp_start(int mode)
     cfg[0].snscnt = 1;
 
     char *chipid = "3519"; // [3516a300 3516d300 35590200 3403 3519]
-    WK_LOGD("chipid[%s]-cfg[0].snsname[%s] mode[%d]\n", chipid, cfg[0].snsname, mode);
+    WK_LOGI("chipid[%s]-cfg[0].snsname[%s] mode[%d]\n", chipid, cfg[0].snsname, mode);
     strcpy(cfg[0].type, chipid);
     //second channel from bsp_def.json; [0: disable, 1: BT656.PAL, 2:BT656.NTSC, 3: BT601.GD]
     WK_LOGD("BOARD [type:%s, snscnt:%d]\n", cfg[0].type, cfg[0].snscnt);
@@ -386,7 +386,7 @@ static td_void wk_mpp_get_default_vb_config(ot_size *size, ot_vb_cfg *vb_cfg)
     vb_cfg->common_pool[1].blk_size = calc_cfg.vb_size;
     vb_cfg->common_pool[1].blk_cnt = 2;
     SAMPLE_VGS_SetVbConfig(&calc_cfg);
-    WK_LOGI("============ SAMPLE_VGS_GetYUVBufferCfg blk_size[%d] end\n", calc_cfg.vb_size);
+    WK_LOGD("============ SAMPLE_VGS_GetYUVBufferCfg blk_size[%d] end\n", calc_cfg.vb_size);
 }
 
 static td_s32 wk_mpp_vb_init(ot_vi_vpss_mode_type mode_type, ot_vi_aiisp_mode video_mode)
@@ -1038,7 +1038,7 @@ int wk_mpp_scene_start(int scenemode)
     ot_scene_video_mode stVideoMode;
 
     wk_scence_mode = 0; //scenemode;
-    WK_LOGD("=========== wk_scence_mode[%d]\n", wk_scence_mode);
+    WK_LOGI("=========== wk_scence_mode[%d]\n", wk_scence_mode);
 
     inipath = "param/sensor_os04a10";
     s32ret = ot_scene_create_param(inipath, &stSceneParam, &stVideoMode);
@@ -1066,7 +1066,7 @@ int wk_mpp_scene_start(int scenemode)
         WK_LOGE("OT_SCENE_Resume failed\n");
         return TD_FAILURE;
     }
-    WK_LOGD("The sceneauto is started.\n");
+    WK_LOGI("The sceneauto is started.\n");
 
     return s32ret;
 }

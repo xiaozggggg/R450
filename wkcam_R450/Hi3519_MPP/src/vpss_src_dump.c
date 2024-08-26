@@ -25,6 +25,7 @@
 #include "ss_mpi_vpss.h"
 #include "ss_mpi_vgs.h"
 #include "ot_buffer.h"
+#include "sample_comm.h"
 
 #define MAX_DIGIT_LEN 4
 #define MAX_FRM_WIDTH 20480
@@ -64,7 +65,7 @@ static td_void vpss_src_dump_covert_chroma_sp42x_to_planar(const ot_video_frame 
     phys_addr = frame->phys_addr[1];
     g_user_page_addr[1] = (td_char *)ss_mpi_sys_mmap(phys_addr, g_c_size);
     if (g_user_page_addr[1] == TD_NULL) {
-        printf("mmap chroma data error!!!\n");
+        sample_print_err("mmap chroma data error!!!\n");
         return;
     }
     virt_addr_c = g_user_page_addr[1];
@@ -252,14 +253,14 @@ static td_s32 vpss_src_dump_init_vgs_pool(vpss_dump_mem *dump_mem, ot_vb_calc_cf
 
     g_pool = ss_mpi_vb_create_pool(&vb_pool_cfg);
     if (g_pool == OT_VB_INVALID_POOL_ID) {
-        printf("OT_MPI_VB_CreatePool failed! \n");
+        sample_print_err("OT_MPI_VB_CreatePool failed! \n");
         return TD_FAILURE;
     }
 
     dump_mem->vb_pool = g_pool;
     dump_mem->vb_blk = ss_mpi_vb_get_blk(dump_mem->vb_pool, g_blk_size, TD_NULL);
     if (dump_mem->vb_blk == OT_VB_INVALID_HANDLE) {
-        printf("get vb blk failed!\n");
+        sample_print_err("get vb blk failed!\n");
         return TD_FAILURE;
     }
 
@@ -274,33 +275,33 @@ static td_s32 vpss_src_dump_send_vgs_and_dump(const ot_video_frame_info *vpss_fr
     ot_vb_calc_cfg vb_calc_cfg = {0};
 
     if (vpss_src_dump_init_vgs_pool(&g_mem, &vb_calc_cfg) != TD_SUCCESS) {
-        printf("init vgs pool failed\n");
+        sample_print_err("init vgs pool failed\n");
         return TD_FAILURE;
     }
 
     vpss_src_dump_set_vgs_frame_info(&vgs_frame_info, &g_mem, &vb_calc_cfg, vpss_frame_info);
 
     if (ss_mpi_vgs_begin_job(&g_handle) != TD_SUCCESS) {
-        printf("ss_mpi_vgs_begin_job failed\n");
+        sample_print_err("ss_mpi_vgs_begin_job failed\n");
         return TD_FAILURE;
     }
 
     if (memcpy_s(&vgs_task_attr.img_in, sizeof(ot_video_frame_info),
         vpss_frame_info, sizeof(ot_video_frame_info)) != EOK) {
-        printf("memcpy_s img_in failed\n");
+        sample_print_err("memcpy_s img_in failed\n");
         goto err_exit;
     }
     if (memcpy_s(&vgs_task_attr.img_out, sizeof(ot_video_frame_info),
         &vgs_frame_info, sizeof(ot_video_frame_info)) != EOK) {
-        printf("memcpy_s img_out failed\n");
+        sample_print_err("memcpy_s img_out failed\n");
         goto err_exit;
     }
     if (ss_mpi_vgs_add_scale_task(g_handle, &vgs_task_attr, OT_VGS_SCALE_COEF_NORM) != TD_SUCCESS) {
-        printf("ss_mpi_vgs_add_scale_task failed\n");
+        sample_print_err("ss_mpi_vgs_add_scale_task failed\n");
         goto err_exit;
     }
     if (ss_mpi_vgs_end_job(g_handle) != TD_SUCCESS) {
-        printf("ss_mpi_vgs_end_job failed\n");
+        sample_print_err("ss_mpi_vgs_end_job failed\n");
         goto err_exit;
     }
 
@@ -308,7 +309,7 @@ static td_s32 vpss_src_dump_send_vgs_and_dump(const ot_video_frame_info *vpss_fr
     if (vgs_frame_info.video_frame.dynamic_range == OT_DYNAMIC_RANGE_SDR8) {
         sample_yuv_8bit_dump(&vgs_frame_info.video_frame, g_pfd);
     } else {
-        printf("Only support dump 8-bit data!\n");
+        sample_print_err("Only support dump 8-bit data!\n");
     }
     ss_mpi_vb_release_blk(g_mem.vb_blk);
     g_mem.vb_pool = OT_VB_INVALID_POOL_ID;
@@ -333,7 +334,7 @@ static td_s32 vpss_src_dump_open_yuv_file(ot_vpss_grp grp, const ot_video_frame 
         case OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420:
         case OT_PIXEL_FORMAT_YUV_SEMIPLANAR_420:
             if (snprintf_s(pixel_str, PIXEL_FORMAT_STRING_LEN, PIXEL_FORMAT_STRING_LEN - 1, "P420") < EOK) {
-                printf("set pixel name fail!\n");
+                sample_print_err("set pixel name fail!\n");
                 return TD_FAILURE;
             }
             break;
@@ -341,14 +342,14 @@ static td_s32 vpss_src_dump_open_yuv_file(ot_vpss_grp grp, const ot_video_frame 
         case OT_PIXEL_FORMAT_YVU_SEMIPLANAR_422:
         case OT_PIXEL_FORMAT_YUV_SEMIPLANAR_422:
             if (snprintf_s(pixel_str, PIXEL_FORMAT_STRING_LEN, PIXEL_FORMAT_STRING_LEN - 1, "P422") < EOK) {
-                printf("set pixel name fail!\n");
+                sample_print_err("set pixel name fail!\n");
                 return TD_FAILURE;
             }
             break;
 
         default:
             if (snprintf_s(pixel_str, PIXEL_FORMAT_STRING_LEN, PIXEL_FORMAT_STRING_LEN - 1, "P400") < EOK) {
-                printf("set pixel name fail!\n");
+                sample_print_err("set pixel name fail!\n");
                 return TD_FAILURE;
             }
             break;
@@ -356,15 +357,15 @@ static td_s32 vpss_src_dump_open_yuv_file(ot_vpss_grp grp, const ot_video_frame 
 
     if (snprintf_s(yuv_name, FILE_NAME_LENGTH, FILE_NAME_LENGTH - 1, "./vpss%d_%ux%u_%s.yuv",
         grp, frame->width, frame->height, pixel_str) < EOK) {
-        printf("set output file name fail!\n");
+        sample_print_err("set output file name fail!\n");
         return TD_FAILURE;
     }
 
-    printf("Dump YUV frame of vpss%d  to file: \"%s\"\n", grp, yuv_name);
+    sample_print("Dump YUV frame of vpss%d  to file: \"%s\"\n", grp, yuv_name);
 
     g_pfd = fopen(yuv_name, "wb");
     if (g_pfd == TD_NULL) {
-        printf("open file failed, errno %d!\n", errno);
+        sample_print_err("open file failed, errno %d!\n", errno);
         return TD_FAILURE;
     }
 
@@ -379,12 +380,12 @@ static td_s32 vpss_src_dump_try_get_frame(ot_vpss_grp grp)
     /* get frame  */
     while ((ss_mpi_vpss_get_grp_frame(grp, &g_frame, millisec) != TD_SUCCESS)) {
         if (g_signal_flag == 1) {
-            printf("\033[0;31mprogram termination abnormally!\033[0;39m\n");
+            sample_print_err("mprogram termination abnormally!\n");
             return TD_FAILURE;
         }
         try_times--;
         if (try_times <= 0) {
-            printf("get frame error for 10 times,now exit !!!\n");
+            sample_print_err("get frame error for 10 times,now exit !!!\n");
             return TD_FAILURE;
         }
         sleep(2); /* sleep 2 seconds */
@@ -472,8 +473,8 @@ td_s32 vpss_src_dump_main(int argc, char *argv[])
 
     g_vpss_grp = 0;
 
-    printf("\nNOTICE: This tool only can be used for TESTING !!!\n");
-    printf("\tTo see more usage, please enter: ./vpss_src_dump -h\n\n");
+    sample_print("\nNOTICE: This tool only can be used for TESTING !!!\n");
+    sample_print("\tTo see more usage, please enter: ./vpss_src_dump -h\n\n");
 
     if (argc > 1) {
         if (!strncmp(argv[1], "-h", 2)) { /* 2 help */
@@ -488,18 +489,18 @@ td_s32 vpss_src_dump_main(int argc, char *argv[])
     }
 
     if (!vpss_src_dump_is_valid_digit_str(argv[1])) {
-        printf("%s is invalid, must be reasonable non negative integers!!!!\n\n", argv[1]);
+        sample_print_err("%s is invalid, must be reasonable non negative integers!!!!\n\n", argv[1]);
         return -1;
     }
 
     ret = vpss_get_argv_val(argv, 1, &result);
     if (ret != TD_SUCCESS) {
-        printf("get grp failed!\n");
+        sample_print_err("get grp failed!\n");
         return -1;
     }
     g_vpss_grp = (ot_vpss_grp)result;
     if (!value_between(g_vpss_grp, 0, OT_VPSS_MAX_GRP_NUM - 1)) {
-        printf("grp id must be [0,%d]!!!!\n\n", OT_VPSS_MAX_GRP_NUM - 1);
+        sample_print_err("grp id must be [0,%d]!!!!\n\n", OT_VPSS_MAX_GRP_NUM - 1);
         return -1;
     }
 

@@ -1842,7 +1842,7 @@ static td_s32 scene_load_static_3dnr(const td_char *module, const ot_scene_modul
 
             ret = sscanf_s(get_string, g_3dnr_fmt, SCENE_3DNR_ARG_LIST);
 
-            OT_PRINT("========== load static_3dnr[%s] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d]\n", 
+            scene_logd("========== load static_3dnr[%s] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d] [%d]\n", 
                     node, pas[0].sfs1, ps[1].sfs1, ps[1].sbr1, ps[2].sfs1, ps[2].sbr1, ps[3].sfs1, ps[3].sbr1, 
                     pm[0].mabw0, pm[0].mabw1, pm[1].mabw0, pm[1].mabw1);
 

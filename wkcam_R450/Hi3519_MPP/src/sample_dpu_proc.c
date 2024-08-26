@@ -391,7 +391,7 @@ static td_void sample_svp_dpu_file_rect_match_stop(td_void)
     }
     g_stop_signal = TD_FALSE;
     sample_comm_sys_exit();
-    printf("\033[0;31mprogram termination abnormally!\033[0;39m\n");
+    sample_print_err("mprogram termination abnormally!\n");
     return;
 }
 

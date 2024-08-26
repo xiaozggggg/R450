@@ -258,7 +258,8 @@ void * thread_video_rtsp_srv_entry(void * parg)
     std::thread t1(sendFrameThread, &server, sessionId); 
     t1.detach(); 
 
-    std::cout << "URL: " <<rtspUrl << std::endl;
+	WK_LOGI("URL: %s\n", rtspUrl.c_str());
+    //std::cout << "URL: " <<rtspUrl << std::endl;
 
     eventLoop->loop(); //主线程运行 RtspServer 
 }

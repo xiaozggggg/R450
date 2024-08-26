@@ -1135,7 +1135,7 @@ td_void ot_scene_set_pub_ae_venc(ot_vi_pipe vi_pipe, td_u32 frame_rate, td_u32 a
         venc_attr.rc_attr.h265_cvbr.src_frame_rate = frame_rate;
         venc_attr.rc_attr.h265_cvbr.gop = gop;
     } else {
-        printf("Warning:SceneAuto now only support H265CBR and H265AVBR FPS settings.\n");
+        scene_logd("Warning:SceneAuto now only support H265CBR and H265AVBR FPS settings.\n");
     }
     ret = ss_mpi_venc_set_chn_attr(0, &venc_attr);
     check_scene_ret(ret);
@@ -1231,7 +1231,7 @@ td_s32 ot_scene_set_dynamic_ae(ot_vi_pipe vi_pipe, td_u64 exposure, td_u64 last_
                     get_pipe_params()[index].dynamic_ae.exp_ltoh_thresh[exp_level],
                     get_pipe_params()[index].dynamic_ae.auto_max_hist_offset[exp_level]);
         }
-        OT_PRINT("=========== exposure_attr.auto_attr.hist_ratio_slope[%d]\n", exposure_attr.auto_attr.hist_ratio_slope);
+        scene_logd("=========== exposure_attr.auto_attr.hist_ratio_slope[%d]\n", exposure_attr.auto_attr.hist_ratio_slope);
 
         check_scene_return_if_pause();
         ret = ss_mpi_isp_set_exposure_attr(vi_pipe, &exposure_attr);
@@ -2558,7 +2558,7 @@ td_s32 ot_scene_release_fpn(ot_vi_pipe vi_pipe, td_u8 index)
         g_fpn_enable[vi_pipe] = TD_FALSE;
         ret = sample_comm_vi_disable_fpn_correction(vi_pipe, &g_correction_cfg);
         check_scene_ret(ret);
-        printf("release fpn buffer ok!\n");
+        scene_logd("release fpn buffer ok!\n");
     }
     return TD_SUCCESS;
 }
@@ -2589,7 +2589,7 @@ td_s32 ot_scene_dynamic_fpn_decide(ot_vi_pipe vi_pipe, td_u32 *iso_tmp, td_u32 *
             ret = sample_comm_vi_disable_fpn_correction(vi_pipe, &g_correction_cfg);
             check_scene_ret(ret);
             *last_iso_tmp = *iso_tmp;
-            printf("disable fpn correction\n");
+            scene_logd("disable fpn correction\n");
         }
     } else {
         if ((iso_count - 1) == 0) {
@@ -2701,14 +2701,14 @@ td_s32 ot_scene_set_dynamic_3dnr(ot_vi_pipe vi_pipe, td_u32 iso, td_u8 index, ot
 td_s32 ot_scene_set_pipe_param(const ot_scene_pipe_param *scene_pipe_param, td_u32 num)
 {
     if (scene_pipe_param == TD_NULL) {
-        printf("null pointer");
+        scene_logw("null pointer");
         return TD_FAILURE;
     }
 
     errno_t ret = memcpy_s(get_pipe_params(), sizeof(ot_scene_pipe_param) * OT_SCENE_PIPETYPE_NUM, scene_pipe_param,
         sizeof(ot_scene_pipe_param) * num);
     if (ret != EOK) {
-        printf("copy scene pipe params fail. num = %u\n", num);
+        scene_loge("copy scene pipe params fail. num = %u\n", num);
         return TD_FAILURE;
     }
     return TD_SUCCESS;

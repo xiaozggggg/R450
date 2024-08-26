@@ -6,6 +6,7 @@
 #define OT_SCENECOMM_LOG_H
 
 #include "ot_type.h"
+#include "wk_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,13 +58,13 @@ extern "C" {
 
 #ifdef CFG_DEBUG_LOG_ON
 /* * unified log macro define */
-#define scene_loge(fmt, args...) ot_scene_log(OT_SCENELOG_LEVEL_ERROR, OT_MODULE, fmt, ##args)
-#define scene_logw(fmt, args...) ot_scene_log(OT_SCENELOG_LEVEL_WARNING, OT_MODULE, fmt, ##args)
-#define scene_logd(fmt, args...) ot_scene_log(OT_SCENELOG_LEVEL_DEBUG, OT_MODULE, fmt, ##args)
+#define scene_loge(fmt, args...) WK_LOGE(fmt, ##args)	//ot_scene_log(OT_SCENELOG_LEVEL_ERROR, OT_MODULE, fmt, ##args)
+#define scene_logw(fmt, args...) WK_LOGW(fmt, ##args)	//ot_scene_log(OT_SCENELOG_LEVEL_WARNING, OT_MODULE, fmt, ##args)
+#define scene_logd(fmt, args...) WK_LOGD(fmt, ##args)	//ot_scene_log(OT_SCENELOG_LEVEL_DEBUG, OT_MODULE, fmt, ##args)
 #else
-#define scene_loge(fmt, args...) ot_scene_log(OT_SCENELOG_LEVEL_ERROR, OT_MODULE, fmt, ##args)
-#define scene_logw(fmt, args...)
-#define scene_logd(fmt, args...)
+#define scene_loge(fmt, args...) WK_LOGE(fmt, ##args)	//ot_scene_log(OT_SCENELOG_LEVEL_ERROR, OT_MODULE, fmt, ##args)
+#define scene_logw(fmt, args...) WK_LOGW(fmt, ##args)
+#define scene_logd(fmt, args...) WK_LOGD(fmt, ##args)
 #endif
 
 #ifdef __cplusplus

@@ -461,14 +461,14 @@ static td_void sample_comm_vi_get_mipi_attr(sample_sns_type sns_type, combo_dev_
 
         case SONY_IMX582_MIPI_3000P_30FPS_10BIT:   //add by Kyrie
             ob_height = IMX582_OB_HEIGHT_END;
-            printf("### SONY_IMX582_MIPI_3000P_30FPS_10BIT\n");
+            sample_print("### SONY_IMX582_MIPI_3000P_30FPS_10BIT\n");
             (td_void)memcpy_s(combo_attr, sizeof(combo_dev_attr_t),
                 &g_mipi_4lane_chn0_sensor_imx582_10bit_3000p_nowdr_attr, sizeof(combo_dev_attr_t));
             break;
 
         case OV7251_MIPI_480P_60FPS_10BIT:
             ob_height = IMX582_OB_HEIGHT_END;
-            printf("### OV7251_MIPI_480P_60FPS_10BIT\n");
+            sample_print("### OV7251_MIPI_480P_60FPS_10BIT\n");
             (td_void)memcpy_s(combo_attr, sizeof(combo_dev_attr_t),
                 &g_mipi_1lane_chn0_sensor_ov7251_10bit_8m_nowdr_attr, sizeof(combo_dev_attr_t));
             break;
@@ -1123,13 +1123,13 @@ td_s32 sample_comm_vi_set_vi_vpss_mode(ot_vi_vpss_mode_type mode_type, ot_vi_aii
 
     ret = ss_mpi_sys_set_vi_vpss_mode(&vi_vpss_mode);
     if (ret != TD_SUCCESS) {
-        sample_print("set vi vpss mode failed!\n");
+        sample_print_err("set vi vpss mode failed!\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_sys_set_vi_aiisp_mode(0, aiisp_mode); /* only pipe0 can set aiisp other mode */
     if (ret != TD_SUCCESS) {
-        sample_print("set vi video mode failed!\n");
+        sample_print_err("set vi video mode failed!\n");
         return TD_FAILURE;
     }
 
@@ -1143,7 +1143,7 @@ static td_s32 sample_comm_vi_set_mipi_hs_mode(lane_divide_mode_t hs_mode)
 
     fd = open(MIPI_DEV_NAME, O_RDWR);
     if (fd < 0) {
-        sample_print("open %s failed!\n", MIPI_DEV_NAME);
+        sample_print_err("open %s failed!\n", MIPI_DEV_NAME);
         return TD_FAILURE;
     }
 
@@ -1161,7 +1161,7 @@ static td_s32 sample_comm_vi_mipi_ctrl_cmd(td_u32 devno, td_u32 cmd)
 
     fd = open(MIPI_DEV_NAME, O_RDWR);
     if (fd < 0) {
-        sample_print("open %s failed!\n", MIPI_DEV_NAME);
+        sample_print_err("open %s failed!\n", MIPI_DEV_NAME);
         return TD_FAILURE;
     }
 
@@ -1179,7 +1179,7 @@ static td_s32 sample_comm_vi_set_mipi_combo_attr(const combo_dev_attr_t *combo_d
 
     fd = open(MIPI_DEV_NAME, O_RDWR);
     if (fd < 0) {
-        sample_print("open %s failed!\n", MIPI_DEV_NAME);
+        sample_print_err("open %s failed!\n", MIPI_DEV_NAME);
         return TD_FAILURE;
     }
 
@@ -1197,7 +1197,7 @@ static td_s32 sample_comm_vi_set_mipi_ext_data_type_attr(const ext_data_type_t *
 
     fd = open(MIPI_DEV_NAME, O_RDWR);
     if (fd < 0) {
-        sample_print("open %s failed!\n", MIPI_DEV_NAME);
+        sample_print_err("open %s failed!\n", MIPI_DEV_NAME);
         return TD_FAILURE;
     }
 
@@ -1214,19 +1214,19 @@ static td_s32 sample_comm_vi_start_sensor(const sample_sns_info *sns_info)
 
     ret = sample_comm_vi_mipi_ctrl_cmd(sns_info->sns_clk_src, OT_MIPI_ENABLE_SENSOR_CLOCK);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %u enable sensor clock failed!\n", sns_info->sns_clk_src);
+        sample_print_err("devno %u enable sensor clock failed!\n", sns_info->sns_clk_src);
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(sns_info->sns_rst_src, OT_MIPI_RESET_SENSOR);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %u reset sensor failed!\n", sns_info->sns_rst_src);
+        sample_print_err("devno %u reset sensor failed!\n", sns_info->sns_rst_src);
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(sns_info->sns_rst_src, OT_MIPI_UNRESET_SENSOR);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %u unreset sensor failed!\n", sns_info->sns_rst_src);
+        sample_print_err("devno %u unreset sensor failed!\n", sns_info->sns_rst_src);
         return TD_FAILURE;
     }
 
@@ -1243,37 +1243,37 @@ static td_s32 sample_comm_vi_start_mipi_rx(const sample_sns_info *sns_info, cons
 
     ret = sample_comm_vi_set_mipi_hs_mode(mipi_info->divide_mode);
     if (ret != TD_SUCCESS) {
-        sample_print("mipi rx set hs_mode failed!\n");
+        sample_print_err("mipi rx set hs_mode failed!\n");
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(mipi_info->mipi_dev, OT_MIPI_ENABLE_MIPI_CLOCK);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %d enable mipi rx clock failed!\n", mipi_info->mipi_dev);
+        sample_print_err("devno %d enable mipi rx clock failed!\n", mipi_info->mipi_dev);
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(mipi_info->mipi_dev, OT_MIPI_RESET_MIPI);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %d reset mipi rx failed!\n", mipi_info->mipi_dev);
+        sample_print_err("devno %d reset mipi rx failed!\n", mipi_info->mipi_dev);
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_set_mipi_combo_attr(&mipi_info->combo_dev_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("mipi rx set combo attr failed!\n");
+        sample_print_err("mipi rx set combo attr failed!\n");
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_set_mipi_ext_data_type_attr(&mipi_info->ext_data_type_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("mipi rx set ext data attr failed!\n");
+        sample_print_err("mipi rx set ext data attr failed!\n");
         return TD_FAILURE;
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(mipi_info->mipi_dev, OT_MIPI_UNRESET_MIPI);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %d unreset mipi rx failed!\n", mipi_info->mipi_dev);
+        sample_print_err("devno %d unreset mipi rx failed!\n", mipi_info->mipi_dev);
         return TD_FAILURE;
     }
 
@@ -1294,22 +1294,22 @@ static td_void sample_comm_vi_stop_mipi_rx(const sample_sns_info *sns_info, cons
 
     ret = sample_comm_vi_mipi_ctrl_cmd(mipi_info->mipi_dev, OT_MIPI_RESET_MIPI);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %d reset mipi rx failed!\n", mipi_info->mipi_dev);
+        sample_print_err("devno %d reset mipi rx failed!\n", mipi_info->mipi_dev);
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(mipi_info->mipi_dev, OT_MIPI_DISABLE_MIPI_CLOCK);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %d disable mipi rx clock failed!\n", mipi_info->mipi_dev);
+        sample_print_err("devno %d disable mipi rx clock failed!\n", mipi_info->mipi_dev);
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(sns_info->sns_rst_src, OT_MIPI_RESET_SENSOR);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %u reset sensor failed!\n", sns_info->sns_rst_src);
+        sample_print_err("devno %u reset sensor failed!\n", sns_info->sns_rst_src);
     }
 
     ret = sample_comm_vi_mipi_ctrl_cmd(sns_info->sns_clk_src, OT_MIPI_DISABLE_SENSOR_CLOCK);
     if (ret != TD_SUCCESS) {
-        sample_print("devno %u disable sensor clock failed!\n", sns_info->sns_clk_src);
+        sample_print_err("devno %u disable sensor clock failed!\n", sns_info->sns_clk_src);
     }
 }
 
@@ -1319,13 +1319,13 @@ static td_s32 sample_comm_vi_start_dev(ot_vi_dev vi_dev, const ot_vi_dev_attr *d
 
     ret = ss_mpi_vi_set_dev_attr(vi_dev, dev_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("vi set dev attr failed with 0x%x!\n", ret);
+        sample_print_err("vi set dev attr failed with 0x%x!\n", ret);
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vi_enable_dev(vi_dev);
     if (ret != TD_SUCCESS) {
-        sample_print("vi enable dev failed with 0x%x!\n", ret);
+        sample_print_err("vi enable dev failed with 0x%x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -1338,7 +1338,7 @@ static td_void sample_comm_vi_stop_dev(ot_vi_dev vi_dev)
 
     ret = ss_mpi_vi_disable_dev(vi_dev);
     if (ret != TD_SUCCESS) {
-        sample_print("vi disable dev failed with 0x%x!\n", ret);
+        sample_print_err("vi disable dev failed with 0x%x!\n", ret);
     }
 }
 
@@ -1351,7 +1351,7 @@ static td_s32 sample_comm_vi_dev_bind_pipe(ot_vi_dev vi_dev, const ot_vi_bind_pi
     for (i = 0; i < bind_pipe->pipe_num; i++) {
         ret = ss_mpi_vi_bind(vi_dev, bind_pipe->pipe_id[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("vi dev(%d) bind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[i]);
+            sample_print_err("vi dev(%d) bind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[i]);
             goto exit;
         }
     }
@@ -1362,7 +1362,7 @@ exit:
     for (j = i - 1; j >= 0; j--) {
         ret = ss_mpi_vi_unbind(vi_dev, bind_pipe->pipe_id[j]);
         if (ret != TD_SUCCESS) {
-            sample_print("vi dev(%d) unbind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[j]);
+            sample_print_err("vi dev(%d) unbind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[j]);
         }
     }
     return TD_FAILURE;
@@ -1376,7 +1376,7 @@ static td_void sample_comm_vi_dev_unbind_pipe(ot_vi_dev vi_dev, const ot_vi_bind
     for (i = 0; i < bind_pipe->pipe_num; i++) {
         ret = ss_mpi_vi_unbind(vi_dev, bind_pipe->pipe_id[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("vi dev(%d) unbind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[i]);
+            sample_print_err("vi dev(%d) unbind pipe(%d) failed!\n", vi_dev, bind_pipe->pipe_id[i]);
         }
     }
 }
@@ -1388,7 +1388,7 @@ static td_s32 sample_comm_vi_set_grp_info(const sample_vi_grp_info *grp_info)
     for (i = 0; i < grp_info->grp_num; i++) {
         ret = ss_mpi_vi_set_wdr_fusion_grp_attr(grp_info->fusion_grp[i], &grp_info->fusion_grp_attr[i]);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set wdr fusion grp attr failed!\n");
+            sample_print_err("vi set wdr fusion grp attr failed!\n");
             return TD_FAILURE;
         }
     }
@@ -1406,7 +1406,7 @@ static td_s32 sample_comm_vi_stop_chn(ot_vi_pipe vi_pipe, const sample_vi_chn_in
 
         ret = ss_mpi_vi_disable_chn(vi_pipe, vi_chn);
         if (ret != TD_SUCCESS) {
-            sample_print("vi disable chn(%d) failed with 0x%x!\n", vi_chn, ret);
+            sample_print_err("vi disable chn(%d) failed with 0x%x!\n", vi_chn, ret);
             return TD_FAILURE;
         }
     }
@@ -1427,19 +1427,19 @@ static td_s32 sample_comm_vi_start_chn(ot_vi_pipe vi_pipe, const sample_vi_pipe_
 
         ret = ss_mpi_vi_set_chn_attr(vi_pipe, vi_chn, chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set chn(%d) attr failed with 0x%x!\n", vi_chn, ret);
+            sample_print_err("vi set chn(%d) attr failed with 0x%x!\n", vi_chn, ret);
             return TD_FAILURE;
         }
 
         ret = ss_mpi_vi_set_chn_fmu_mode(vi_pipe, vi_chn, chn_info[i].fmu_mode);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set chn(%d) fmu_mode(%d) failed with 0x%x!\n", vi_chn, chn_info[i].fmu_mode, ret);
+            sample_print_err("vi set chn(%d) fmu_mode(%d) failed with 0x%x!\n", vi_chn, chn_info[i].fmu_mode, ret);
             return TD_FAILURE;
         }
 
         ret = ss_mpi_vi_enable_chn(vi_pipe, vi_chn);
         if (ret != TD_SUCCESS) {
-            sample_print("vi enable chn(%d) failed with 0x%x!\n", vi_chn, ret);
+            sample_print_err("vi enable chn(%d) failed with 0x%x!\n", vi_chn, ret);
             return TD_FAILURE;
         }
     }
@@ -1447,7 +1447,7 @@ static td_s32 sample_comm_vi_start_chn(ot_vi_pipe vi_pipe, const sample_vi_pipe_
     if (pipe_info->nr_attr.enable == TD_TRUE) {
         ret = ss_mpi_vi_set_pipe_3dnr_attr(vi_pipe, &pipe_info->nr_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("vi pipe(%d) set 3dnr_attr failed!\n", vi_pipe);
+            sample_print_err("vi pipe(%d) set 3dnr_attr failed!\n", vi_pipe);
             sample_comm_vi_stop_chn(vi_pipe, chn_info, chn_num);
             return TD_FAILURE;
         }
@@ -1469,7 +1469,7 @@ static td_s32 sample_comm_vi_switch_mode_start_chn(ot_vi_pipe vi_pipe,
 
         ret = ss_mpi_vi_set_chn_attr(vi_pipe, vi_chn, chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set chn(%d) attr failed with 0x%x!\n", vi_chn, ret);
+            sample_print_err("vi set chn(%d) attr failed with 0x%x!\n", vi_chn, ret);
             return TD_FAILURE;
         }
     }
@@ -1485,21 +1485,21 @@ static td_s32 sample_comm_vi_start_one_pipe(ot_vi_pipe vi_pipe, const sample_vi_
     if (pipe_info->bnr_bnf_num != 0) {
         ret = ss_mpi_vi_set_pipe_bnr_buf_num(vi_pipe, pipe_info->bnr_bnf_num);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set pipe(%d) bnr_buf_num failed with %#x!\n", vi_pipe, ret);
+            sample_print_err("vi set pipe(%d) bnr_buf_num failed with %#x!\n", vi_pipe, ret);
             return TD_FAILURE;
         }
     }
 
     ret = ss_mpi_vi_create_pipe(vi_pipe, &pipe_info->pipe_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("vi create pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+        sample_print_err("vi create pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
         return TD_FAILURE;
     }
 
     if (pipe_info->vc_change_en) {
         ret = ss_mpi_vi_set_pipe_vc_number(vi_pipe, pipe_info->vc_number);
         if (ret != TD_SUCCESS) {
-            sample_print("vi set pipe(%d) vc_number failed with %#x!\n", vi_pipe, ret);
+            sample_print_err("vi set pipe(%d) vc_number failed with %#x!\n", vi_pipe, ret);
             goto start_pipe_failed;
         }
     }
@@ -1507,7 +1507,7 @@ static td_s32 sample_comm_vi_start_one_pipe(ot_vi_pipe vi_pipe, const sample_vi_
     if (pipe_info->pipe_need_start == TD_TRUE) {
         ret = ss_mpi_vi_start_pipe(vi_pipe);
         if (ret != TD_SUCCESS) {
-            sample_print("vi start pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+            sample_print_err("vi start pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
             goto start_pipe_failed;
         }
     }
@@ -1518,7 +1518,7 @@ static td_s32 sample_comm_vi_start_one_pipe(ot_vi_pipe vi_pipe, const sample_vi_
 
     ret = sample_comm_vi_start_chn(vi_pipe, pipe_info);
     if (ret != TD_SUCCESS) {
-        sample_print("vi pipe(%d) start chn failed!\n", vi_pipe);
+        sample_print_err("vi pipe(%d) start chn failed!\n", vi_pipe);
         goto start_chn_failed;
     }
 
@@ -1539,18 +1539,18 @@ static td_void sample_comm_vi_stop_one_pipe(ot_vi_pipe vi_pipe, const sample_vi_
     if (is_master_pipe == TD_TRUE) {
         ret = sample_comm_vi_stop_chn(vi_pipe, pipe_info->chn_info, pipe_info->chn_num);
         if (ret != TD_SUCCESS) {
-            sample_print("vi pipe(%d) stop chn failed!\n", vi_pipe);
+            sample_print_err("vi pipe(%d) stop chn failed!\n", vi_pipe);
         }
     }
 
     ret = ss_mpi_vi_stop_pipe(vi_pipe);
     if (ret != TD_SUCCESS) {
-        sample_print("vi stop pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+        sample_print_err("vi stop pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
     }
 
     ret = ss_mpi_vi_destroy_pipe(vi_pipe);
     if (ret != TD_SUCCESS) {
-        sample_print("vi destroy pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+        sample_print_err("vi destroy pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
     }
 }
 
@@ -1597,7 +1597,7 @@ static td_s32 sample_comm_vi_register_sensor_lib(ot_vi_pipe vi_pipe, td_u8 pipe_
 
     ret = sample_comm_isp_sensor_regiter_callback(vi_pipe, sns_type);
     if (ret != TD_SUCCESS) {
-        printf("register sensor to ISP %d failed\n", vi_pipe);
+        sample_print_err("register sensor to ISP %d failed\n", vi_pipe);
         return TD_FAILURE;
     }
 
@@ -1609,26 +1609,26 @@ static td_s32 sample_comm_vi_register_sensor_lib(ot_vi_pipe vi_pipe, td_u8 pipe_
 
     ret = sample_comm_isp_bind_sns(vi_pipe, sns_type, bus_id);
     if (ret != TD_SUCCESS) {
-        printf("register sensor bus id %u failed\n", bus_id);
+        sample_print_err("register sensor bus id %u failed\n", bus_id);
         goto exit0;
     }
     if (sns_type == GST_412C_SLAVE_THERMO_T3_384_288_30FPS_14BIT) {
         ret = sample_comm_isp_thermo_lib_callback(vi_pipe);
         if (ret != TD_SUCCESS) {
-            printf("isp_mst_comm_thermo_lib_callback failed\n");
+            sample_print_err("isp_mst_comm_thermo_lib_callback failed\n");
             goto exit0;
         }
     } else {
         ret = sample_comm_isp_ae_lib_callback(vi_pipe);
         if (ret != TD_SUCCESS) {
-            printf("isp_mst_comm_ae_lib_callback failed\n");
+            sample_print_err("isp_mst_comm_ae_lib_callback failed\n");
             goto exit0;
         }
     }
 
     ret = sample_comm_isp_awb_lib_callback(vi_pipe);
     if (ret != TD_SUCCESS) {
-        printf("isp_mst_comm_awb_lib_callback failed\n");
+        sample_print_err("isp_mst_comm_awb_lib_callback failed\n");
         goto exit1;
     }
 
@@ -1664,7 +1664,7 @@ static td_void sample_comm_vi_set_isp_ctrl_param(ot_vi_pipe vi_pipe, td_bool is_
     ot_isp_ctrl_param isp_ctrl_param = {};
 
     if (ss_mpi_isp_get_ctrl_param(vi_pipe, &isp_ctrl_param) != TD_SUCCESS) {
-        printf("vi_pipe = %d get isp ctrl para failed!\n", vi_pipe);
+        sample_print_err("vi_pipe = %d get isp ctrl para failed!\n", vi_pipe);
         return;
     }
 
@@ -1673,7 +1673,7 @@ static td_void sample_comm_vi_set_isp_ctrl_param(ot_vi_pipe vi_pipe, td_bool is_
     isp_ctrl_param.quick_start_en = is_isp_quick_start;
 
     if (ss_mpi_isp_set_ctrl_param(vi_pipe, &isp_ctrl_param) != TD_SUCCESS) {
-        printf("vi_pipe = %d wakeup select be end failed!\n", vi_pipe);
+        sample_print_err("vi_pipe = %d wakeup select be end failed!\n", vi_pipe);
     }
 }
 
@@ -1683,7 +1683,7 @@ static td_s32 sample_comm_vi_start_one_pipe_isp(ot_vi_pipe vi_pipe, td_u8 pipe_i
 
     ret = sample_comm_vi_register_sensor_lib(vi_pipe, pipe_index, vi_cfg);
     if (ret != TD_SUCCESS) {
-        printf("register sensor to ISP %d failed\n", vi_pipe);
+        sample_print_err("register sensor to ISP %d failed\n", vi_pipe);
         return TD_FAILURE;
     }
 
@@ -1692,19 +1692,19 @@ static td_s32 sample_comm_vi_start_one_pipe_isp(ot_vi_pipe vi_pipe, td_u8 pipe_i
 
     ret = ss_mpi_isp_mem_init(vi_pipe);
     if (ret != TD_SUCCESS) {
-        printf("OT_MPI_ISP_MemInit failed with 0x%x!\n", ret);
+        sample_print_err("OT_MPI_ISP_MemInit failed with 0x%x!\n", ret);
         goto exit0;
     }
 
     ret = ss_mpi_isp_set_pub_attr(vi_pipe, &vi_cfg->pipe_info[pipe_index].isp_info.isp_pub_attr);
     if (ret != TD_SUCCESS) {
-        printf("OT_MPI_ISP_SetPubAttr failed with 0x%x!\n", ret);
+        sample_print_err("OT_MPI_ISP_SetPubAttr failed with 0x%x!\n", ret);
         goto exit1;
     }
 
     ret = ss_mpi_isp_init(vi_pipe);
     if (ret != TD_SUCCESS) {
-        printf("OT_MPI_ISP_Init failed with 0x%x!\n", ret);
+        sample_print_err("OT_MPI_ISP_Init failed with 0x%x!\n", ret);
         return -1;
     }
 
@@ -1712,7 +1712,7 @@ static td_s32 sample_comm_vi_start_one_pipe_isp(ot_vi_pipe vi_pipe, td_u8 pipe_i
         (vi_cfg->pipe_info[pipe_index].isp_need_run == TD_TRUE)) {
         ret = sample_comm_isp_run(vi_pipe);
         if (ret != TD_SUCCESS) {
-            printf("ISP Run failed with 0x%x!\n", ret);
+            sample_print_err("ISP Run failed with 0x%x!\n", ret);
             goto exit1;
         }
     }
@@ -1740,16 +1740,16 @@ static td_void sample_comm_vi_stop_one_pipe_isp(ot_vi_pipe vi_pipe, const sample
 td_s32 sample_comm_vi_get_isp_run_state(td_bool *isp_states, td_u32 size)
 {
     if (isp_states == TD_NULL) {
-        sample_print("isp_states is NULL\n");
+        sample_print_err("isp_states is NULL\n");
         return TD_FAILURE;
     }
     if (size < OT_VI_MAX_PIPE_NUM) {
-        sample_print("array size smaller than %d\n", OT_VI_MAX_PIPE_NUM);
+        sample_print_err("array size smaller than %d\n", OT_VI_MAX_PIPE_NUM);
         return TD_FAILURE;
     }
     td_s32 ret = memcpy_s(isp_states, size * sizeof(td_bool), g_start_isp, OT_VI_MAX_PIPE_NUM * sizeof(td_bool));
     if (ret != EOK) {
-        sample_print("memcpy_s isp states fail %x\n", ret);
+        sample_print_err("memcpy_s isp states fail %x\n", ret);
         return TD_FAILURE;
     }
 
@@ -1847,38 +1847,38 @@ td_s32 sample_comm_vi_start_vi(const sample_vi_cfg *vi_cfg)
     sample_sns_type sns_type;
     ret = sample_comm_vi_start_mipi_rx(&vi_cfg->sns_info, &vi_cfg->mipi_info);
     if (ret != TD_SUCCESS) {
-        sample_print("start mipi rx failed!\n");
+        sample_print_err("start mipi rx failed!\n");
         goto start_mipi_rx_failed;
     }
 
     vi_dev = vi_cfg->dev_info.vi_dev;
     ret = sample_comm_vi_start_dev(vi_dev, &vi_cfg->dev_info.dev_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("start dev failed!\n");
+        sample_print_err("start dev failed!\n");
         goto start_dev_failed;
     }
 
     ret = sample_comm_vi_dev_bind_pipe(vi_dev, &vi_cfg->bind_pipe);
     if (ret != TD_SUCCESS) {
-        sample_print("dev bind pipe failed!\n");
+        sample_print_err("dev bind pipe failed!\n");
         goto dev_bind_pipe_failed;
     }
 
     ret = sample_comm_vi_set_grp_info(&vi_cfg->grp_info);
     if (ret != TD_SUCCESS) {
-        sample_print("set grp info failed!\n");
+        sample_print_err("set grp info failed!\n");
         goto set_grp_info_failed;
     }
 
     ret = sample_comm_vi_start_pipe(&vi_cfg->bind_pipe, vi_cfg->pipe_info);
     if (ret != TD_SUCCESS) {
-        sample_print("start pipe failed!\n");
+        sample_print_err("start pipe failed!\n");
         goto start_pipe_failed;
     }
 
     ret = sample_comm_vi_start_isp(vi_cfg);
     if (ret != TD_SUCCESS) {
-        sample_print("start isp failed!\n");
+        sample_print_err("start isp failed!\n");
         goto start_isp_failed;
     }  
 
@@ -1925,7 +1925,7 @@ static td_s32 sample_comm_vi_mode_switch_start_one_pipe(ot_vi_pipe vi_pipe, cons
 
     ret = ss_mpi_vi_create_pipe(vi_pipe, &pipe_info->pipe_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("vi create pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+        sample_print_err("vi create pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
         return TD_FAILURE;
     }
 
@@ -1935,7 +1935,7 @@ static td_s32 sample_comm_vi_mode_switch_start_one_pipe(ot_vi_pipe vi_pipe, cons
 
     ret = sample_comm_vi_switch_mode_start_chn(vi_pipe, pipe_info->chn_info, pipe_info->chn_num);
     if (ret != TD_SUCCESS) {
-        sample_print("vi pipe(%d) start chn failed!\n", vi_pipe);
+        sample_print_err("vi pipe(%d) start chn failed!\n", vi_pipe);
         goto start_chn_failed;
     }
 
@@ -1979,32 +1979,32 @@ td_s32 sample_comm_vi_mode_switch_start_vi(const sample_vi_cfg *vi_cfg, td_bool 
 
     ret = sample_comm_vi_start_mipi_rx(&vi_cfg->sns_info, &vi_cfg->mipi_info);
     if (ret != TD_SUCCESS) {
-        sample_print("start mipi rx failed!\n");
+        sample_print_err("start mipi rx failed!\n");
         goto start_mipi_rx_failed;
     }
 
     vi_dev   = vi_cfg->dev_info.vi_dev;
     ret = sample_comm_vi_start_dev(vi_dev, &vi_cfg->dev_info.dev_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("start dev failed!\n");
+        sample_print_err("start dev failed!\n");
         goto start_dev_failed;
     }
 
     ret = sample_comm_vi_dev_bind_pipe(vi_dev, &vi_cfg->bind_pipe);
     if (ret != TD_SUCCESS) {
-        sample_print("dev bind pipe failed!\n");
+        sample_print_err("dev bind pipe failed!\n");
         goto dev_bind_pipe_failed;
     }
 
     ret = sample_comm_vi_set_grp_info(&vi_cfg->grp_info);
     if (ret != TD_SUCCESS) {
-        sample_print("set grp info failed!\n");
+        sample_print_err("set grp info failed!\n");
         goto set_grp_info_failed;
     }
 
     ret = sample_comm_vi_mode_switch_start_pipe(&vi_cfg->bind_pipe, vi_cfg->pipe_info);
     if (ret != TD_SUCCESS) {
-        sample_print("set grp info failed!\n");
+        sample_print_err("set grp info failed!\n");
         goto set_grp_info_failed;
     }
 
@@ -2014,7 +2014,7 @@ td_s32 sample_comm_vi_mode_switch_start_vi(const sample_vi_cfg *vi_cfg, td_bool 
         ret = sample_comm_vi_switch_isp_mode(vi_cfg);
     }
     if (ret != TD_SUCCESS) {
-        sample_print("sample_comm_vi_start_isp failed!\n");
+        sample_print_err("sample_comm_vi_start_isp failed!\n");
         goto start_isp_failed;
     }
 
@@ -2039,7 +2039,7 @@ static td_s32 sample_comm_vi_mode_switch_start_one_pipe_chn(ot_vi_pipe vi_pipe, 
 
     ret = ss_mpi_vi_start_pipe(vi_pipe);
     if (ret != TD_SUCCESS) {
-        sample_print("vi start pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
+        sample_print_err("vi start pipe(%d) failed with 0x%x!\n", vi_pipe, ret);
         goto start_pipe_failed;
     }
 
@@ -2049,7 +2049,7 @@ static td_s32 sample_comm_vi_mode_switch_start_one_pipe_chn(ot_vi_pipe vi_pipe, 
 
     ret = sample_comm_vi_start_chn(vi_pipe, pipe_info);
     if (ret != TD_SUCCESS) {
-        sample_print("vi pipe(%d) start chn failed!\n", vi_pipe);
+        sample_print_err("vi pipe(%d) start chn failed!\n", vi_pipe);
         goto start_chn_failed;
     }
 
@@ -2106,7 +2106,7 @@ static td_void sample_comoon_vi_query_isp_inner_state_info(ot_vi_pipe vi_pipe, t
             }
         }
         if (switch_finish == TD_TRUE) {
-            sample_print("switch finish !\n");
+            sample_print_info("switch finish !\n");
             break;
         }
         ot_usleep(SLEEP_TIME);
@@ -2153,12 +2153,12 @@ td_s32 sample_comm_vi_switch_isp_mode(const sample_vi_cfg *vi_cfg)
 
             ret = ss_mpi_isp_get_pub_attr(vi_pipe, &pre_pub_attr);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_isp_get_pub_attr failed!\n");
+                sample_print_err("ss_mpi_isp_get_pub_attr failed!\n");
                 sample_comm_vi_stop_isp(vi_cfg);
             }
             ret = ss_mpi_isp_set_pub_attr(vi_pipe, &pub_attr);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_isp_set_pub_attr failed!\n");
+                sample_print_err("ss_mpi_isp_set_pub_attr failed!\n");
                 sample_comm_vi_stop_isp(vi_cfg);
             }
 
@@ -2174,7 +2174,7 @@ td_s32 sample_comm_vi_switch_isp_mode(const sample_vi_cfg *vi_cfg)
     for (i = 0; i < dev_num; i++) {
         ret = sample_comm_vi_mode_switch_start_pipe_chn(&vi_cfg->bind_pipe, vi_cfg->pipe_info);
         if (ret != TD_SUCCESS) {
-            sample_print("set grp info failed!\n");
+            sample_print_err("set grp info failed!\n");
             goto start_pipe_failed;
         }
 
@@ -2212,12 +2212,12 @@ td_s32 sample_comm_vi_switch_isp_resolution(const sample_vi_cfg *vi_cfg, const o
 
             ret = ss_mpi_isp_get_pub_attr(vi_pipe, &pre_pub_attr);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_isp_get_pub_attr failed!\n");
+                sample_print_err("ss_mpi_isp_get_pub_attr failed!\n");
                 sample_comm_vi_stop_isp(vi_cfg);
             }
             ret = ss_mpi_isp_set_pub_attr(vi_pipe, &pub_attr);
             if (ret != TD_SUCCESS) {
-                sample_print("ss_mpi_isp_set_pub_attr failed!\n");
+                sample_print_err("ss_mpi_isp_set_pub_attr failed!\n");
                 sample_comm_vi_stop_isp(vi_cfg);
             }
 
@@ -2233,7 +2233,7 @@ td_s32 sample_comm_vi_switch_isp_resolution(const sample_vi_cfg *vi_cfg, const o
     for (i = 0; i < dev_num; i++) {
         ret = sample_comm_vi_mode_switch_start_pipe_chn(&vi_cfg->bind_pipe, vi_cfg->pipe_info);
         if (ret != TD_SUCCESS) {
-            sample_print("set grp info failed!\n");
+            sample_print_err("set grp info failed!\n");
             goto start_pipe_failed;
         }
 
@@ -2293,14 +2293,14 @@ static td_s32 sample_comm_vi_malloc_frame_blk(ot_vb_pool pool_id,
 
     vb_blk = ss_mpi_vb_get_blk(pool_id, calc_cfg->vb_size, TD_NULL);
     if (vb_blk == OT_VB_INVALID_HANDLE) {
-        sample_print("ss_mpi_vb_get_blk err, size:%u\n", calc_cfg->vb_size);
+        sample_print_err("ss_mpi_vb_get_blk err, size:%u\n", calc_cfg->vb_size);
         return TD_FAILURE;
     }
 
     phys_addr = ss_mpi_vb_handle_to_phys_addr(vb_blk);
     virt_addr = (td_u8 *)ss_mpi_sys_mmap(phys_addr, calc_cfg->vb_size);
     if (virt_addr == TD_NULL) {
-        sample_print("ss_mpi_sys_mmap err!\n");
+        sample_print_err("ss_mpi_sys_mmap err!\n");
         ss_mpi_vb_release_blk(vb_blk);
         return TD_FAILURE;
     }
@@ -2339,12 +2339,12 @@ td_void sample_comm_vi_free_frame_blk(sample_vi_user_frame_info *user_frame_info
 
     ret = ss_mpi_sys_munmap(virt_addr, blk_size);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_sys_munmap failure!\n");
+        sample_print_err("ss_mpi_sys_munmap failure!\n");
     }
 
     ret = ss_mpi_vb_release_blk(vb_blk);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vb_release_blk block 0x%x failure\n", vb_blk);
+        sample_print_err("ss_mpi_vb_release_blk block 0x%x failure\n", vb_blk);
     }
 
     user_frame_info->vb_blk = OT_VB_INVALID_HANDLE;
@@ -2366,7 +2366,7 @@ td_s32 sample_comm_vi_get_frame_blk(sample_vi_get_frame_vb_cfg *get_frame_vb_cfg
     vb_pool_cfg.remap_mode = OT_VB_REMAP_MODE_NONE;
     pool_id = ss_mpi_vb_create_pool(&vb_pool_cfg);
     if (pool_id == OT_VB_INVALID_POOL_ID) {
-        sample_print("ss_mpi_vb_create_pool failed!\n");
+        sample_print_err("ss_mpi_vb_create_pool failed!\n");
         return TD_FAILURE;
     }
 
@@ -2410,7 +2410,7 @@ static td_s32 sample_comm_vi_get_fpn_frame_info(ot_vi_pipe vi_pipe,
 
     ret = ss_mpi_vi_get_pipe_attr(vi_pipe, &pipe_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("vi get pipe attr failed!\n");
+        sample_print_err("vi get pipe attr failed!\n");
         return ret;
     }
 
@@ -2423,7 +2423,7 @@ static td_s32 sample_comm_vi_get_fpn_frame_info(ot_vi_pipe vi_pipe,
 
     ret = sample_comm_vi_get_frame_blk(&vb_cfg, user_frame_info, blk_cnt);
     if (ret != TD_SUCCESS) {
-        sample_print("get fpn frame vb failed!\n");
+        sample_print_err("get fpn frame vb failed!\n");
         return ret;
     }
 
@@ -2541,7 +2541,7 @@ static td_void *sample_common_vi_send_pipe_frame_proc(td_void *param)
     frame_cnt = vi_send_frame_info->frame_cnt;
     ret = ss_mpi_vi_set_pipe_frame_source(vi_send_frame_info->vi_pipe, OT_VI_PIPE_FRAME_SOURCE_USER);
     if (ret != TD_SUCCESS) {
-        printf("vi set pipe frame source failed!\n");
+        sample_print_err("vi set pipe frame source failed!\n");
         goto exit;
     }
 
@@ -2553,7 +2553,7 @@ static td_void *sample_common_vi_send_pipe_frame_proc(td_void *param)
 
             ret = ss_mpi_vi_send_pipe_raw(vi_send_frame_info->vi_pipe, frame_info, frame_num, milli_sec);
             if (ret != TD_SUCCESS) {
-                printf("vi send pipe frame failed with %#x!\n", ret);
+                sample_print_err("vi send pipe frame failed with %#x!\n", ret);
                 continue;
             }
             send_cnt += frame_num;
@@ -2564,7 +2564,7 @@ static td_void *sample_common_vi_send_pipe_frame_proc(td_void *param)
 
     ret = ss_mpi_vi_set_pipe_frame_source(vi_send_frame_info->vi_pipe, OT_VI_PIPE_FRAME_SOURCE_FE);
     if (ret != TD_SUCCESS) {
-        printf("vi set pipe frame source failed!\n");
+        sample_print_err("vi set pipe frame source failed!\n");
     }
 
 exit:
@@ -2583,7 +2583,7 @@ static td_s32 sample_comm_vi_fpn_multi_calibrate(ot_vi_pipe vi_pipe, sample_vi_u
 
         ret = ss_mpi_isp_fpn_calibrate(vi_pipe, calibrate_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("vi fpn calibrate failed!\n");
+            sample_print_err("vi fpn calibrate failed!\n");
             return TD_FAILURE;
         }
         (td_void)memcpy_s(&user_frame_info[i].frame_info, sizeof(ot_video_frame_info),
@@ -2607,7 +2607,7 @@ static td_s32 sample_comm_vi_fpn_calibrate_process(ot_vi_pipe vi_pipe, sample_vi
     if (ret != TD_SUCCESS) {
         return ret;
     }
-    printf("first calibrate done, times: %d.\n", calib_cnt);
+    sample_print("first calibrate done, times: %d.\n", calib_cnt);
 
     vi_send_frame_info.vi_pipe = vi_pipe;
     vi_send_frame_info.frame_cnt = calib_cnt;
@@ -2615,7 +2615,7 @@ static td_s32 sample_comm_vi_fpn_calibrate_process(ot_vi_pipe vi_pipe, sample_vi
     g_send_pipe_pthread = TD_TRUE;
     ret = pthread_create(&thread_id, TD_NULL, sample_common_vi_send_pipe_frame_proc, (td_void *)&vi_send_frame_info);
     if (ret != TD_SUCCESS) {
-        printf("vi create send frame thread failed!\n");
+        sample_print_err("vi create send frame thread failed!\n");
         g_send_pipe_pthread = TD_FALSE;
         return TD_FAILURE;
     }
@@ -2627,7 +2627,7 @@ static td_s32 sample_comm_vi_fpn_calibrate_process(ot_vi_pipe vi_pipe, sample_vi
     if (ret != TD_SUCCESS) {
         goto exit;
     }
-    printf("second calibrate done, times: 1.\n");
+    sample_print("second calibrate done, times: 1.\n");
 
 exit:
     g_send_pipe_pthread = TD_FALSE;
@@ -2645,7 +2645,7 @@ td_s32 sample_comm_vi_fpn_calibrate(ot_vi_pipe vi_pipe, sample_vi_fpn_calibratio
 
     td_char fpn_file_name[FPN_FILE_NAME_LENGTH];
 
-    printf("please turn off camera aperture to start calibrate!\nhit any key ,start calibrate!\n");
+    sample_print("please turn off camera aperture to start calibrate!\nhit any key ,start calibrate!\n");
     (td_void)getchar();
 
     ret = ss_mpi_vi_disable_chn(vi_pipe, vi_chn);
@@ -2665,22 +2665,22 @@ td_s32 sample_comm_vi_fpn_calibrate(ot_vi_pipe vi_pipe, sample_vi_fpn_calibratio
 
     ret = sample_comm_vi_fpn_calibrate_process(vi_pipe, user_frame_info, &calibrate_attr, FPN_CALIB_TIMES);
     if (ret != TD_SUCCESS) {
-        sample_print("vi fpn calibrate failed!\n");
+        sample_print_err("vi fpn calibrate failed!\n");
         goto exit;
     }
 
-    printf("\nafter calibrate ");
+    sample_print("\nafter calibrate ");
     for (i = 0; i < OT_VI_MAX_SPLIT_NODE_NUM; i++) {
-        printf("offset[%d] = 0x%x, ", i, calibrate_attr.fpn_cali_frame.offset[i]);
+        sample_print("offset[%d] = 0x%x, ", i, calibrate_attr.fpn_cali_frame.offset[i]);
     }
-    printf("frame_size = %u, iso = %u\n", calibrate_attr.fpn_cali_frame.frm_size, calibrate_attr.fpn_cali_frame.iso);
+    sample_print("frame_size = %u, iso = %u\n", calibrate_attr.fpn_cali_frame.frm_size, calibrate_attr.fpn_cali_frame.iso);
 
     sample_comm_vi_get_fpn_file_name(&calibrate_attr.fpn_cali_frame.fpn_frame.video_frame,
                                      fpn_file_name, FPN_FILE_NAME_LENGTH);
-    printf("save dark frame file: %s!\n", fpn_file_name);
+    sample_print("save dark frame file: %s!\n", fpn_file_name);
     pfd = fopen(fpn_file_name, "wb");
     if (pfd == TD_NULL) {
-        printf("open file %s err!\n", fpn_file_name);
+        sample_print_err("open file %s err!\n", fpn_file_name);
         goto exit;
     }
 
@@ -2721,16 +2721,16 @@ td_s32 sample_comm_vi_fpn_calibrate_for_thermo(ot_vi_pipe vi_pipe, sample_vi_fpn
 
     ret = sample_comm_vi_fpn_calibrate_process(vi_pipe, user_frame_info, &calibrate_attr, FPN_CALIB_TIMES);
     if (ret != TD_SUCCESS) {
-        sample_print("vi fpn calibrate failed!\n");
+        sample_print_err("vi fpn calibrate failed!\n");
         goto exit;
     }
 
     sample_comm_vi_get_fpn_file_name(&calibrate_attr.fpn_cali_frame.fpn_frame.video_frame,
                                      fpn_file_name, FPN_FILE_NAME_LENGTH);
-    printf("save dark frame file: %s!\n", fpn_file_name);
+    sample_print("save dark frame file: %s!\n", fpn_file_name);
     pfd = fopen(fpn_file_name, "wb");
     if (pfd == TD_NULL) {
-        printf("open file %s err!\n", fpn_file_name);
+        sample_print_err("open file %s err!\n", fpn_file_name);
         goto exit;
     }
 
@@ -2782,7 +2782,7 @@ td_s32 sample_comm_vi_enable_fpn_correction(ot_vi_pipe vi_pipe, sample_vi_fpn_co
                                      fpn_file_name, FPN_FILE_NAME_LENGTH);
     pfd = fopen(fpn_file_name, "rb");
     if (pfd == TD_NULL) {
-        printf("open file %s err!\n", fpn_file_name);
+        sample_print_err("open file %s err!\n", fpn_file_name);
         goto exit;
     }
 
@@ -2792,11 +2792,11 @@ td_s32 sample_comm_vi_enable_fpn_correction(ot_vi_pipe vi_pipe, sample_vi_fpn_co
     (td_void)fclose(pfd);
 
     for (i = 0; i < OT_VI_MAX_SPLIT_NODE_NUM; i++) {
-        printf("offset[%u] = 0x%x; ", i, correction_attr.fpn_frm_info.offset[i]);
+        sample_print("offset[%u] = 0x%x; ", i, correction_attr.fpn_frm_info.offset[i]);
     }
-    printf("\n");
-    printf("frame_size = %u.\n", correction_attr.fpn_frm_info.frm_size);
-    printf("iso = %u.\n", correction_attr.fpn_frm_info.iso);
+    sample_print("\n");
+    sample_print("frame_size = %u.\n", correction_attr.fpn_frm_info.frm_size);
+    sample_print("iso = %u.\n", correction_attr.fpn_frm_info.iso);
 
     correction_attr.enable = TD_TRUE;
     correction_attr.aibnr_mode = TD_FALSE;
@@ -2805,7 +2805,7 @@ td_s32 sample_comm_vi_enable_fpn_correction(ot_vi_pipe vi_pipe, sample_vi_fpn_co
     correction_attr.manual_attr.strength = correction_cfg->strength;
     ret = ss_mpi_isp_set_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set fpn attr failed!\n");
+        sample_print_err("set fpn attr failed!\n");
         goto exit;
     }
 
@@ -2836,7 +2836,7 @@ td_s32 sample_comm_vi_enable_fpn_correction_for_thermo(ot_vi_pipe vi_pipe, sampl
                                      fpn_file_name, FPN_FILE_NAME_LENGTH);
     pfd = fopen(fpn_file_name, "rb");
     if (pfd == TD_NULL) {
-        printf("open file %s err!\n", fpn_file_name);
+        sample_print_err("open file %s err!\n", fpn_file_name);
         goto exit;
     }
 
@@ -2852,7 +2852,7 @@ td_s32 sample_comm_vi_enable_fpn_correction_for_thermo(ot_vi_pipe vi_pipe, sampl
     correction_attr.manual_attr.strength = correction_cfg->strength;
     ret = ss_mpi_isp_set_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set fpn attr failed!\n");
+        sample_print_err("set fpn attr failed!\n");
         goto exit;
     }
 
@@ -2883,10 +2883,10 @@ td_s32 sample_comm_vi_enable_fpn_correction_for_scene(ot_vi_pipe vi_pipe, sample
                  "sample_comm_vi_get_fpn_file_name_iso");
     pfd = fopen(fpn_file_name, "rb");
     if (pfd == TD_NULL) {
-        printf("open file %s err!\n", fpn_file_name);
+        sample_print_err("open file %s err!\n", fpn_file_name);
         goto exit;
     }
-    printf("open file %s success!\n", fpn_file_name);
+    sample_print("open file %s success!\n", fpn_file_name);
     correction_attr.fpn_frm_info.frm_size = user_frame_info->blk_size;
     sample_comm_vi_read_fpn_file(&correction_attr.fpn_frm_info, pfd);
     ret = fclose(pfd);
@@ -2896,9 +2896,9 @@ td_s32 sample_comm_vi_enable_fpn_correction_for_scene(ot_vi_pipe vi_pipe, sample
     correction_attr.fpn_frm_info.iso = iso;
     for (i = 0; i < OT_VI_MAX_SPLIT_NODE_NUM; i++) {
         correction_attr.fpn_frm_info.offset[i] = scene_fpn_offset_cfg->offset;
-        printf("offset[%u] = %#x; ", i, scene_fpn_offset_cfg->offset);
+        sample_print("offset[%u] = %#x; ", i, scene_fpn_offset_cfg->offset);
     }
-    printf("\n frame_size = %u. iso = %u.\n", correction_attr.fpn_frm_info.frm_size, correction_attr.fpn_frm_info.iso);
+    sample_print("\n frame_size = %u. iso = %u.\n", correction_attr.fpn_frm_info.frm_size, correction_attr.fpn_frm_info.iso);
     correction_attr.enable = TD_TRUE;
     correction_attr.aibnr_mode = correction_cfg->aibnr_mode;
     correction_attr.op_type = correction_cfg->op_mode;
@@ -2907,7 +2907,7 @@ td_s32 sample_comm_vi_enable_fpn_correction_for_scene(ot_vi_pipe vi_pipe, sample
     correction_attr.fpn_frm_info.fpn_frame.video_frame.compress_mode = correction_cfg->compress_mode;
     ret = ss_mpi_isp_set_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set fpn attr failed!\n");
+        sample_print_err("set fpn attr failed!\n");
         goto exit;
     }
     return TD_SUCCESS;
@@ -2925,14 +2925,14 @@ td_s32 sample_comm_vi_disable_fpn_correction(ot_vi_pipe vi_pipe, sample_vi_fpn_c
 
     ret = ss_mpi_isp_get_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("get fpn attr failed!\n");
+        sample_print_err("get fpn attr failed!\n");
         return TD_FAILURE;
     }
 
     correction_attr.enable = TD_FALSE;
     ret = ss_mpi_isp_set_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set fpn attr failed!\n");
+        sample_print_err("set fpn attr failed!\n");
         return TD_FAILURE;
     }
 
@@ -2949,7 +2949,7 @@ td_s32 sample_comm_vi_disable_fpn_correction_for_thermo(ot_vi_pipe vi_pipe,
 
     ret = ss_mpi_isp_get_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("get fpn attr failed!\n");
+        sample_print_err("get fpn attr failed!\n");
         return TD_FAILURE;
     }
 
@@ -2960,7 +2960,7 @@ td_s32 sample_comm_vi_disable_fpn_correction_for_thermo(ot_vi_pipe vi_pipe,
     correction_attr.enable = TD_FALSE;
     ret = ss_mpi_isp_set_fpn_attr(vi_pipe, &correction_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("set fpn attr failed!\n");
+        sample_print_err("set fpn attr failed!\n");
         return TD_FAILURE;
     }
 
@@ -2975,13 +2975,13 @@ td_s32 sample_comm_vi_start_virt_pipe(const sample_vi_cfg *vi_cfg)
 
     ret = sample_comm_vi_start_pipe(&vi_cfg->bind_pipe, vi_cfg->pipe_info);
     if (ret != TD_SUCCESS) {
-        sample_print("start pipe failed!\n");
+        sample_print_err("start pipe failed!\n");
         goto start_pipe_failed;
     }
 
     ret = sample_comm_vi_start_isp(vi_cfg);
     if (ret != TD_SUCCESS) {
-        sample_print("sample_comm_vi_start_isp failed!\n");
+        sample_print_err("sample_comm_vi_start_isp failed!\n");
         goto start_isp_failed;
     }
 
@@ -3011,11 +3011,11 @@ static td_s32 sample_comm_vi_convert_chroma_planar_to_sp42x(FILE *file, td_u8 *c
 
     temp = (td_u8*)malloc(chroma_stride);
     if (temp == TD_NULL) {
-        sample_print("vi malloc failed!\n");
+        sample_print_err("vi malloc failed!\n");
         return TD_FAILURE;
     }
     if (memset_s(temp, chroma_stride, 0, chroma_stride) != EOK) {
-        sample_print("vi memset_s failed!\n");
+        sample_print_err("vi memset_s failed!\n");
         free(temp);
         temp = TD_NULL;
         return TD_FAILURE;
@@ -3101,7 +3101,7 @@ static td_s32 sample_comm_vi_get_user_pic_frame_info(ot_size *dst_size, sample_v
 
     ret = sample_comm_vi_get_frame_blk(&vb_cfg, user_frame_info, 1);
     if (ret != TD_SUCCESS) {
-        sample_print("get user pic frame vb failed!\n");
+        sample_print_err("get user pic frame vb failed!\n");
         return ret;
     }
 
@@ -3116,31 +3116,31 @@ static td_s32 sample_comm_vi_add_scale_task(ot_video_frame_info *src_frame, ot_v
 
     ret = ss_mpi_vgs_begin_job(&handle);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
+        sample_print_err("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
         return TD_FAILURE;
     }
 
     if (memcpy_s(&vgs_task_attr.img_in, sizeof(ot_video_frame_info),
         src_frame, sizeof(ot_video_frame_info)) != EOK) {
-        sample_print("memcpy_s img_in failed\n");
+        sample_print_err("memcpy_s img_in failed\n");
         return TD_FAILURE;
     }
 
     if (memcpy_s(&vgs_task_attr.img_out, sizeof(ot_video_frame_info),
         dst_frame, sizeof(ot_video_frame_info)) != EOK) {
-        sample_print("memcpy_s img_out failed\n");
+        sample_print_err("memcpy_s img_out failed\n");
         return TD_FAILURE;
     }
 
     if (ss_mpi_vgs_add_scale_task(handle, &vgs_task_attr, OT_VGS_SCALE_COEF_NORM) != TD_SUCCESS) {
-        sample_print("ss_mpi_vgs_add_scale_task failed\n");
+        sample_print_err("ss_mpi_vgs_add_scale_task failed\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vgs_end_job(handle);
     if (ret != TD_SUCCESS) {
         ss_mpi_vgs_cancel_job(handle);
-        sample_print("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
+        sample_print_err("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
         return TD_FAILURE;
     }
 
@@ -3162,7 +3162,7 @@ static td_s32 sample_comm_vi_read_user_frame_file(ot_vi_pipe vi_pipe, sample_vi_
 
     pfd = fopen(frame_file, "rb");
     if (pfd == TD_NULL) {
-        sample_print("open file \"%s\" failed!\n", frame_file);
+        sample_print_err("open file \"%s\" failed!\n", frame_file);
         ret = TD_FAILURE;
         goto exit0;
     }
@@ -3176,7 +3176,7 @@ static td_s32 sample_comm_vi_read_user_frame_file(ot_vi_pipe vi_pipe, sample_vi_
 
     ret = sample_comm_vi_add_scale_task(&pic_frame_info.frame_info, &user_frame_info->frame_info);
     if (ret != TD_SUCCESS) {
-        sample_print("add vgs scale task failed.\n");
+        sample_print_err("add vgs scale task failed.\n");
     }
 
 exit1:
@@ -3195,19 +3195,19 @@ static td_s32 sample_comm_vi_add_coverex_task(ot_video_frame_info *dst_frame)
 
     ret = ss_mpi_vgs_begin_job(&handle);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
+        sample_print_err("ss_mpi_vgs_begin_job failed, ret:0x%x", ret);
         return TD_FAILURE;
     }
 
     if (memcpy_s(&vgs_task_attr.img_in, sizeof(ot_video_frame_info),
         dst_frame, sizeof(ot_video_frame_info)) != EOK) {
-        sample_print("memcpy_s img_in failed\n");
+        sample_print_err("memcpy_s img_in failed\n");
         return TD_FAILURE;
     }
 
     if (memcpy_s(&vgs_task_attr.img_out, sizeof(ot_video_frame_info),
         dst_frame, sizeof(ot_video_frame_info)) != EOK) {
-        sample_print("memcpy_s img_out failed\n");
+        sample_print_err("memcpy_s img_out failed\n");
         return TD_FAILURE;
     }
 
@@ -3219,14 +3219,14 @@ static td_s32 sample_comm_vi_add_coverex_task(ot_video_frame_info *dst_frame)
     cover.rect_attr.is_solid = TD_TRUE;
     cover.color = 0xFF0000;
     if (ss_mpi_vgs_add_cover_task(handle, &vgs_task_attr, &cover, 1) != TD_SUCCESS) {
-        sample_print("ss_mpi_vgs_add_scale_task failed\n");
+        sample_print_err("ss_mpi_vgs_add_scale_task failed\n");
         return TD_FAILURE;
     }
 
     ret = ss_mpi_vgs_end_job(handle);
     if (ret != TD_SUCCESS) {
         ss_mpi_vgs_cancel_job(handle);
-        sample_print("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
+        sample_print_err("ss_mpi_vgs_end_job failed, ret:0x%x", ret);
         return TD_FAILURE;
     }
 
@@ -3241,7 +3241,7 @@ td_s32 sample_common_vi_load_user_pic(ot_vi_pipe vi_pipe, sample_vi_user_pic_typ
 
     ret = ss_mpi_vi_get_pipe_attr(vi_pipe, &pipe_attr);
     if (ret != TD_SUCCESS) {
-        sample_print("vi get pipe attr failed!\n");
+        sample_print_err("vi get pipe attr failed!\n");
         return ret;
     }
 
@@ -3297,7 +3297,7 @@ static td_s32 sample_common_vi_match_wdr_pts(ot_video_frame_info frame_info[], o
     td_s32 min_id, i;
 
     if (pipe_num != WDR_FUSION_MAX_FRAME) {
-        printf("this demo only support two pipe\n");
+        sample_print_info("this demo only support two pipe\n");
         return TD_FAILURE;
     }
 
@@ -3320,7 +3320,7 @@ static td_s32 sample_common_vi_match_wdr_pts(ot_video_frame_info frame_info[], o
         (td_void)ss_mpi_vi_release_pipe_frame(vi_pipe[min_id], &frame_info[min_id]);
         ret = ss_mpi_vi_get_pipe_frame(vi_pipe[min_id], &frame_info[min_id], millsec);
         if (ret != TD_SUCCESS) {
-            printf("repeated get pipe[%d] frame failed\n", vi_pipe[min_id]);
+            sample_print_err("repeated get pipe[%d] frame failed\n", vi_pipe[min_id]);
             return TD_FAILURE;
         }
     }
@@ -3337,13 +3337,13 @@ static td_s32 sample_common_vi_run_be_set_pipe_dump_attr(ot_vi_pipe vi_pipe[], t
     for (i = 0; i < pipe_num; i++) {
         ret = ss_mpi_vi_set_pipe_frame_dump_attr(vi_pipe[i], dump_attr);
         if (ret != TD_SUCCESS) {
-            printf("set pipe[%d] dump attr failed\n", vi_pipe[i]);
+            sample_print_err("set pipe[%d] dump attr failed\n", vi_pipe[i]);
             return TD_FAILURE;
         }
 
         ret = ss_mpi_vi_set_pipe_frame_source(vi_pipe[i], OT_VI_PIPE_FRAME_SOURCE_USER);
         if (ret != TD_SUCCESS) {
-            printf("set pipe[%d] user frame source failed\n", vi_pipe[i]);
+            sample_print_err("set pipe[%d] user frame source failed\n", vi_pipe[i]);
             return TD_FAILURE;
         }
     }
@@ -3374,7 +3374,7 @@ static td_void *sample_vi_run_be_dump_and_send_proc_single(td_void *param)
         for (i = 0; i < bind_pipe->pipe_num && i < WDR_FUSION_MAX_FRAME; i++) {
             ret = ss_mpi_vi_get_pipe_frame(vi_pipe[i], &frame_info[i], wait_time);
             if (ret != TD_SUCCESS) {
-                printf("%s, %d vi pipe %d get pipe frame failed! wait time = %d\n",
+                sample_print_err("%s, %d vi pipe %d get pipe frame failed! wait time = %d\n",
                     __func__, __LINE__, vi_pipe[i], wait_time);
                 goto err;
             }
@@ -3382,7 +3382,7 @@ static td_void *sample_vi_run_be_dump_and_send_proc_single(td_void *param)
 
         if (bind_pipe->wdr_mode != OT_WDR_MODE_NONE) {
             if (sample_common_vi_match_wdr_pts(frame_info, vi_pipe, bind_pipe->pipe_num) != TD_SUCCESS) {
-                printf("pipe frame not suitable, lost frame\n");
+                sample_print_err("pipe frame not suitable, lost frame\n");
                 goto err;
             }
         }
@@ -3392,7 +3392,7 @@ static td_void *sample_vi_run_be_dump_and_send_proc_single(td_void *param)
 
         ret = ss_mpi_vi_send_pipe_raw(vi_pipe[0], send_frame_info, pipe_num, millsec);
         if (ret != TD_SUCCESS) {
-            printf("pipe[%d] send frame failed\n", vi_pipe[0]);
+            sample_print_err("pipe[%d] send frame failed\n", vi_pipe[0]);
         }
 
 err:
@@ -3411,12 +3411,12 @@ td_s32 sample_comm_vi_send_run_be_frame(sample_run_be_bind_pipe *bind_pipe)
     g_send_pipe_pthread = TD_TRUE;
     ret = pthread_create(&thread_id, TD_NULL, sample_vi_run_be_dump_and_send_proc_single, (td_void *)bind_pipe);
     if (ret != TD_SUCCESS) {
-        printf("vi create run be send frame thread failed!\n");
+        sample_print_err("vi create run be send frame thread failed!\n");
         g_send_pipe_pthread = TD_FALSE;
         return TD_FAILURE;
     }
 
-    printf("runbe send frame thread running, print any key to exit!\n");
+    sample_print("runbe send frame thread running, print any key to exit!\n");
     (td_void)getchar();
 
     g_send_pipe_pthread = TD_FALSE;
@@ -3505,10 +3505,10 @@ td_s32 sample_comm_vi_read_raw_frame(td_char *frame_file,
     FILE *pfd;
     td_u32 i;
 
-    printf("reading frame file: %s, please wait...\n", frame_file);
+    sample_print("reading frame file: %s, please wait...\n", frame_file);
     pfd = fopen(frame_file, "rb");
     if (!pfd) {
-        printf("open file \"%s\" failed!\n", frame_file);
+        sample_print_err("open file \"%s\" failed!\n", frame_file);
         return TD_FAILURE;
     }
 
@@ -3522,7 +3522,7 @@ td_s32 sample_comm_vi_read_raw_frame(td_char *frame_file,
             (video_frame->pixel_format == OT_PIXEL_FORMAT_RGB_BAYER_16BPP)) {
             sample_comm_vi_read_raw_from_file(pfd, video_frame);
         } else {
-            printf("unsupport pixel format (%d)!\n", video_frame->pixel_format);
+            sample_print("unsupport pixel format (%d)!\n", video_frame->pixel_format);
         }
     }
 
@@ -3530,7 +3530,7 @@ td_s32 sample_comm_vi_read_raw_frame(td_char *frame_file,
         return TD_FAILURE;
     }
 
-    printf("read raw frame from file \"%s\" done!\n", frame_file);
+    sample_print("read raw frame from file \"%s\" done!\n", frame_file);
 
     return TD_SUCCESS;
 }

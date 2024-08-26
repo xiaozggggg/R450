@@ -12,6 +12,9 @@
 #include "ot_common_dpu_rect.h"
 #include "ot_common_dpu_match.h"
 
+#include "wk_log.h"
+
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C"{
@@ -116,7 +119,7 @@ typedef struct {
 
 #define sample_svp_dpu_pause()                                                      \
 do {                                                                    \
-    printf("---------------press Enter key to exit!---------------\n"); \
+    WK_LOGD("---------------press Enter key to exit!---------------\n"); \
     (void)getchar();                                                    \
 } while (0)
 
@@ -124,6 +127,7 @@ do {                                                                    \
 do { \
     fprintf(stderr, "[level]:%s,[func]:%s [line]:%d [info]:"msg, \
         level_str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+    WK_LOGD(msg, ##__VA_ARGS__); \
 } while (0)
 #define sample_svp_dpu_printf_red(level_str, msg, ...) \
 do { \
@@ -132,8 +136,8 @@ do { \
 } while (0)
 
 /* error conditions */
-#define sample_svp_dpu_trace_err(msg, ...)     sample_svp_dpu_printf_red("Error", msg, ##__VA_ARGS__)
-#define sample_svp_dpu_trace_info(msg, ...)    sample_svp_dpu_printf("Info", msg, ##__VA_ARGS__)
+#define sample_svp_dpu_trace_err(msg, ...)     WK_LOGE(msg, ##__VA_ARGS__) //sample_svp_dpu_printf_red("Error", msg, ##__VA_ARGS__)
+#define sample_svp_dpu_trace_info(msg, ...)    WK_LOGD(msg, ##__VA_ARGS__) //sample_svp_dpu_printf("Info", msg, ##__VA_ARGS__)
 /* exps is true, goto */
 #define sample_svp_dpu_check_exps_goto(exps, label, msg, ...)                  \
 do {                                                                              \

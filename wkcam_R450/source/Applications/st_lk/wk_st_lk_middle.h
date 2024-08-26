@@ -14,7 +14,7 @@
 #include "wk_st_lk_mng.h"
 #include "wk_st_lk_debug.h"
 #include "wk_log.h"
-#include "opencv/core.hpp"
+#include "core.hpp"
 
 using namespace std; 
 
@@ -97,6 +97,10 @@ public:
 	td_bool wk_result_export(wk_location_result_s::wk_ptr& _result);
 
 
+	/**
+	 * @brief 打印mat
+	 */
+	td_s32 wk_log_mat(cv::Mat _mat);
 
 	/**
 	 * @brief 调试性代码,  将帧描点，并送入venc进行编码

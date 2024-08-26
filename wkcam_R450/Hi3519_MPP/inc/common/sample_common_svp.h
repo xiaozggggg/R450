@@ -18,6 +18,8 @@
 #include "ot_common.h"
 #include "ot_common_svp.h"
 #include "sample_comm.h"
+#include "wk_log.h"
+
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -87,21 +89,21 @@ do { \
         __LINE__, ##__VA_ARGS__); \
 } while (0)
 /* system is unusable   */
-#define sample_svp_trace_fatal(msg, ...)   sample_svp_printf_red("Fatal", msg, ##__VA_ARGS__)
+#define sample_svp_trace_fatal(msg, ...) 	WK_LOGF(msg, ##__VA_ARGS__) // sample_svp_printf_red("Fatal", msg, ##__VA_ARGS__)
 /* action must be taken immediately */
-#define sample_svp_trace_alert(msg, ...)   sample_svp_printf_red("Alert", msg, ##__VA_ARGS__)
+#define sample_svp_trace_alert(msg, ...)    WK_LOGE(msg, ##__VA_ARGS__) //sample_svp_printf_red("Alert", msg, ##__VA_ARGS__)
 /* critical conditions */
-#define sample_svp_trace_critical(msg, ...)    sample_svp_printf_red("Critical", msg, ##__VA_ARGS__)
+#define sample_svp_trace_critical(msg, ...) WK_LOGE(msg, ##__VA_ARGS__) //sample_svp_printf_red("Critical", msg, ##__VA_ARGS__)
 /* error conditions */
-#define sample_svp_trace_err(msg, ...)     sample_svp_printf_red("Error", msg, ##__VA_ARGS__)
+#define sample_svp_trace_err(msg, ...)    	WK_LOGE(msg, ##__VA_ARGS__) //sample_svp_printf_red("Error", msg, ##__VA_ARGS__)
 /* warning conditions */
-#define sample_svp_trace_warning(msg, ...)    sample_svp_printf("Warning", msg, ##__VA_ARGS__)
+#define sample_svp_trace_warning(msg, ...)  WK_LOGW(msg, ##__VA_ARGS__)  //sample_svp_printf("Warning", msg, ##__VA_ARGS__)
 /* normal but significant condition  */
-#define sample_svp_trace_notic(msg, ...)  sample_svp_printf("Notice", msg, ##__VA_ARGS__)
+#define sample_svp_trace_notic(msg, ...) 	WK_LOGI(msg, ##__VA_ARGS__) //sample_svp_printf("Notice", msg, ##__VA_ARGS__)
 /* informational */
-#define sample_svp_trace_info(msg, ...)    sample_svp_printf("Info", msg, ##__VA_ARGS__)
+#define sample_svp_trace_info(msg, ...)   	WK_LOGI(msg, ##__VA_ARGS__) //sample_svp_printf("Info", msg, ##__VA_ARGS__)
 /* debug-level messages  */
-#define sample_svp_trace_debug(msg, ...)  sample_svp_printf("Debug", msg, ##__VA_ARGS__)
+#define sample_svp_trace_debug(msg, ...)  	WK_LOGD(msg, ##__VA_ARGS__)	//sample_svp_printf("Debug", msg, ##__VA_ARGS__)
 
 /* exps is true, goto */
 #define sample_svp_check_exps_goto(exps, label, level, msg, ...)                  \

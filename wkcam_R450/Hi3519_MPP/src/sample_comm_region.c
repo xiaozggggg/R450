@@ -67,7 +67,7 @@ static osd_color_format region_mst_get_color_format_by_pixel_format(ot_pixel_for
         case OT_PIXEL_FORMAT_ARGB_8888:
             return OSD_COLOR_FORMAT_RGB8888;
         default:
-            printf("pixel format is not support!\n");
+            sample_print_err("pixel format is not support!\n");
             return OSD_COLOR_FORMAT_BUTT;
     }
 }
@@ -85,7 +85,7 @@ static td_u8 *region_mst_get_clut2_data_from_bmp_data(ot_bmp *bmp)
 
     clut_data = malloc(bmp->height * bmp->width / PIX_PER_BYTE_CLUT2);
     if (clut_data == NULL) {
-        printf("malloc osd memory err!\n");
+        sample_print_err("malloc osd memory err!\n");
         return TD_NULL;
     }
 
@@ -121,7 +121,7 @@ static td_u8 *region_mst_get_clut4_data_from_bmp_data(ot_bmp *bmp)
 
     clut_data = malloc(bmp->height * bmp->width / PIX_PER_BYTE_CLUT4);
     if (clut_data == NULL) {
-        printf("malloc osd memory err!\n");
+        sample_print_err("malloc osd memory err!\n");
         return TD_NULL;
     }
 
@@ -172,13 +172,13 @@ td_s32 region_mst_load_bmp(rgn_load_bmp_info *load_bmp_info)
     td_u32 bpp;
     td_u8 *clut_data = NULL;
     if (get_bmp_info(load_bmp_info->filename, &bmp_file_header, &bmp_info) < 0) {
-        printf("get_bmp_info err!\n");
+        sample_print_err("get_bmp_info err!\n");
         return TD_FAILURE;
     }
 
     if (bmp_info.bmp_header.bi_bit_count > MAX_BIT_COUNT || bmp_info.bmp_header.bi_width > OT_RGN_OVERLAY_MAX_WIDTH ||
         bmp_info.bmp_header.bi_height > OT_RGN_OVERLAY_MAX_HEIGHT) {
-        printf("bmp info error!");
+        sample_print_err("bmp info error!");
         return TD_FAILURE;
     }
     surface.color_format = region_mst_get_color_format_by_pixel_format(load_bmp_info->pixel_fmt);
@@ -188,7 +188,7 @@ td_s32 region_mst_load_bmp(rgn_load_bmp_info *load_bmp_info)
     bpp = bmp_info.bmp_header.bi_bit_count / BITS_NUM_PER_BYTE;
     load_bmp_info->bmp.data = malloc(bmp_info.bmp_header.bi_width * bpp * abs(bmp_info.bmp_header.bi_height));
     if (load_bmp_info->bmp.data == NULL) {
-        printf("malloc osd memory err!\n");
+        sample_print_err("malloc osd memory err!\n");
         return TD_FAILURE;
     }
 
@@ -219,7 +219,7 @@ td_s32 region_mst_update_canvas(rgn_load_bmp_info *load_bmp_info, ot_size *size,
     canvas_size_info canvas_size;
 
     if (get_bmp_info(load_bmp_info->filename, &bmp_file_header, &bmp_info) < 0) {
-        printf("get_bmp_info err!\n");
+        sample_print_err("get_bmp_info err!\n");
         return TD_FAILURE;
     }
 
@@ -234,12 +234,12 @@ td_s32 region_mst_update_canvas(rgn_load_bmp_info *load_bmp_info, ot_size *size,
     } else if (OT_PIXEL_FORMAT_ARGB_CLUT4 == load_bmp_info->pixel_fmt) {
         surface.color_format = OSD_COLOR_FORMAT_CLUT4;
     } else {
-        printf("pixel format is not support!\n");
+        sample_print_err("pixel format is not support!\n");
         return TD_FAILURE;
     }
 
     if (load_bmp_info->bmp.data == NULL) {
-        printf("malloc osd memory err!\n");
+        sample_print_err("malloc osd memory err!\n");
         return TD_FAILURE;
     }
 
@@ -348,7 +348,7 @@ td_s32 sample_region_create_overlay(td_s32 handle_num)
         ret = TD_FALSE;
     }
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -369,7 +369,7 @@ td_s32 sample_region_create_overlayex(td_s32 handle_num)
     for (i = OVERLAYEX_MIN_HANDLE; i < OVERLAYEX_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -388,7 +388,7 @@ td_s32 sample_region_create_cover(td_s32 handle_num)
     for (i = COVER_MIN_HANDLE; i < COVER_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -407,7 +407,7 @@ td_s32 sample_region_create_coverex(td_s32 handle_num)
     for (i = COVEREX_MIN_HANDLE; i < COVEREX_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -426,7 +426,7 @@ td_s32 sample_region_create_line(td_s32 handle_num)
     for (i = LINE_MIN_HANDLE; i < LINE_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -446,7 +446,7 @@ td_s32 sample_region_create_mosaic(td_s32 handle_num)
     for (i = MOSAIC_MIN_HANDLE; i < MOSAIC_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -465,7 +465,7 @@ td_s32 sample_region_create_mosaicex(td_s32 handle_num)
     for (i = MOSAICEX_MIN_HANDLE; i < MOSAICEX_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -484,7 +484,7 @@ td_s32 sample_region_create_corner_rect(td_s32 handle_num)
     for (i = CORNER_RECT_MIN_HANDLE; i < CORNER_RECT_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -503,7 +503,7 @@ td_s32 sample_region_create_corner_rectex(td_s32 handle_num)
     for (i = CORNER_RECTEX_MIN_HANDLE; i < CORNER_RECTEX_MIN_HANDLE + handle_num; i++) {
         ret = ss_mpi_rgn_create(i, &region);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_create failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_create failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -517,7 +517,7 @@ td_s32 sample_region_destroy(ot_rgn_handle handle)
 
     ret = ss_mpi_rgn_destroy(handle);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_destroy failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_destroy failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -532,13 +532,13 @@ td_s32 sample_region_attach(ot_rgn_handle handle, ot_mpp_chn *chn, ot_rgn_chn_at
     if (op_flag & REGION_OP_CHN) {
         ret = ss_mpi_rgn_attach_to_chn(handle, chn, chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_attach_to_chn failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_attach_to_chn failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     } else if (op_flag & REGION_OP_DEV) {
         ret = ss_mpi_rgn_attach_to_dev(handle, chn, chn_attr);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_attach_to_dev failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_attach_to_dev failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -553,13 +553,13 @@ td_s32 sample_region_detach(ot_rgn_handle handle, ot_mpp_chn *chn, region_op_fla
     if (op_flag & REGION_OP_CHN) {
         ret = ss_mpi_rgn_detach_from_chn(handle, chn);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_detach_from_chn failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_detach_from_chn failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     } else if (op_flag & REGION_OP_DEV) {
         ret = ss_mpi_rgn_detach_from_dev(handle, chn);
         if (ret != TD_SUCCESS) {
-            sample_print("ss_mpi_rgn_detach_from_dev failed with %#x!\n", ret);
+            sample_print_err("ss_mpi_rgn_detach_from_dev failed with %#x!\n", ret);
             return TD_FAILURE;
         }
     }
@@ -572,7 +572,7 @@ td_s32 sample_region_set_bit_map(ot_rgn_handle handle, ot_bmp *bitmap)
     td_s32 ret;
     ret = ss_mpi_rgn_set_bmp(handle, bitmap);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_set_bit_map failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_set_bit_map failed with %#x!\n", ret);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -583,13 +583,13 @@ td_s32 sample_region_get_up_canvas_info(ot_rgn_handle handle, ot_rgn_canvas_info
     td_s32 ret;
     ret = ss_mpi_rgn_get_canvas_info(handle, canvas_info);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_get_canvas_info failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_get_canvas_info failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
     ret = ss_mpi_rgn_update_canvas(handle);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_update_canvas failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_update_canvas failed with %#x!\n", ret);
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -599,11 +599,11 @@ td_s32 sample_comm_region_create(td_s32 handle_num, ot_rgn_type type)
 {
     td_s32 ret = TD_SUCCESS;
     if (handle_num <= 0 || handle_num > 16) { /* 16:max_num */
-        sample_print("handle_num is illegal %d!\n", handle_num);
+        sample_print_err("handle_num is illegal %d!\n", handle_num);
         return TD_FAILURE;
     }
     if (type < 0 || type >= OT_RGN_BUTT) {
-        sample_print("type is illegal %d!\n", type);
+        sample_print_err("type is illegal %d!\n", type);
         return TD_FAILURE;
     }
     switch (type) {
@@ -638,7 +638,7 @@ td_s32 sample_comm_region_create(td_s32 handle_num, ot_rgn_type type)
             break;
     }
     if (ret != TD_SUCCESS) {
-        sample_print("sample_comm_region_create failed! handle_num%d,type:%d!\n", handle_num, type);
+        sample_print_err("sample_comm_region_create failed! handle_num%d,type:%d!\n", handle_num, type);
         return TD_FAILURE;
     }
     return ret;
@@ -651,18 +651,18 @@ td_s32 sample_comm_region_destroy(td_s32 handle_num, ot_rgn_type type)
     td_s32 min_handle;
 
     if (handle_num <= 0 || handle_num > 16) { /* 16 max_num */
-        sample_print("handle_num is illegal %d!\n", handle_num);
+        sample_print_err("handle_num is illegal %d!\n", handle_num);
         return TD_FAILURE;
     }
     if (type < 0 || type >= OT_RGN_BUTT) {
-        sample_print("type is illegal %d!\n", type);
+        sample_print_err("type is illegal %d!\n", type);
         return TD_FAILURE;
     }
     min_handle = sample_comm_region_get_min_handle(type);
     for (i = min_handle; i < min_handle + handle_num; i++) {
         ret = sample_region_destroy(i);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_comm_region_destroy failed!\n");
+            sample_print_err("sample_comm_region_destroy failed!\n");
         }
     }
     return TD_SUCCESS;
@@ -671,15 +671,15 @@ td_s32 sample_comm_region_destroy(td_s32 handle_num, ot_rgn_type type)
 td_s32 sample_comm_region_attach_check(td_s32 handle_num, ot_rgn_type type, ot_mpp_chn *mpp_chn)
 {
     if (handle_num <= 0 || handle_num > 16) { /* 16 max_num */
-        sample_print("handle_num is illegal %d!\n", handle_num);
+        sample_print_err("handle_num is illegal %d!\n", handle_num);
         return TD_FAILURE;
     }
     if (type < 0 || type >= OT_RGN_BUTT) {
-        sample_print("type is illegal %d!\n", type);
+        sample_print_err("type is illegal %d!\n", type);
         return TD_FAILURE;
     }
     if (mpp_chn == TD_NULL) {
-        sample_print("mpp_chn is NULL !\n");
+        sample_print_err("mpp_chn is NULL !\n");
         return TD_FAILURE;
     }
     return TD_SUCCESS;
@@ -688,7 +688,7 @@ td_s32 sample_comm_region_attach_check(td_s32 handle_num, ot_rgn_type type, ot_m
 #define rgn_check_handle_min_ret(handle, min_value) \
     do { \
         if ((handle) < (min_value)) { \
-            sample_print("handle(%d) invalid\n", (handle)); \
+            sample_print_err("handle(%d) invalid\n", (handle)); \
             return; \
         } \
     } while (0)
@@ -722,7 +722,7 @@ td_s32 sample_region_set_overlay_chn_attr(td_s32 handle_num,
         sample_region_get_overlay_chn_attr(i, &chn_attr->attr.overlay_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - OVERLAY_MIN_HANDLE + 1, OT_RGN_OVERLAY, mpp_chn, op_flag);
             return ret;
         }
@@ -756,7 +756,7 @@ td_s32 sample_region_set_overlayex_chn_attr(td_s32 handle_num,
         sample_region_get_overlayex_chn_attr(i, &chn_attr->attr.overlayex_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - OVERLAYEX_MIN_HANDLE + 1, OT_RGN_OVERLAYEX, mpp_chn, op_flag);
             return ret;
         }
@@ -794,7 +794,7 @@ td_s32 sample_region_set_cover_chn_attr(td_s32 handle_num,
         sample_region_get_rect_cover_chn_attr(i, &chn_attr->attr.cover_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - COVER_MIN_HANDLE + 1, OT_RGN_COVER, mpp_chn, op_flag);
             return ret;
         }
@@ -859,7 +859,7 @@ td_s32 sample_region_set_coverex_chn_attr(td_s32 handle_num,
         }
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - COVEREX_MIN_HANDLE + 1, OT_RGN_COVEREX, mpp_chn, op_flag);
             return ret;
         }
@@ -920,7 +920,7 @@ td_s32 sample_region_set_corner_rect_chn_attr(td_s32 handle_num,
         }
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - CORNER_RECT_MIN_HANDLE + 1, OT_RGN_CORNER_RECT, mpp_chn, op_flag);
             return ret;
         }
@@ -947,7 +947,7 @@ td_s32 sample_region_set_corner_rectex_chn_attr(td_s32 handle_num,
         }
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - CORNER_RECTEX_MIN_HANDLE + 1, OT_RGN_CORNER_RECTEX, mpp_chn, op_flag);
             return ret;
         }
@@ -981,7 +981,7 @@ static td_s32 sample_region_set_lineex_chn_attr(td_s32 handle_num,
         sample_region_get_line_chn_attr(i, &chn_attr->attr.lineex_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - LINE_MIN_HANDLE + 1, OT_RGN_LINEEX, mpp_chn, op_flag);
             return ret;
         }
@@ -1015,7 +1015,7 @@ static td_s32 sample_region_set_mosaic_chn_attr(td_s32 handle_num,
         sample_region_get_mosaic_chn_attr(i, &chn_attr->attr.mosaic_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - MOSAIC_MIN_HANDLE + 1, OT_RGN_MOSAIC, mpp_chn, op_flag);
             return ret;
         }
@@ -1050,7 +1050,7 @@ td_s32 sample_region_set_mosaicex_chn_attr(td_s32 handle_num,
         sample_region_get_mosaicex_chn_attr(i, &chn_attr->attr.mosaicex_chn);
         ret = sample_region_attach(i, mpp_chn, chn_attr, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_attach failed!\n");
+            sample_print_err("sample_region_attach failed!\n");
             sample_comm_region_detach(i - MOSAICEX_MIN_HANDLE + 1, MOSAICEX_MIN_HANDLE, mpp_chn, op_flag);
             return ret;
         }
@@ -1109,7 +1109,7 @@ td_s32 sample_comm_region_attach(td_s32 handle_num, ot_rgn_type type, ot_mpp_chn
     chn_attr.is_show = TD_TRUE;
     ret = sample_region_set_chn_attr(handle_num, type, &chn_attr, mpp_chn, op_flag);
     if (ret != TD_SUCCESS) {
-        sample_print("sample_region_attach failed!\n");
+        sample_print_err("sample_region_attach failed!\n");
     }
     return ret;
 }
@@ -1131,26 +1131,26 @@ td_s32 sample_comm_region_detach(td_s32 handle_num, ot_rgn_type type, ot_mpp_chn
     td_s32 min_handle;
 
     if (handle_num <= 0 || handle_num > 16) { /* 16:max region num */
-        sample_print("handle_num is illegal %d!\n", handle_num);
+        sample_print_err("handle_num is illegal %d!\n", handle_num);
         return TD_FAILURE;
     }
     if (type < 0 || type >= OT_RGN_BUTT) {
-        sample_print("type is illegal %d!\n", type);
+        sample_print_err("type is illegal %d!\n", type);
         return TD_FAILURE;
     }
     if (mpp_chn == TD_NULL) {
-        sample_print("mpp_chn is NULL !\n");
+        sample_print_err("mpp_chn is NULL !\n");
         return TD_FAILURE;
     }
     min_handle = sample_comm_region_get_min_handle(type);
     if (sample_comm_check_min(min_handle) != TD_SUCCESS) {
-        sample_print("min_handle(%d) should be in [0, %d).\n", min_handle, OT_RGN_HANDLE_MAX);
+        sample_print_err("min_handle(%d) should be in [0, %d).\n", min_handle, OT_RGN_HANDLE_MAX);
         return TD_FAILURE;
     }
     for (i = min_handle; i < min_handle + handle_num; i++) {
         ret = sample_region_detach(i, mpp_chn, op_flag);
         if (ret != TD_SUCCESS) {
-            sample_print("sample_region_detach failed! handle:%d\n", i);
+            sample_print_err("sample_region_detach failed! handle:%d\n", i);
         }
     }
     return TD_SUCCESS;
@@ -1168,35 +1168,35 @@ td_s32 sample_comm_region_set_bit_map(ot_rgn_handle handle, const td_char *bmp_p
         load_bmp_info.pixel_fmt = OT_PIXEL_FORMAT_ARGB_CLUT2;
         ret = region_mst_load_bmp(&load_bmp_info);
         if (ret != TD_SUCCESS) {
-            sample_print("region_mst_load_bmp failed!handle\n");
+            sample_print_err("region_mst_load_bmp failed!handle\n");
         }
         ret = sample_region_set_bit_map(handle, &load_bmp_info.bmp);
     } else if (handle < OVERLAY_MIN_HANDLE + 4 && handle >= OVERLAY_MIN_HANDLE + 2) { /* 4:2:create argbclut4 region */
         load_bmp_info.pixel_fmt = OT_PIXEL_FORMAT_ARGB_CLUT4;
         ret = region_mst_load_bmp(&load_bmp_info);
         if (ret != TD_SUCCESS) {
-            sample_print("region_mst_load_bmp failed!handle\n");
+            sample_print_err("region_mst_load_bmp failed!handle\n");
         }
         ret = sample_region_set_bit_map(handle, &load_bmp_info.bmp);
     } else if (handle < OVERLAY_MIN_HANDLE + 6 && handle >= OVERLAY_MIN_HANDLE + 4) { /* 6:4:create argb1555 region */
         load_bmp_info.pixel_fmt = OT_PIXEL_FORMAT_ARGB_1555;
         ret = region_mst_load_bmp(&load_bmp_info);
         if (ret != TD_SUCCESS) {
-            sample_print("region_mst_load_bmp failed!handle\n");
+            sample_print_err("region_mst_load_bmp failed!handle\n");
         }
         ret = sample_region_set_bit_map(handle, &load_bmp_info.bmp);
     } else if (handle < OVERLAY_MIN_HANDLE + 8 && handle >= OVERLAY_MIN_HANDLE + 6) { /* 8:6:create argb4444 region */
         load_bmp_info.pixel_fmt = OT_PIXEL_FORMAT_ARGB_4444;
         ret = region_mst_load_bmp(&load_bmp_info);
         if (ret != TD_SUCCESS) {
-            sample_print("region_mst_load_bmp failed!handle\n");
+            sample_print_err("region_mst_load_bmp failed!handle\n");
         }
         ret = sample_region_set_bit_map(handle, &load_bmp_info.bmp);
     } else {
         ret = TD_FALSE;
     }
     if (ret != TD_SUCCESS) {
-        sample_print("sample_region_set_bit_map failed!handle:%d\n", handle);
+        sample_print_err("sample_region_set_bit_map failed!handle:%d\n", handle);
     }
     free(load_bmp_info.bmp.data);
     return ret;
@@ -1211,7 +1211,7 @@ td_s32 sample_comm_region_get_up_canvas(ot_rgn_handle handle, const td_char *bmp
 
     ret = ss_mpi_rgn_get_canvas_info(handle, &canvas_info);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_get_canvas_info failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_get_canvas_info failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
@@ -1224,13 +1224,13 @@ td_s32 sample_comm_region_get_up_canvas(ot_rgn_handle handle, const td_char *bmp
     load_bmp_info.filename = bmp_path;
     ret = region_mst_update_canvas(&load_bmp_info, &size, canvas_info.stride);
     if (ret != TD_SUCCESS) {
-        sample_print("region_mst_update_canvas failed with %#x!\n", ret);
+        sample_print_err("region_mst_update_canvas failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
     ret = ss_mpi_rgn_update_canvas(handle);
     if (ret != TD_SUCCESS) {
-        sample_print("ss_mpi_rgn_update_canvas failed with %#x!\n", ret);
+        sample_print_err("ss_mpi_rgn_update_canvas failed with %#x!\n", ret);
         return TD_FAILURE;
     }
 
