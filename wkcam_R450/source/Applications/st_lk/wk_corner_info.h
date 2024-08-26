@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <functional>
 
 #include "sample_comm.h"
 #include "sample_common_ive.h"
@@ -80,7 +81,8 @@ struct wk_location_result_s{
 	wk_corner_video_frame_s::wk_ptr frame;  	/* 帧数据 */
 };
 
-typedef void (*pfun_wk_get_frame_cb)(wk_corner_video_frame_s::wk_ptr);
+//typedef void (*pfun_wk_get_frame_cb)(wk_corner_video_frame_s::wk_ptr);
+typedef std::function<void(wk_corner_video_frame_s::wk_ptr)> pfun_wk_get_frame_cb;
 
 
 
