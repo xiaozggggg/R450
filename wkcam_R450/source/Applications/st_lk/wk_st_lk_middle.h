@@ -96,7 +96,6 @@ public:
 	 */
 	td_bool wk_result_export(wk_location_result_s::wk_ptr& _result);
 
-
 	/**
 	 * @brief 打印mat
 	 */
@@ -109,7 +108,7 @@ public:
 	 * @param _points		描绘的角点
 	 * @param _points_num	角点个数
 	 */
-	td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, ot_svp_point_s25q7* _points, td_u32 _points_num);
+	td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, wk_points_float_s* _points, td_u32 _points_num);
 
 private:
 	wk_st_lk_middle();

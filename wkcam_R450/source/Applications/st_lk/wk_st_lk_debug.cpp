@@ -26,9 +26,68 @@ static td_s32 _wk_st_lk_draw_points_send_venc(ot_video_frame_info *_pframe)
 	return TD_SUCCESS;
 }
 
+#if 0
+/* float转s25q7 */
+static td_s32 _wk_debug_float_to_s25q7(wk_points_float_s* _float_val, ot_svp_point_s25q7* _s25q7_val, td_u16 _cnt)
+{
+	td_u8 u8sign = 0;
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+		u8sign = (_float_val[ifor].x > 0) ? 0:1;
+		_s25q7_val[ifor].x = _float_val[ifor].x*128.0;
+		_s25q7_val[ifor].x |= u8sign<<31;
+
+
+		/* 转换y坐标 */
+		u8sign = (_float_val[ifor].y > 0) ? 0:1;
+		_s25q7_val[ifor].y = _float_val[ifor].y*128.0;
+		_s25q7_val[ifor].y |= u8sign<<31;
+	}	
+	
+	return TD_SUCCESS;
+}
+#else
+/* float转s25q7 */
+static td_s32 _wk_debug_float_to_s25q7(wk_points_float_s* _float_val, ot_svp_point_s25q7* _s25q7_val, td_u16 _cnt)
+{
+	td_u8 u8sign = 0;
+	td_s32 integerPart = 0;
+	td_float floatPart = 0.0;
+	td_s32 tmppart = 0;
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+		u8sign = (_float_val[ifor].x > 0) ? 0:1;
+		integerPart = (td_s32)_float_val[ifor].x;
+		floatPart = _float_val[ifor].x - integerPart;
+		tmppart = (td_s32)(floatPart*128);
+
+		_s25q7_val[ifor].x = (integerPart & 0xFFFFFF) << 7;
+		_s25q7_val[ifor].x |= u8sign<<31;
+		_s25q7_val[ifor].x |= (tmppart & 0x7F);
+
+
+		/* 转换y坐标 */
+		u8sign = (_float_val[ifor].y > 0) ? 0:1;
+		integerPart = (td_s32)_float_val[ifor].y;
+		floatPart = _float_val[ifor].y - integerPart;
+		tmppart = (td_s32)(floatPart*128);
+
+		_s25q7_val[ifor].y = (integerPart & 0xFFFFFF) << 7;
+		_s25q7_val[ifor].y |= u8sign<<31;
+		_s25q7_val[ifor].y |= (tmppart & 0x7F);
+	}	
+	
+	return TD_SUCCESS;
+}
+#endif
+
 
 /* 建立vgs任务，进行图像绘点 */
-td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, ot_svp_point_s25q7* _points, td_u32 _points_num)
+td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, wk_points_float_s* _points, td_u32 _points_num)
 {
 	#define ONE_CYCLE_DRAW_POINT_MAX_NUM	100
     ot_vgs_handle vgs_handle = -1;
@@ -50,7 +109,7 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, ot_
 	}
 
 	/* 循环对图像进行绘点 */
-	memcpy(ponits, _points, sizeof(ot_svp_point_s25q7)*_points_num);
+	_wk_debug_float_to_s25q7(_points, ponits, _points_num);
 	memcpy_s(&vgs_task.img_in, sizeof(ot_video_frame_info), _frame, sizeof(ot_video_frame_info));
 	memcpy_s(&vgs_task.img_out, sizeof(ot_video_frame_info),_frame, sizeof(ot_video_frame_info));
 	while(u32ponits_cnt < _points_num)

@@ -137,6 +137,146 @@ td_bool wk_st_set_ctrl_param(td_u16 _quality_level, td_u16 _max_points_num, td_u
 	return TD_TRUE;
 }
 
+#if 0
+/* s25q7转float */
+static td_s32 _wk_s25q7_to_float(ot_svp_point_s25q7* _s25q7_val, wk_points_float_s* _float_val, td_u16 _cnt)
+{
+	td_float float_value = 0;
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+	    float_value = copysignf((_s25q7_val[ifor].x & ~(1<<32))/128.0, (_s25q7_val[ifor].x >> 31) & 0x01);
+		_float_val[ifor].x = float_value;
+
+		/* 转换y坐标 */
+	    float_value = copysignf((_s25q7_val[ifor].y & ~(1<<32))/128.0, (_s25q7_val[ifor].y >> 31) & 0x01);
+		_float_val[ifor].y = float_value;
+	}
+	
+	return TD_SUCCESS;
+}
+
+/* float转s25q7 */
+static td_s32 _wk_float_to_s25q7(wk_points_float_s* _float_val, ot_svp_point_s25q7* _s25q7_val, td_u16 _cnt)
+{
+	td_u8 u8sign = 0;
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+		u8sign = (_float_val[ifor].x > 0) ? 0:1;
+		_s25q7_val[ifor].x = _float_val[ifor].x*128.0;
+		_s25q7_val[ifor].x |= u8sign<<31;
+
+
+		/* 转换y坐标 */
+		u8sign = (_float_val[ifor].y > 0) ? 0:1;
+		_s25q7_val[ifor].y = _float_val[ifor].y*128.0;
+		_s25q7_val[ifor].y |= u8sign<<31;
+	}	
+	
+	return TD_SUCCESS;
+}
+
+
+/* u9q7转float */
+static td_s32 _wk_u9q7_to_float(td_u9q7* _u9q7, td_float* _float, td_u16 _cnt)
+{
+	td_s32 int_part = 0;		  
+	td_s32 float_part = 0;	
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+	    int_part = (_u9q7[ifor] >> 7) & 0x1FF;         
+	    float_part = _u9q7[ifor] & 0x7F;          
+		_float[ifor] = int_part + float_part/128.0f;
+	}	
+	
+	return TD_SUCCESS;
+}
+#else
+/* s25q7转float */
+static td_s32 _wk_s25q7_to_float(ot_svp_point_s25q7* _s25q7_val, wk_points_float_s* _float_val, td_u16 _cnt)
+{
+	td_float float_value = 0;
+	td_s32 int_part = 0;		  
+	td_s32 float_part = 0;	
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+	    int_part = (_s25q7_val[ifor].x >> 7) & 0xFFFFFF;         
+	    float_part = _s25q7_val[ifor].x & 0x7F;          
+	    float_value = copysignf((float)int_part, (_s25q7_val[ifor].x >> 31) & 0x01);
+	    float_value += (td_float)float_part / 128.0f;
+		_float_val[ifor].x = float_value;
+
+		/* 转换y坐标 */
+		int_part = (_s25q7_val[ifor].y >> 7) & 0xFFFFFF;         
+	    float_part = _s25q7_val[ifor].y & 0x7F;          
+	    float_value = copysignf((float)int_part, (_s25q7_val[ifor].y >> 31) & 0x01);
+	    float_value += (td_float)float_part / 128.0f;
+		_float_val[ifor].y = float_value;
+	}
+	
+	return TD_SUCCESS;
+}
+
+/* float转s25q7 */
+static td_s32 _wk_float_to_s25q7(wk_points_float_s* _float_val, ot_svp_point_s25q7* _s25q7_val, td_u16 _cnt)
+{
+	td_u8 u8sign = 0;
+	td_s32 integerPart = 0;
+	td_float floatPart = 0.0;
+	td_s32 tmppart = 0;
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+		/* 转换x坐标 */
+		u8sign = (_float_val[ifor].x > 0) ? 0:1;
+		integerPart = (td_s32)_float_val[ifor].x;
+		floatPart = _float_val[ifor].x - integerPart;
+		tmppart = (td_s32)(floatPart*128);
+
+		_s25q7_val[ifor].x = (integerPart & 0xFFFFFF) << 7;
+		_s25q7_val[ifor].x |= u8sign<<31;
+		_s25q7_val[ifor].x |= (tmppart & 0x7F);
+
+
+		/* 转换y坐标 */
+		u8sign = (_float_val[ifor].y > 0) ? 0:1;
+		integerPart = (td_s32)_float_val[ifor].y;
+		floatPart = _float_val[ifor].y - integerPart;
+		tmppart = (td_s32)(floatPart*128);
+
+		_s25q7_val[ifor].y = (integerPart & 0xFFFFFF) << 7;
+		_s25q7_val[ifor].y |= u8sign<<31;
+		_s25q7_val[ifor].y |= (tmppart & 0x7F);
+	}	
+	
+	return TD_SUCCESS;
+}
+
+
+
+/* u9q7转float */
+static td_s32 _wk_u9q7_to_float(td_u9q7* _u9q7, td_float* _float, td_u16 _cnt)
+{
+	td_s32 int_part = 0;		  
+	td_s32 float_part = 0;	
+
+	for(td_u16 ifor=0; ifor<_cnt; ifor++)
+	{
+	    int_part = (_u9q7[ifor] >> 7) & 0x1FF;         
+	    float_part = _u9q7[ifor] & 0x7F;          
+		_float[ifor] = int_part + float_part/128.0f;
+	}	
+	
+	return TD_SUCCESS;
+}
+#endif
+
 /* 通过st取点处理 */
 td_s32 wk_st_get_points(ot_video_frame_info *_frame, wk_st_points_s* _points)
 {
@@ -155,12 +295,12 @@ td_s32 wk_st_get_points(ot_video_frame_info *_frame, wk_st_points_s* _points)
 	s32ret = wk_ive_st_get_points(&pmng->st_lk_infor, _frame);
 	if(s32ret == TD_SUCCESS){
 		_points->points_cnt = pmng->st_lk_infor.points_cnt;
-		memcpy(_points->points, pmng->st_lk_infor.curr_corner_points, sizeof(pmng->st_lk_infor.curr_corner_points));	
+		_wk_s25q7_to_float(pmng->st_lk_infor.curr_corner_points, _points->points, _points->points_cnt);
 	}
 
 	now_ms = system_time_ms_get();
 	times = get_delta_time(now_ms, last_ms);
-	//printf("### wk_st_get_points calculateC times ===> %d [%d]\n", times);  
+	WK_LOGI("### wk_st_get_points calculateC times ===> %d [%d]\n", times);  
 	return s32ret;
 }
 
@@ -196,8 +336,9 @@ td_bool wk_lk_set_ctrl_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps)
 td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _points)
 {
 	td_s32 s32ret = -1;
+	ot_svp_point_s25q7* prev_points = NULL;
 	wk_st_lk_mng_info_s* pmng = &g_st_lk_mng_info;
-
+	
 	if(_info == NULL || _points == NULL) {
 		WK_LOGE("fail: wk_st_get_points param illegal\n");
 		return TD_FAILURE;
@@ -207,18 +348,29 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 	uint32_t last_ms = now_ms;
 	int times = 0;
 
-	s32ret = wk_ive_lk_get_points(&pmng->st_lk_infor, _info->curr_frame, _info->prev_frame, _info->prev_points, _info->points_cnt);
+	prev_points = (ot_svp_point_s25q7*)malloc(sizeof(ot_svp_point_s25q7)*500);
+	if(prev_points == NULL) {
+		WK_LOGE("malloc err\n");
+		return TD_FAILURE;
+	}
+	memset(prev_points, 0, sizeof(ot_svp_point_s25q7)*500);
+
+	_wk_float_to_s25q7(_info->prev_points, prev_points, _info->points_cnt);
+
+	s32ret = wk_ive_lk_get_points(&pmng->st_lk_infor, _info->curr_frame, _info->prev_frame, prev_points, _info->points_cnt);
 	if(s32ret == TD_SUCCESS) {
 		_points->points_cnt = _info->points_cnt;
-		memcpy(_points->prev_points, pmng->st_lk_infor.prev_corner_points, sizeof(pmng->st_lk_infor.prev_corner_points));
-		memcpy(_points->curr_points, pmng->st_lk_infor.curr_corner_points, sizeof(pmng->st_lk_infor.curr_corner_points));
+		_wk_s25q7_to_float(pmng->st_lk_infor.prev_corner_points, _points->prev_points, _points->points_cnt);
+		_wk_s25q7_to_float(pmng->st_lk_infor.curr_corner_points, _points->curr_points, _points->points_cnt);
 		memcpy(_points->status, pmng->st_lk_infor.curr_points_status, sizeof(pmng->st_lk_infor.curr_points_status));
-		memcpy(_points->err, pmng->st_lk_infor.curr_points_err, sizeof(pmng->st_lk_infor.curr_points_err));	
+		_wk_u9q7_to_float(pmng->st_lk_infor.curr_points_err, _points->err, _points->points_cnt);
 	}
 
 	now_ms = system_time_ms_get();
 	times = get_delta_time(now_ms, last_ms);
-	//printf("### wk_lk_get_points calculateC times ===> %d [%d]\n", times);  
+	WK_LOGI("### wk_lk_get_points calculateC times ===> %d [%d]\n", times);  
+
+	free(prev_points);
 	return s32ret;
 }
 

@@ -34,12 +34,18 @@ public:
 	td_u32 ave_lum;								// 图像亮度
 };
 
+/* 浮点坐标值 */
+struct wk_points_float_s{
+	td_float x;
+	td_float y;
+};
+
 
 /* 识别角点数据结构 */
 struct wk_st_points_s{
 	using wk_ptr = std::shared_ptr<wk_st_points_s>;
 
-	ot_svp_point_s25q7 points[500];        		// 帧角点
+	wk_points_float_s points[500];        		// 帧角点
 	td_u32	points_cnt;							// 角点数量
 };
 
@@ -49,7 +55,7 @@ struct wk_lk_points_input_s{
 	using wk_ptr = std::shared_ptr<wk_lk_points_input_s>;
 
 	ot_video_frame_info* prev_frame;			// 前图像帧
-	ot_svp_point_s25q7 prev_points[500];        // 前帧角点
+	wk_points_float_s prev_points[500];       	// 前帧角点
 	td_u32	points_cnt;							// 角点数量
 
 	ot_video_frame_info* curr_frame;			// 当前图像帧
@@ -60,11 +66,11 @@ struct wk_lk_points_input_s{
 struct wk_lk_points_output_s{
 	using wk_ptr = std::shared_ptr<wk_lk_points_output_s>;
 
-	ot_svp_point_s25q7 prev_points[500];   	    // 前帧角点
-	ot_svp_point_s25q7 curr_points[500];        // 当前帧角点
+	wk_points_float_s prev_points[500];   	    // 前帧角点
+	wk_points_float_s curr_points[500];        	// 当前帧角点
 	td_u32	points_cnt;							// 角点数量
 	td_u8 	status[500];                    	// 当前帧角点状态
-	td_u9q7 err[500];	                    	// 当前帧已跟踪点的误差
+	td_float err[500];	                    	// 当前帧已跟踪点的误差
 };
 
 /* 结果输出数据结构 */
@@ -102,7 +108,7 @@ public:
 	virtual td_bool wk_corner_track_set_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps)=0;
 	virtual td_s32 wk_corner_track(wk_lk_points_input_s::wk_ptr& _info, wk_lk_points_output_s::wk_ptr& _points)=0;
 	virtual td_bool wk_result_export(wk_location_result_s::wk_ptr& _result)=0;
-	virtual td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, ot_svp_point_s25q7* _points, td_u32 _points_num)=0;
+	virtual td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, wk_points_float_s* _points, td_u32 _points_num)=0;
 	
 protected:
 	wk_corner_points();
