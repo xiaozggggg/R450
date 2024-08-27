@@ -68,8 +68,6 @@ bool Frontend::Track()
     {
         // tracking bad
         status_ = FrontendStatus::TRACKING_BAD;
-
-        std::cout << "tracking bad!" << std::endl;
     }
     else
     {
@@ -90,7 +88,7 @@ bool Frontend::InsertKeyframe()
 {
     if (tracking_inliers_ >= num_features_tracking_bad_)
     {
-        std::cout << "still have enough features, don't insert keyframe:" << tracking_inliers_ << std::endl << num_features_needed_for_keyframe_ << std::endl;
+        std::cout << "still have enough features, don't insert keyframe:" << tracking_inliers_ << std::endl << num_features_tracking_bad_ << std::endl;
         return false;
     }
 
@@ -192,6 +190,11 @@ int Frontend::EstimateCurrentPose()
         }
     }
 
+    if(vecWorldPts.size() < 8)
+    {
+        std::cout << "vecWorldPts.size() < 8!" << std::endl;
+        return 0;
+    }
     if(!cv::solvePnP(vecWorldPts, vecImagePts, camera_left_->K(), cv::Mat::zeros(5, 1, CV_64FC1), rotationVector, translationVector))
         std::cout << "solvePnP false!" << std::endl;
 
@@ -482,7 +485,7 @@ int Frontend::DetectFeatures(Frame::Ptr frame)
     }
     else
     {
-        wk_st_points_s::wk_ptr _points;
+        wk_st_points_s::wk_ptr _points = std::make_shared<wk_st_points_s>();
         wk_st_lk_middle::wk_st_lk_get_instance()->wk_corner_recognize(frame->img_data, _points);
 
         for(int i=0; i<_points->points_cnt; ++i)
@@ -492,7 +495,11 @@ int Frontend::DetectFeatures(Frame::Ptr frame)
             kp.pt.y = _points->points[i].y;
 
             keypoints.push_back(kp);
+
+            std::cout << "DetectFeatures num: " << _points->points[i].x << " " << _points->points[i].y << std::endl;
         }
+
+        std::cout << "DetectFeatures num: " << keypoints.size() << std::endl;
     }
 
 
