@@ -49,11 +49,11 @@ bool VisualOdometry::Init(const std::string& config_file_path)
     return true;
 }
 
-int VisualOdometry::Step(const cv::Mat& img, unsigned long int timeStamp)
+int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
 {
     auto new_frame = Frame::CreateFrame();
-    new_frame->left_img_ = img;
-    new_frame->time_stamp_ = timeStamp;
+
+    new_frame->img_data = img_data;
 
     auto t1 = std::chrono::steady_clock::now();
 
@@ -72,6 +72,20 @@ int VisualOdometry::Step(const cv::Mat& img, unsigned long int timeStamp)
         r = eigen_map;
 
         Eigen::Quaternionf q(r);
+
+        wk_location_result_s::wk_ptr result = std::make_shared<wk_location_result_s>();
+
+        result->x = t.at<float>(0,0);
+        result->y = t.at<float>(1,0);
+        result->z = t.at<float>(2,0);
+        result->q[0] = q.x();
+        result->q[1] = q.y();
+        result->q[2] = q.z();
+        result->q[3] = q.w();
+        result->frame = new_frame->img_data;
+        result->corner_num = frontend_->GetTrackingInliersNum();
+
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
     }
 
     auto t2 = std::chrono::steady_clock::now();

@@ -5,6 +5,7 @@
 
 #include "myslam/camera.h"
 #include "myslam/common_include.h"
+#include "wk_corner_info.h"
 
 namespace myslam
 {
@@ -30,6 +31,9 @@ struct Frame
     cv::Mat pose_;                       // Tcw 形式Pose
     std::mutex pose_mutex_;          // Pose数据锁
     cv::Mat left_img_, right_img_;   // stereo images
+
+    wk_corner_video_frame_s::wk_ptr img_data;
+
 
     // extracted features in left image
     std::vector<std::shared_ptr<Feature>> features_left_;

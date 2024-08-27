@@ -10,6 +10,7 @@
 #include "myslam/frontend.h"
 //#include "myslam/g2o_types.h"
 #include "myslam/map.h"
+#include "wk_st_lk_middle.h"
 
 namespace myslam
 {
@@ -212,52 +213,85 @@ int Frontend::EstimateCurrentPose()
 
 int Frontend::TrackLastFrame()
 {
+    int num_good_pts = 0;
     // use LK flow to estimate points in the right image
-    std::vector<cv::Point2f> kps_last, kps_current;
-    for (auto &kp : last_frame_->features_left_)
+    if(false && "use wk")
     {
-        if (kp->map_point_.lock() && false)
+        std::vector<cv::Point2f> kps_last, kps_current;
+
+        for (auto &kp : last_frame_->features_left_)
         {
-            // use project point
-            auto mp = kp->map_point_.lock();
-            cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
-            cv::Mat Rcw;
-            cv::Mat tcw;
-            current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
-            current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
-            auto px = camera_left_->world2pixel(pc, Rcw, tcw);
-            //std::cout << "ppppppppppppppppppp1:" << kp->position_.pt.x << " " << kp->position_.pt.y << std::endl;
-            //std::cout << "ppppppppppppppppppp2:" << px.at<float>(0) << " " << px.at<float>(1) << std::endl;
-            kps_last.push_back(kp->position_.pt);
-            kps_current.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
+            if (kp->map_point_.lock() && false)
+            {
+                // use project point
+                auto mp = kp->map_point_.lock();
+                cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
+                cv::Mat Rcw;
+                cv::Mat tcw;
+                current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
+                current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
+                auto px = camera_left_->world2pixel(pc, Rcw, tcw);
+                //std::cout << "ppppppppppppppppppp1:" << kp->position_.pt.x << " " << kp->position_.pt.y << std::endl;
+                //std::cout << "ppppppppppppppppppp2:" << px.at<float>(0) << " " << px.at<float>(1) << std::endl;
+                kps_last.push_back(kp->position_.pt);
+                kps_current.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
+            }
+            else
+            {
+                kps_last.push_back(kp->position_.pt);
+                kps_current.push_back(kp->position_.pt);
+            }
         }
-        else
+
+        std::vector<uchar> status;
+        Mat error;
+        cv::calcOpticalFlowPyrLK(
+            last_frame_->left_img_, current_frame_->left_img_, kps_last,
+            kps_current, status, error, cv::Size(11, 11), 3,
+            cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
+                            0.01),
+            cv::OPTFLOW_USE_INITIAL_FLOW);
+
+        for (size_t i = 0; i < status.size(); ++i)
         {
-            kps_last.push_back(kp->position_.pt);
-            kps_current.push_back(kp->position_.pt);
+            if (status[i])
+            {
+                cv::KeyPoint kp(kps_current[i], 7);
+                Feature::Ptr feature(new Feature(current_frame_, kp));
+                feature->map_point_ = last_frame_->features_left_[i]->map_point_;
+                current_frame_->features_left_.push_back(feature);
+                num_good_pts++;
+            }
         }
     }
-
-    std::vector<uchar> status;
-    Mat error;
-    cv::calcOpticalFlowPyrLK(
-        last_frame_->left_img_, current_frame_->left_img_, kps_last,
-        kps_current, status, error, cv::Size(11, 11), 3,
-        cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
-                         0.01),
-        cv::OPTFLOW_USE_INITIAL_FLOW);
-
-    int num_good_pts = 0;
-
-    for (size_t i = 0; i < status.size(); ++i)
+    else
     {
-        if (status[i])
+        wk_lk_points_input_s::wk_ptr _info = std::make_shared<wk_lk_points_input_s>();
+        wk_lk_points_output_s::wk_ptr _points = std::make_shared<wk_lk_points_output_s>();
+
+        _info->points_cnt = 0;
+        _info->prev_frame = &last_frame_->img_data->frame;
+        _info->curr_frame = &current_frame_->img_data->frame;
+
+        for (auto &kp : last_frame_->features_left_)
         {
-            cv::KeyPoint kp(kps_current[i], 7);
-            Feature::Ptr feature(new Feature(current_frame_, kp));
-            feature->map_point_ = last_frame_->features_left_[i]->map_point_;
-            current_frame_->features_left_.push_back(feature);
-            num_good_pts++;
+            _info->prev_points[_info->points_cnt].x = kp->position_.pt.x;
+            _info->prev_points[_info->points_cnt].y = kp->position_.pt.y;
+            _info->points_cnt++;
+        }
+
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_corner_track(_info, _points);
+
+        for(int i=0; i<_info->points_cnt; ++i)
+        {
+            if(_points->status[i] == 1)
+            {
+                cv::KeyPoint kp(cv::Point2f(_points->curr_points[i].x, _points->curr_points[i].y), 7);
+                Feature::Ptr feat(new Feature(current_frame_, kp));
+                feat->map_point_ = last_frame_->features_left_[i]->map_point_;
+                current_frame_->features_left_.push_back(feat);
+                num_good_pts++;
+            }
         }
     }
 
@@ -432,15 +466,36 @@ void Frontend::MonocularInitialization()
 
 int Frontend::DetectFeatures(Frame::Ptr frame)
 {
-    cv::Mat mask(frame->left_img_.size(), CV_8UC1, 255);
-    for (auto &feat : frame->features_left_)
+    std::vector<cv::KeyPoint> keypoints;
+
+    if(false && "use wk")
     {
-        cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
-                      feat->position_.pt + cv::Point2f(10, 10), 0, CV_FILLED);
+        cv::Mat mask(frame->left_img_.size(), CV_8UC1, 255);
+
+        for (auto &feat : frame->features_left_)
+        {
+            cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
+                          feat->position_.pt + cv::Point2f(10, 10), 0, CV_FILLED);
+        }
+
+        gftt_->detect(frame->left_img_, keypoints, mask);
+    }
+    else
+    {
+        wk_st_points_s::wk_ptr _points;
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_corner_recognize(frame->img_data, _points);
+
+        for(int i=0; i<_points->points_cnt; ++i)
+        {
+            cv::KeyPoint kp;
+            kp.pt.x = _points->points[i].x;
+            kp.pt.y = _points->points[i].y;
+
+            keypoints.push_back(kp);
+        }
     }
 
-    std::vector<cv::KeyPoint> keypoints;
-    gftt_->detect(frame->left_img_, keypoints, mask);
+
     int cnt_detected = 0;
     for (auto &kp : keypoints)
     {
@@ -454,55 +509,89 @@ int Frontend::DetectFeatures(Frame::Ptr frame)
 
 int Frontend::FindFeaturesInRight()
 {
+    int num_good_pts = 0;
+
     current_frame_->features_left_.clear();
 
     mvIniMatches = std::vector<int>(last_frame_->features_left_.size(),-1);
 
-    // use LK flow to estimate points in the right image
-    std::vector<cv::Point2f> kps_last_frame, kps_current_frame;
-    for (auto &kp : last_frame_->features_left_)
+    if(false && "use wk")
     {
-        kps_last_frame.push_back(kp->position_.pt);
-        auto mp = kp->map_point_.lock();
-        if (mp && false)
+        // use LK flow to estimate points in the right image
+        std::vector<cv::Point2f> kps_last_frame, kps_current_frame;
+        for (auto &kp : last_frame_->features_left_)
         {
-            // use projected points as initial guess
-            cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
-            cv::Mat Rcw;
-            cv::Mat tcw;
-            current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
-            current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
+            kps_last_frame.push_back(kp->position_.pt);
+            auto mp = kp->map_point_.lock();
+            if (mp && false)
+            {
+                // use projected points as initial guess
+                cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
+                cv::Mat Rcw;
+                cv::Mat tcw;
+                current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
+                current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
 
-            auto px = camera_left_->world2pixel(pc, Rcw, tcw);
-            kps_current_frame.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
+                auto px = camera_left_->world2pixel(pc, Rcw, tcw);
+                kps_current_frame.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
+            }
+            else
+            {
+                // use same pixel in left iamge
+                kps_current_frame.push_back(kp->position_.pt);
+            }
         }
-        else
+
+        std::vector<uchar> status;
+        Mat error;
+        cv::calcOpticalFlowPyrLK(last_frame_->left_img_,
+                                current_frame_->left_img_,
+                                kps_last_frame,
+                                kps_current_frame,
+                                status, error, cv::Size(11, 11), 3,
+                                cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
+                                cv::OPTFLOW_USE_INITIAL_FLOW);
+
+        for (size_t i = 0; i < status.size(); ++i)
         {
-            // use same pixel in left iamge
-            kps_current_frame.push_back(kp->position_.pt);
+            if (status[i])
+            {
+                cv::KeyPoint kp(kps_current_frame[i], 7);
+                Feature::Ptr feat(new Feature(current_frame_, kp));
+                current_frame_->features_left_.push_back(feat);
+                mvIniMatches[i] = current_frame_->features_left_.size()-1;
+                num_good_pts++;
+            }
         }
     }
-
-    std::vector<uchar> status;
-    Mat error;
-    cv::calcOpticalFlowPyrLK(last_frame_->left_img_,
-                             current_frame_->left_img_,
-                             kps_last_frame,
-                             kps_current_frame,
-                             status, error, cv::Size(11, 11), 3,
-                             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-                             cv::OPTFLOW_USE_INITIAL_FLOW);
-
-    int num_good_pts = 0;
-    for (size_t i = 0; i < status.size(); ++i)
+    else
     {
-        if (status[i])
+        wk_lk_points_input_s::wk_ptr _info = std::make_shared<wk_lk_points_input_s>();
+        wk_lk_points_output_s::wk_ptr _points = std::make_shared<wk_lk_points_output_s>();
+
+        _info->points_cnt = 0;
+        _info->prev_frame = &last_frame_->img_data->frame;
+        _info->curr_frame = &current_frame_->img_data->frame;
+
+        for (auto &kp : last_frame_->features_left_)
         {
-            cv::KeyPoint kp(kps_current_frame[i], 7);
-            Feature::Ptr feat(new Feature(current_frame_, kp));
-            current_frame_->features_left_.push_back(feat);
-            mvIniMatches[i] = current_frame_->features_left_.size()-1;
-            num_good_pts++;
+            _info->prev_points[_info->points_cnt].x = kp->position_.pt.x;
+            _info->prev_points[_info->points_cnt].y = kp->position_.pt.y;
+            _info->points_cnt++;
+        }
+
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_corner_track(_info, _points);
+
+        for(int i=0; i<_info->points_cnt; ++i)
+        {
+            if(_points->status[i] == 1)
+            {
+                cv::KeyPoint kp(cv::Point2f(_points->curr_points[i].x, _points->curr_points[i].y), 7);
+                Feature::Ptr feat(new Feature(current_frame_, kp));
+                current_frame_->features_left_.push_back(feat);
+                mvIniMatches[i] = current_frame_->features_left_.size()-1;
+                num_good_pts++;
+            }
         }
     }
     std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
@@ -516,96 +605,171 @@ int Frontend::FindFeaturesInLast()
     current_frame_->features_left_.clear();
 
     // use LK flow to estimate points in the right image
-    std::vector<cv::Point2f> kps_last_frame, kps_current_frame;
-
-    for (auto &kp : last_frame_->features_left_)
-    {
-        kps_last_frame.push_back(kp->position_.pt);
-
-        auto mp = kp->map_point_.lock();
-
-        if (mp && false)
-        {
-            // use projected points as initial guess
-            cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
-            cv::Mat Rcw;
-            cv::Mat tcw;
-            current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
-            current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
-
-            auto px = camera_left_->world2pixel(pc, Rcw, tcw);
-            kps_current_frame.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
-        }
-        else
-        {
-            // use same pixel in left iamge
-            kps_current_frame.push_back(kp->position_.pt);
-        }
-    }
-
-    std::vector<uchar> status;
-    cv::Mat error;
-    cv::calcOpticalFlowPyrLK(last_frame_->left_img_,
-                             current_frame_->left_img_,
-                             kps_last_frame,
-                             kps_current_frame,
-                             status, error, cv::Size(11, 11), 3,
-                             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-                             cv::OPTFLOW_USE_INITIAL_FLOW);
 
     int num_good_pts = 0;
     int num_triangulate_pts = 0;
-    for (size_t i = 0; i < status.size(); ++i)
-    {
-        if (status[i])
-        {
-            cv::KeyPoint kp(kps_current_frame[i], 7);
-            Feature::Ptr feat(new Feature(current_frame_, kp));
 
-            if(last_frame_->features_left_[i]->map_point_.lock())
+    if(false && "use wk")
+    {
+        std::vector<cv::Point2f> kps_last_frame, kps_current_frame;
+
+        for (auto &kp : last_frame_->features_left_)
+        {
+            kps_last_frame.push_back(kp->position_.pt);
+
+            auto mp = kp->map_point_.lock();
+
+            if (mp && false)
             {
-                feat->map_point_ = last_frame_->features_left_[i]->map_point_;
-                current_frame_->features_left_.push_back(feat);
-                num_good_pts++;
+                // use projected points as initial guess
+                cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
+                cv::Mat Rcw;
+                cv::Mat tcw;
+                current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
+                current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
+
+                auto px = camera_left_->world2pixel(pc, Rcw, tcw);
+                kps_current_frame.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
             }
             else
             {
-                std::vector<cv::Point2f> keypoint_1{last_frame_->features_left_[i]->position_.pt};
-                std::vector<cv::Point2f> keypoint_2{kps_current_frame[i]};
-
-                cv::Mat R;
-                cv::Mat t;
-                std::vector<cv::Point3f> points;
-                cv::Mat Tcl = current_frame_->Pose() * last_frame_->Pose().inv();
-                Tcl.rowRange(0,3).colRange(0,3).copyTo(R);
-                Tcl.rowRange(0,3).col(3).copyTo(t);
-
-                TriangulateNewPoints(keypoint_1, keypoint_2, R, t, points);
-
-                if(points[i].z < 0)
-                {
-                    std::cout << "points[" << i << "].z < 0 !" << std::endl;
-                    continue;
-                }
-
-                cv::Mat p_c = (cv::Mat_<float>(3, 1) << points[0].x, points[0].y, points[0].z);
-                cv::Mat p_w = camera_left_->camera2world(p_c, last_frame_->Pose().rowRange(0,3).colRange(0,3), last_frame_->Pose().rowRange(0,3).col(3));
-                Vec3 pworld(p_w.at<float>(0,0), p_w.at<float>(1,0), p_w.at<float>(2,0));
-
-                auto new_map_point = MapPoint::CreateNewMappoint();
-                new_map_point->SetPos(pworld);
-                new_map_point->AddObservation(last_frame_->features_left_[i]);
-                new_map_point->AddObservation(feat);
-                last_frame_->features_left_[i]->map_point_ = new_map_point;
-                feat->map_point_ = new_map_point;
-                map_->InsertMapPoint(new_map_point);
-                num_triangulate_pts++;
-
-                current_frame_->features_left_.push_back(feat);
-                num_good_pts++;
+                // use same pixel in left iamge
+                kps_current_frame.push_back(kp->position_.pt);
             }
         }
 
+        std::vector<uchar> status;
+        cv::Mat error;
+        cv::calcOpticalFlowPyrLK(last_frame_->left_img_,
+                                current_frame_->left_img_,
+                                kps_last_frame,
+                                kps_current_frame,
+                                status, error, cv::Size(11, 11), 3,
+                                cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
+                                cv::OPTFLOW_USE_INITIAL_FLOW);
+
+        for (size_t i = 0; i < status.size(); ++i)
+        {
+            if (status[i])
+            {
+                cv::KeyPoint kp(kps_current_frame[i], 7);
+                Feature::Ptr feat(new Feature(current_frame_, kp));
+
+                if(last_frame_->features_left_[i]->map_point_.lock())
+                {
+                    feat->map_point_ = last_frame_->features_left_[i]->map_point_;
+                    current_frame_->features_left_.push_back(feat);
+                    num_good_pts++;
+                }
+                else
+                {
+                    std::vector<cv::Point2f> keypoint_1{last_frame_->features_left_[i]->position_.pt};
+                    std::vector<cv::Point2f> keypoint_2{kps_current_frame[i]};
+
+                    cv::Mat R;
+                    cv::Mat t;
+                    std::vector<cv::Point3f> points;
+                    cv::Mat Tcl = current_frame_->Pose() * last_frame_->Pose().inv();
+                    Tcl.rowRange(0,3).colRange(0,3).copyTo(R);
+                    Tcl.rowRange(0,3).col(3).copyTo(t);
+
+                    TriangulateNewPoints(keypoint_1, keypoint_2, R, t, points);
+
+                    if(points[i].z < 0)
+                    {
+                        std::cout << "points[" << i << "].z < 0 !" << std::endl;
+                        continue;
+                    }
+
+                    cv::Mat p_c = (cv::Mat_<float>(3, 1) << points[0].x, points[0].y, points[0].z);
+                    cv::Mat p_w = camera_left_->camera2world(p_c, last_frame_->Pose().rowRange(0,3).colRange(0,3), last_frame_->Pose().rowRange(0,3).col(3));
+                    Vec3 pworld(p_w.at<float>(0,0), p_w.at<float>(1,0), p_w.at<float>(2,0));
+
+                    auto new_map_point = MapPoint::CreateNewMappoint();
+                    new_map_point->SetPos(pworld);
+                    new_map_point->AddObservation(last_frame_->features_left_[i]);
+                    new_map_point->AddObservation(feat);
+                    last_frame_->features_left_[i]->map_point_ = new_map_point;
+                    feat->map_point_ = new_map_point;
+                    map_->InsertMapPoint(new_map_point);
+                    num_triangulate_pts++;
+
+                    current_frame_->features_left_.push_back(feat);
+                    num_good_pts++;
+                }
+            }
+
+        }
+    }
+    else
+    {
+        wk_lk_points_input_s::wk_ptr _info = std::make_shared<wk_lk_points_input_s>();
+        wk_lk_points_output_s::wk_ptr _points = std::make_shared<wk_lk_points_output_s>();
+
+        _info->points_cnt = 0;
+        _info->prev_frame = &last_frame_->img_data->frame;
+        _info->curr_frame = &current_frame_->img_data->frame;
+
+        for (auto &kp : last_frame_->features_left_)
+        {
+            _info->prev_points[_info->points_cnt].x = kp->position_.pt.x;
+            _info->prev_points[_info->points_cnt].y = kp->position_.pt.y;
+            _info->points_cnt++;
+        }
+
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_corner_track(_info, _points);
+
+        for(int i=0; i<_info->points_cnt; ++i)
+        {
+            if(_points->status[i] == 1)
+            {
+                cv::KeyPoint kp(cv::Point2f(_points->curr_points[i].x, _points->curr_points[i].y), 7);
+                Feature::Ptr feat(new Feature(current_frame_, kp));
+                
+                if(last_frame_->features_left_[i]->map_point_.lock())
+                {
+                    feat->map_point_ = last_frame_->features_left_[i]->map_point_;
+                    current_frame_->features_left_.push_back(feat);
+                    num_good_pts++;
+                }
+                else
+                {
+                    std::vector<cv::Point2f> keypoint_1{last_frame_->features_left_[i]->position_.pt};
+                    std::vector<cv::Point2f> keypoint_2{cv::Point2f(_points->curr_points[i].x, _points->curr_points[i].y)};
+
+                    cv::Mat R;
+                    cv::Mat t;
+                    std::vector<cv::Point3f> points;
+                    cv::Mat Tcl = current_frame_->Pose() * last_frame_->Pose().inv();
+                    Tcl.rowRange(0,3).colRange(0,3).copyTo(R);
+                    Tcl.rowRange(0,3).col(3).copyTo(t);
+
+                    TriangulateNewPoints(keypoint_1, keypoint_2, R, t, points);
+
+                    if(points[i].z < 0)
+                    {
+                        std::cout << "points[" << i << "].z < 0 !" << std::endl;
+                        continue;
+                    }
+
+                    cv::Mat p_c = (cv::Mat_<float>(3, 1) << points[0].x, points[0].y, points[0].z);
+                    cv::Mat p_w = camera_left_->camera2world(p_c, last_frame_->Pose().rowRange(0,3).colRange(0,3), last_frame_->Pose().rowRange(0,3).col(3));
+                    Vec3 pworld(p_w.at<float>(0,0), p_w.at<float>(1,0), p_w.at<float>(2,0));
+
+                    auto new_map_point = MapPoint::CreateNewMappoint();
+                    new_map_point->SetPos(pworld);
+                    new_map_point->AddObservation(last_frame_->features_left_[i]);
+                    new_map_point->AddObservation(feat);
+                    last_frame_->features_left_[i]->map_point_ = new_map_point;
+                    feat->map_point_ = new_map_point;
+                    map_->InsertMapPoint(new_map_point);
+                    num_triangulate_pts++;
+
+                    current_frame_->features_left_.push_back(feat);
+                    num_good_pts++;
+                }
+            }
+        }
     }
 
     if(num_good_pts < 50)
@@ -622,9 +786,7 @@ int Frontend::FindFeaturesInLast()
         //cv::imshow("current_frame_->left_img_", current_frame_->left_img_);
         //cv::waitKey(0);
     }
-    std::cout << "Find " << num_good_pts << " in the last image." << std::endl
-              << kps_last_frame.size() << std::endl << kps_current_frame.size() << std::endl
-              << num_triangulate_pts << std::endl;
+    std::cout << "Find " << num_good_pts << " in the last image." << std::endl << num_triangulate_pts << std::endl;
 
     return num_good_pts;
 }

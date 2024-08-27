@@ -5,6 +5,7 @@
 #include "myslam/backend.h"
 #include "myslam/common_include.h"
 #include "myslam/frontend.h"
+#include "wk_st_lk_middle.h"
 
 namespace myslam
 {
@@ -30,7 +31,7 @@ public:
     /**
      * Make a step forward in dataset
      */
-    int Step(const cv::Mat& img, unsigned long int timeStamp);
+    int Step(wk_corner_video_frame_s::wk_ptr img_data);
 
     /// 获取前端状态
     FrontendStatus GetFrontendStatus() const { return frontend_->GetStatus(); }
