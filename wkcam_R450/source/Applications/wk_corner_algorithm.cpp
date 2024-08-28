@@ -1,6 +1,8 @@
 #include "wk_corner_algorithm.h"
 
-#include "core.hpp"
+#include <core.hpp>
+#include <highgui.hpp>
+#include <opencv.hpp>
 
 wk_corner_video_frame_s::wk_ptr prev_frame;
 wk_st_points_s::wk_ptr prev_pionts_test(new wk_st_points_s);
@@ -10,12 +12,18 @@ bool falg;
 void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 {
 	wk_st_lk_middle* middle = wk_st_lk_middle::wk_st_lk_get_instance();
-	
+
+	//middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, 0);
+
 	if(falg == false){
 		falg = true;
 		
 		middle->wk_corner_recognize(_info, prev_pionts_test);
 		middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, prev_pionts_test->points_cnt);
+
+		cv::Mat test;
+		middle->wk_frame_to_mat(_info, test);
+		cv::imwrite("./outpu1111t.jpg", test);
 		
 		prev_frame = _info;
 	}
@@ -61,7 +69,6 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 			falg = false;
 		}
 	}
-
 	 
 	return;
 }

@@ -110,6 +110,14 @@ public:
 	 */
 	td_s32 wk_frame_pionts_venc_debug(wk_corner_video_frame_s::wk_ptr& _frame, wk_points_float_s* _points, td_u32 _points_num);
 
+	/**
+	 * @brief 调试性代码, 将yuv中的y分量，转换为mat
+	 * 
+	 * @param _frame_yuv		图像帧
+	 * @param _mat_yuv			输入mat对象
+	 */
+	td_s32 wk_frame_to_mat(wk_corner_video_frame_s::wk_ptr& _frame_yuv, cv::Mat& _mat_yuv);
+
 private:
 	wk_st_lk_middle();
 	wk_st_lk_middle(const wk_st_lk_middle&)=delete;

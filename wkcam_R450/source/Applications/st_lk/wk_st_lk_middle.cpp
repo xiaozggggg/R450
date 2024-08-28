@@ -6,8 +6,6 @@
 #include "wk_st_lk_middle.h"
 
 
-
-
 wk_st_lk_middle* wk_st_lk_middle::instance = nullptr;
 
 
@@ -178,6 +176,36 @@ td_s32 wk_st_lk_middle::wk_log_mat(cv::Mat _mat)
 	
 	free(tmp);
 	return TD_SUCCESS;
+}
+
+td_s32 wk_st_lk_middle::wk_frame_to_mat(wk_corner_video_frame_s::wk_ptr& _frame_yuv, cv::Mat& _mat_yuv)
+{
+	td_u16 u16wight = 0, u16hight = 0;
+	td_u32 phy_addr = 0, size = 0, offset = 0;
+	td_char *ppage_addr = NULL;
+	ot_video_frame_info* _pframe = &_frame_yuv->frame;
+	
+	if (OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420 == _pframe->video_frame.pixel_format){
+		size = (_pframe->video_frame.stride[0]) * (_pframe->video_frame.height) * 3 / 2;
+	}
+	u16wight = _pframe->video_frame.width;
+	u16hight = _pframe->video_frame.height;
+	phy_addr = _pframe->video_frame.phys_addr[0];
+
+	offset = 0;
+	ppage_addr = (td_char *)ss_mpi_sys_mmap_cached(phy_addr, size);
+	if(TD_NULL == ppage_addr) {
+		WK_LOGE("ppage_addr is NULL\n");
+		return -1;
+	}
+
+	cv::Mat tmp = cv::Mat(u16hight, u16wight, CV_8UC1, ppage_addr);
+	_mat_yuv = tmp.clone();
+
+	ss_mpi_sys_munmap(ppage_addr, size);
+    ppage_addr = TD_NULL;
+	
+	return TD_SUCCESS; 
 }
 
 td_bool wk_st_lk_middle::wk_result_export(wk_location_result_s::wk_ptr& _result)
