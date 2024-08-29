@@ -286,10 +286,9 @@ td_s32 wk_ive_st_get_points(wk_ive_st_lk_info *_lk_info, ot_video_frame_info *_f
         //_lk_info->curr_corner_points[k].y  = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN);
 	
         _lk_info->curr_corner_points[k].x = (td_s32)(corner_info->corner[k].x << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;  // 使用缩小1倍的分辨率
+		/* 缩小角点Y轴坐标倍数 */
+        corner_info->corner[k].y *= ((_frame->video_frame.height*1.0)/(_lk_info->frame_size.height*1.0)); 
         _lk_info->curr_corner_points[k].y = (td_s32)(corner_info->corner[k].y << OT_SAMPLE_IVE_LEFT_SHIFT_SEVEN)*2;
-
-		/* 缩小角点坐标倍数 */
-		_lk_info->curr_corner_points[k].x *= ((_frame->video_frame.height*1.0)/(_lk_info->frame_size.height*1.0));
 	}
 
 task_err:

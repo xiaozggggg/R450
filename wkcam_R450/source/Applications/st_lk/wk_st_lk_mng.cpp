@@ -3,13 +3,13 @@
 #define WK_IVE_SENSOR_PIC_SIZE			PIC_640X480					/* sensor输出图像分辨率 */
 #define WK_IVE_LK_D1_PIC_WIDTH          640   		            	/* st lk中使用的图像分辨率 */ 	
 #define WK_IVE_LK_D1_PIC_HIGTH          512   		         
-#define WK_IVE_ST_LK_SRC_FRAMW_TYPE		OT_SVP_IMG_TYPE_YUV420SP  	/* 输入图像类型 */ 
+#define WK_IVE_ST_LK_SRC_FRAMW_TYPE		OT_SVP_IMG_TYPE_YUV420SP	/* 输入图像类型 */ 
 #define WK_IVE_LK_MAX_LEVEL          	(WK_IVE_LK_PYR_NUM-1)       /* 金字塔层数 [0~3] */ 
-#define WK_IVE_ST_QUALITY_LEVEL      	25							/* ST特征点质量控制参数 [1~255]*/
-#define WK_IVE_ST_LK_MAX_POINTS_NUM     100        					/* 特征点个数最大值 */ 
-#define WK_IVE_ST_LK_MIN_POINTS_NUM     5							/* 特征点个数最小值 */
+#define WK_IVE_ST_QUALITY_LEVEL      	80							/* ST特征点质量控制参数 [1~255]*/
+#define WK_IVE_ST_LK_MAX_POINTS_NUM     200        					/* 特征点个数最大值 */ 
+#define WK_IVE_ST_LK_MIN_POINTS_NUM     20							/* 特征点相邻距离最小值 */
 #define WK_IVE_LK_MIN_EIG_VALUE  		100							/* LK最小特征阈值 [1~255] */
-#define WK_IVE_LK_ITER_CNT          	10							/* LK最大迭代次数 [1~20] */
+#define WK_IVE_LK_ITER_CNT          	12							/* LK最大迭代次数 [1~20] */
 #define WK_IVE_LK_EPS                	2							/* LK迭代收敛条件 [1~255] */
 
 #define WK_IVE_SENSOR_VI_PIPE 			0							/* 下视sensor使用的VI PIPE */
@@ -300,7 +300,8 @@ td_s32 wk_st_get_points(ot_video_frame_info *_frame, wk_st_points_s* _points)
 
 	now_ms = system_time_ms_get();
 	times = get_delta_time(now_ms, last_ms);
-	WK_LOGI("### wk_st_get_points calculateC times ===> %d [%d]\n", times);  
+	//WK_LOGI("### wk_st_get_points calculateC times ===> %d [%d]\n", times);
+	
 	return s32ret;
 }
 
@@ -368,7 +369,7 @@ td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _poi
 
 	now_ms = system_time_ms_get();
 	times = get_delta_time(now_ms, last_ms);
-	WK_LOGI("### wk_lk_get_points calculateC times ===> %d [%d]\n", times);  
+	//WK_LOGI("### wk_lk_get_points calculateC times ===> %d [%d]\n", times);  
 
 	free(prev_points);
 	return s32ret;
@@ -413,7 +414,7 @@ static void * _wk_st_lk_proc(void* _pArgs)
 
 		ret = ss_mpi_vpss_get_chn_frame(pmng->grp, pmng->chn, &st_frame_info, 1000);
 		if(ret != TD_SUCCESS) {
-			//printf("OT_MPI_VPSS_GetChnFrame grp:%d chn:%d err:0x%x\n", pmng->grp,  pmng->chn, ret);
+			WK_LOGE("OT_MPI_VPSS_GetChnFrame grp:%d chn:%d err:0x%x\n", pmng->grp,  pmng->chn, ret);
 			usleep(5*1000);
 			continue;
 		}
@@ -522,6 +523,18 @@ td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result)
 //    	 wk_location_result.quaternion[0], wk_location_result.quaternion[1], wk_location_result.quaternion[2], wk_location_result.quaternion[3],
 //         wk_location_result.width, wk_location_result.height, 
 //         wk_location_result.ave_lun, wk_location_result.corner, wk_location_result.timestamp);
+
+#if 0
+	uint32_t now_ms = system_time_ms_get();
+	static uint32_t last_ms = 0;
+	static uint32_t u32cnt = 0;
+	u32cnt++;
+	if(get_delta_time(now_ms, last_ms) >= 1000){
+		WK_LOGF("u32cnt = %d, time = %d\n", u32cnt, now_ms-last_ms);
+		u32cnt = 0;
+		last_ms = now_ms;
+	}
+#endif
 
     mavlink_msg_wk_camera_visual_intertial_odometry_data_encode(MAVLINK_SYS_ID,WK_MODULE_TYPE_CAMERA, &msg, &wk_location_result);
     length = mavlink_msg_to_send_buffer(msgbuff,&msg);
