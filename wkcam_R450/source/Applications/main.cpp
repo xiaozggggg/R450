@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
 	myslam::VisualOdometry::Ptr vo( new myslam::VisualOdometry() );
 
-	if(!vo->Init(argv[1]))
+		if(!vo->Init(argv[1]))
     {
         std::cout << "vo->Ini() fail!" << std::endl;
         return -1;

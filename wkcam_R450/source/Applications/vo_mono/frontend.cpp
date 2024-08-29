@@ -314,20 +314,16 @@ void Frontend::MonocularInitialization()
         {
             mInitialFrame = current_frame_;
             last_frame_ = current_frame_;
-            mvbPrevMatched.resize(current_frame_->features_left_.size());
+
+            vector<cv::KeyPoint> keysUn;
 
             for(size_t i=0; i<current_frame_->features_left_.size(); i++)
-                mvbPrevMatched[i] = current_frame_->features_left_[i]->position_.pt;
+                keysUn.push_back(current_frame_->features_left_[i]->position_);
 
             if(mpInitializer)
                 mpInitializer = nullptr;
 
-            cv::Mat k = (cv::Mat_<float>(3, 3) <<
-                        camera_left_->fx_, 0, camera_left_->cx_,
-                        0, camera_left_->fy_, camera_left_->cy_,
-                        0, 0, 1);
-
-            mpInitializer = std::make_unique<Initializer>(*current_frame_, k, 1.0, 200);
+            mpInitializer = std::make_unique<Initializer>(keysUn, camera_left_->K(), 1.0, 200);
 
             std::fill(mvIniMatches.begin(), mvIniMatches.end(), -1);
 
@@ -358,7 +354,7 @@ void Frontend::MonocularInitialization()
             std::cout << "Init step 2 succ!" << std::endl;
         }
 
-        int nmatches = FindFeaturesInRight();
+        int nmatches = FindFeaturesInInitialFrame();
 
         // Check if there are enough correspondences
         if(nmatches < num_features_init_)
@@ -374,6 +370,10 @@ void Frontend::MonocularInitialization()
             std::cout << "Init step 3 succ!" << std::endl;
         }
 
+        vector<cv::KeyPoint> keysUn;
+        for(size_t i=0; i<current_frame_->features_left_.size(); i++)
+            keysUn.push_back(current_frame_->features_left_[i]->position_);
+
         cv::Mat Rcw; // Current Camera Rotation
         cv::Mat tcw; // Current Camera Translation
         std::vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
@@ -387,11 +387,11 @@ void Frontend::MonocularInitialization()
             std::vector<cv::Point2f> points1;
             std::vector<cv::Point2f> points2;
 
-            for(int i=0; i<last_frame_->features_left_.size();++i)
+            for(int i=0; i<mInitialFrame->features_left_.size();++i)
             {
                 if(mvIniMatches[i]>=0)
                 {
-                    points1.push_back(last_frame_->features_left_[i]->position_.pt);
+                    points1.push_back(mInitialFrame->features_left_[i]->position_.pt);
                     points2.push_back(current_frame_->features_left_[mvIniMatches[i]]->position_.pt);
                 }
             }
@@ -431,7 +431,7 @@ void Frontend::MonocularInitialization()
                 status_ = FrontendStatus::TRACKING_GOOD;
             }
         }
-        else if(mpInitializer->Initialize(*current_frame_, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
+        else if(mpInitializer->Initialize(keysUn, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
         {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
@@ -442,7 +442,7 @@ void Frontend::MonocularInitialization()
                 }
             }
 
-            std::cout << "Init step 3333 succ!" << std::endl;
+            std::cout << "Init step Initialize succ!" << std::endl;
 
             // Set Frame Poses
             mInitialFrame->SetPose(cv::Mat::eye(4,4,CV_32F));
@@ -461,6 +461,7 @@ void Frontend::MonocularInitialization()
         }
         else
         {
+            mpInitializer = nullptr;
             std::cout << "Init step 4 Initialize fail!" << std::endl;
         }
     }
@@ -514,46 +515,29 @@ int Frontend::DetectFeatures(Frame::Ptr frame)
     return cnt_detected;
 }
 
-int Frontend::FindFeaturesInRight()
+int Frontend::FindFeaturesInInitialFrame()
 {
     int num_good_pts = 0;
 
     current_frame_->features_left_.clear();
 
-    mvIniMatches = std::vector<int>(last_frame_->features_left_.size(),-1);
+    mvIniMatches = std::vector<int>(mInitialFrame->features_left_.size(),-1);
 
     if(false && "use wk")
     {
         // use LK flow to estimate points in the right image
-        std::vector<cv::Point2f> kps_last_frame, kps_current_frame;
-        for (auto &kp : last_frame_->features_left_)
+        std::vector<cv::Point2f> kps_init_frame, kps_current_frame;
+        for (auto &kp : mInitialFrame->features_left_)
         {
-            kps_last_frame.push_back(kp->position_.pt);
-            auto mp = kp->map_point_.lock();
-            if (mp && false)
-            {
-                // use projected points as initial guess
-                cv::Mat pc = (cv::Mat_<float>(3, 1) << mp->pos_.x(), mp->pos_.y(), mp->pos_.z());
-                cv::Mat Rcw;
-                cv::Mat tcw;
-                current_frame_->Pose().rowRange(0,3).colRange(0,3).copyTo(Rcw);
-                current_frame_->Pose().rowRange(0,3).col(3).copyTo(tcw);
-
-                auto px = camera_left_->world2pixel(pc, Rcw, tcw);
-                kps_current_frame.push_back(cv::Point2f(px.at<float>(0), px.at<float>(1)));
-            }
-            else
-            {
-                // use same pixel in left iamge
-                kps_current_frame.push_back(kp->position_.pt);
-            }
+            kps_init_frame.push_back(kp->position_.pt);
+            kps_current_frame.push_back(kp->position_.pt);
         }
 
         std::vector<uchar> status;
         Mat error;
-        cv::calcOpticalFlowPyrLK(last_frame_->left_img_,
+        cv::calcOpticalFlowPyrLK(mInitialFrame->left_img_,
                                 current_frame_->left_img_,
-                                kps_last_frame,
+                                kps_init_frame,
                                 kps_current_frame,
                                 status, error, cv::Size(11, 11), 3,
                                 cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
@@ -577,10 +561,10 @@ int Frontend::FindFeaturesInRight()
         wk_lk_points_output_s::wk_ptr _points = std::make_shared<wk_lk_points_output_s>();
 
         _info->points_cnt = 0;
-        _info->prev_frame = &last_frame_->img_data->frame;
+        _info->prev_frame = &mInitialFrame->img_data->frame;
         _info->curr_frame = &current_frame_->img_data->frame;
 
-        for (auto &kp : last_frame_->features_left_)
+        for (auto &kp : mInitialFrame->features_left_)
         {
             _info->prev_points[_info->points_cnt].x = kp->position_.pt.x;
             _info->prev_points[_info->points_cnt].y = kp->position_.pt.y;
@@ -601,7 +585,7 @@ int Frontend::FindFeaturesInRight()
             }
         }
     }
-    std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
+    std::cout << "Find " << num_good_pts << " in the init image." << std::endl;
     return num_good_pts;
 }
 

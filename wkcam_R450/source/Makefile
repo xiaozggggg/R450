@@ -37,6 +37,7 @@ OPENCV_LIB = -L ../lib/opencv 	-lopencv_dnn -lopencv_ml -lopencv_objdetect -lope
 								-lopencv_videostab -lopencv_calib3d -lopencv_features2d -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs \
 								-lopencv_video -lopencv_photo -lopencv_imgproc -lopencv_flann -lopencv_core
 
+DBoW2_LIB = -L ../lib/DBoW2 -lDBoW2
 ################# rtsp src #################
 RTSP_INC_PATH1 = ./Libraries/rtsp_srv/inc/net
 RTSP_INC_PATH2 = ./Libraries/rtsp_srv/inc/xop
@@ -100,7 +101,7 @@ CUR_INC_PATH = -I./
 ########################################################################
 CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(CORNER_INC_PATH)
 CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
-LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB)
+LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(DBoW2_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
 ################# debug src #################

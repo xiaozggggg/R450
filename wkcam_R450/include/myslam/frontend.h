@@ -95,7 +95,7 @@ class Frontend {
      * Find the corresponding features in right image of current_frame_
      * @return num of features found
      */
-    int FindFeaturesInRight();
+    int FindFeaturesInInitialFrame();
 
     int FindFeaturesInLast();
 
@@ -125,7 +125,6 @@ class Frontend {
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
     std::vector<int> mvIniMatches;
-    std::vector<cv::Point2f> mvbPrevMatched;
     std::vector<cv::Point3f> mvIniP3D;
     Frame::Ptr mInitialFrame;
 
