@@ -51,6 +51,10 @@ bool VisualOdometry::Init(const std::string& config_file_path)
 
 int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
 {
+    std::cout << "Step begin." << std::endl;
+
+    static cv::Mat Tlw = cv::Mat::eye(4,4,CV_32F);
+
     auto new_frame = Frame::CreateFrame();
 
     new_frame->img_data = img_data;
@@ -61,9 +65,9 @@ int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
 
     if(success)
     {
-        cv::Mat Tcw = new_frame->Pose();
-        cv::Mat R = Tcw.rowRange(0,3).colRange(0,3);
-        cv::Mat t = Tcw.rowRange(0,3).col(3);
+        cv::Mat Tlc = Tlw * new_frame->Pose().inv();
+        cv::Mat R = Tlc.rowRange(0,3).colRange(0,3);
+        cv::Mat t = Tlc.rowRange(0,3).col(3);
 
         Eigen::Matrix3f r = Eigen::Matrix3f::Identity();
 
@@ -86,6 +90,8 @@ int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
         result->corner_num = frontend_->GetTrackingInliersNum();
 
         wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
+
+        Tlw = new_frame->Pose();
     }
 
     auto t2 = std::chrono::steady_clock::now();

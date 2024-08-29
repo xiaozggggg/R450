@@ -52,6 +52,8 @@ class Map {
     /// 清理map中观测数量为零的点
     void CleanMap();
 
+    void Reset();
+
    private:
     // 将旧的关键帧置为不活跃状态
     void RemoveOldKeyframe();

@@ -112,4 +112,12 @@ void Map::CleanMap() {
     std::cout << "Removed " << cnt_landmark_removed << " active landmarks";
 }
 
+void Map::Reset()
+{
+    active_landmarks_.clear();
+    landmarks_.clear();
+    keyframes_.clear();
+    active_keyframes_.clear();
+}
+
 }  // namespace myslam

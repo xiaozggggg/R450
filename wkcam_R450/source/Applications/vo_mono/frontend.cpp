@@ -800,6 +800,8 @@ int Frontend::FindFeaturesInLast()
 
 bool Frontend::CreateInitialMapMonocular()
 {
+    map_->Reset();
+    
     size_t cnt_init_landmarks = 0;
 
     for(size_t i=0; i<mvIniMatches.size();i++)
