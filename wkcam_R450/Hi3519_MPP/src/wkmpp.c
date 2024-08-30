@@ -925,13 +925,12 @@ int wk_mpp_venc_stream_start(ot_venc_chn VencChn)
         break;
 
     case WK_VIDEO_CHANNEL_PREVIEW:
-#ifdef DEBUG_ST_LK_POINTS_PREVIEW
+
 		wk_mpp_venc_no_bind_start(&venc_preview);
-#else 
-	    wk_mpp_venc_start(&venc_preview);
+
+	    //wk_mpp_venc_start(&venc_preview);
 	    //wk_mpp_venc_set_IntraRefresh(VencChn);
 	    //wk_mpp_venc_setRcParam(VencChn);
-#endif
 
         s32Ret = WK_COMM_VENC_GetStreamStart(VencChn);
         if (TD_SUCCESS != s32Ret)

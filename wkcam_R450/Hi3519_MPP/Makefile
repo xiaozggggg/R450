@@ -10,8 +10,6 @@ TARG := lib/libwkmpp.so
 
 #CFLAGS += -DHNR_SCENE_AUTO_USED
 #============================================================= 
-CFLAGS += -DDEBUG_ST_LK_POINTS_PREVIEW
-
 
 INCS := -Isrc -Isrc -Iinc -Iinc/hisisdk -Iinc/common -Iinc/scene_auto -Iinc/libexif
 

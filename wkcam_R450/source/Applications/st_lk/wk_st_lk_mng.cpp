@@ -419,6 +419,10 @@ static void * _wk_st_lk_proc(void* _pArgs)
 			continue;
 		}
 
+		#ifndef DEBUG_ST_LK_POINTS_PREVIEW
+		ss_mpi_venc_send_frame(WK_VIDEO_CHANNEL_PREVIEW,  &st_frame_info, -1);
+		#endif
+
 		/* 调用算法回调 */
 		_wk_st_lk_get_frame_cb_handle(pmng->grp, pmng->chn, &st_frame_info);
 
