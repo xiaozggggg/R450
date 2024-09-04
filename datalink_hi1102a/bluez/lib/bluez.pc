@@ -1,0 +1,10 @@
+prefix=/home/walkera/Hi3519DV500_SDK_V2.0.1.0/third_party/_install_3519
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: BlueZ
+Description: Bluetooth protocol stack for Linux
+Version: 5.66
+Libs: -L${libdir} -lbluetooth
+Cflags: -I${includedir}
