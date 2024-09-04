@@ -59,10 +59,10 @@ APPLICATIONS_SRC  = $(notdir $(wildcard $(APPLICATIONS_PATH)/*.cpp))
 APPLICATIONS_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(APPLICATIONS_SRC))
 APPLICATIONS_INC_PATH = -I$(APPLICATIONS_PATH)
 
-CORNER_PATH = ./Applications/corner_common
-CORNER_SRC  = $(notdir $(wildcard $(CORNER_PATH)/*.cpp))
-CORNER_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(CORNER_SRC))
-CORNER_INC_PATH = -I$(CORNER_PATH)
+IMU_PATH = ./Applications/imu_rev
+IMU_SRC  = $(notdir $(wildcard $(IMU_PATH)/*.cpp))
+IMU_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(IMU_SRC))
+IMU_INC_PATH = -I$(IMU_PATH)
 
 ST_LK_PATH = ./Applications/st_lk
 ST_LK_SRC  = $(notdir $(wildcard $(ST_LK_PATH)/*.cpp))
@@ -99,7 +99,7 @@ GIT_INFO_DEPEND = gitinfo
 
 CUR_INC_PATH = -I./
 ########################################################################
-CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(CORNER_INC_PATH)
+CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(IMU_INC_PATH)
 CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
 LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(DBoW2_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
@@ -119,7 +119,7 @@ $(GIT_INFO_DEPEND):
 	$(GIT_INFO_SHELL_PATH)
 	$(PRINTF_GREEN) "Generate $(GIT_INFO_INC_PATH)"
 
-$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(VO_MONO_OBJS) $(CORNER_OBJS)
+$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(VO_MONO_OBJS) $(IMU_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
 
 
@@ -127,7 +127,7 @@ $(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_O
 $(OBJPATH)/%.o:$(APPLICATIONS_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
-$(OBJPATH)/%.o:$(CORNER_PATH)/%.cpp
+$(OBJPATH)/%.o:$(IMU_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(ST_LK_PATH)/%.cpp

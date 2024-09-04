@@ -73,18 +73,24 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 	return;
 }
 
+void fun_wk_get_imu_cb(wk_imu_data_s::wk_ptr _info)
+{
+	WK_LOGD("gyro -- %f\t%f\t%f\t accel ---- %f\t%f\t%f   ----  %ld\n", 
+		_info->gyro_x, _info->gyro_y, _info->gyro_z, _info->accel_x, _info->accel_y, _info->accel_z, _info->u64pts);
+
+	return;
+}
+
+
 
 int middle_test()
 {
 	wk_st_lk_middle* middle = wk_st_lk_middle::wk_st_lk_get_instance();
-
 	middle->wk_register_get_frame_cb(fun_wk_get_frame_cb);
 
-
-	td_char data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-	cv::Mat mat3(2, 2, CV_8UC3, data);
-	middle->wk_log_mat(mat3);
-
+	
+	wk_imu_middle* imu_middle = wk_imu_middle::wk_imu_get_instance();
+	imu_middle->wk_register_get_imu_cb(fun_wk_get_imu_cb);
 
 	return 0;
 }

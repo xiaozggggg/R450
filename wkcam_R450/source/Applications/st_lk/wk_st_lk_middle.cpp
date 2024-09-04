@@ -24,13 +24,13 @@ wk_st_lk_middle* wk_st_lk_middle::wk_st_lk_get_instance()
 	td_s32 u32ret;
 	
 	if(instance == nullptr) {
-		instance = new wk_st_lk_middle();
-
 		u32ret = wk_st_lk_start(0, WK_VIDEO_CHANNEL_PREVIEW);
 		if(u32ret != TD_SUCCESS) {
 			WK_LOGE("err: wk_st_lk_start error!\n");
 			return nullptr;
 		}
+		
+		instance = new wk_st_lk_middle();
 	}
 
 	return instance;

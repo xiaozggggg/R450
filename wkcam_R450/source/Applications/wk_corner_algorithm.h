@@ -13,6 +13,7 @@
 
 #include "wk_corner_info.h"
 #include "wk_st_lk_middle.h"
+#include "wk_imu_middle.h"
 
 using namespace std; 
 
