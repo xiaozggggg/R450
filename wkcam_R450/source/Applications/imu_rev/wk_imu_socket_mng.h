@@ -53,14 +53,14 @@ typedef struct {
 
 #pragma pack(1)
 typedef struct {
-	td_s16 s16gyro_x;
-	td_s16 s16gyro_y;
-	td_s16 s16gyro_z;
+	td_float gyro_x;
+	td_float gyro_y;
+	td_float gyro_z;
 	td_s16 s16gyro_temp;
 	
-	td_s16 s16accel_x;
-	td_s16 s16accel_y;
-	td_s16 s16accel_z;
+	td_float accel_x;
+	td_float accel_y;
+	td_float accel_z;
 	
 	td_s16 s16angle;
 	td_u64 u64pts;       // 单位：ms

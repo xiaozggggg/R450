@@ -798,16 +798,6 @@ void DataCenter::UartRevThread(void)
 }
 #else  // 使用如下代码，则开始imu传输功能
 
-uint8_t tmp_imu_data[] = { 0xaa, 0x55,
-						   0x1c, 0x21, 
-						   0x01, 0x11, 0x02, 0x22, 0x03, 0x33, 
-						   0x00, 0x21,
-						   0x04, 0x44, 0x05, 0x55, 0x06, 0x66, 
-						   0x12, 0x23, 
-						   0x98, 0x87, 0x76, 0x65, 0x54, 0x43, 0x32, 0x21,
-						   0x00, 0x00, 0x00,
-						   0xf1 };
-
 void DataCenter::UartRevThread(void)
 {
     uint8_t  uart_buf[MAX_CMDLENGTH]; 
@@ -825,9 +815,6 @@ void DataCenter::UartRevThread(void)
         memset(uart_buf, 0, sizeof(uart_buf));
 		uart_length = UartReadHandle(uart_buf, sizeof(uart_buf));
 		//printf("uart_length = %d\n", uart_length);
-		
-		memcpy(&uart_buf[uart_length], tmp_imu_data, sizeof(tmp_imu_data));
-		uart_length += sizeof(tmp_imu_data);
 		
 		if(uart_length > 0) {
 			memset(mavlink_buf, 0, sizeof(mavlink_buf));
@@ -1291,6 +1278,7 @@ int DataCenter::CamImuHandle(uint8_t *src_buf, uint16_t src_size, uint8_t other[
 			other_size++;
 			u32ignore_cnt++;
 			data++;
+			printf("imu data cheak sum err\n");
 			continue;
 		}
 

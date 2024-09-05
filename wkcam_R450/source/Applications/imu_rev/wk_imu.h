@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys_utils.h>
+#include <list>
 #include "ot_type.h"
 #include "ss_mpi_sys.h"
 

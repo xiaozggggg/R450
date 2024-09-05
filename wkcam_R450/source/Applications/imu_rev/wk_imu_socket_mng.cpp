@@ -125,13 +125,16 @@ td_s32 wk_imu_socket_register_imu_data_cb(wk_fun_cmd_reply_callback _cb)
 
 
 /* 数据发送接口 */
+extern void CamSendHandle(char *buf, int size);
 static td_s32 _wk_imu_socket_rw_send(td_u8* _data, td_u8 _length)
 {
+	CamSendHandle((char*)_data, _length);
+#if 0
 	td_s32 ret = -1;
 	wk_imu_socket_rw_s* prw = &g_socket_rw;
 
 	if(prw->imu_socket <= 0) {
-		WK_LOGE("usart is no open\n");
+		WK_LOGE("socket is no open\n");
 		return ret;
 	}
 
@@ -145,8 +148,9 @@ static td_s32 _wk_imu_socket_rw_send(td_u8* _data, td_u8 _length)
 		WK_LOGE("write socket data failed! ret = %d\n", ret);
 		return -1;
 	}
-	
-	return ret;
+#endif 
+
+	return TD_SUCCESS;
 }
 
 /* 求数据帧校验和 */
@@ -490,7 +494,7 @@ static void * _wk_imu_socket_mng_proc(void* _pArgs)
 	wk_imu_socket_mng_s* pmng = &g_socket_mng;
 	td_u8 u8temp[2*1024] = {0};
 	td_s32 u32len = 0;
-	
+
 	while(pmng->b_proc_running == true) {
 		/* 调用imu 使用层注册的回调 */
 		if(pmng->imu_callback != NULL){
@@ -513,7 +517,7 @@ static void * _wk_imu_socket_mng_proc(void* _pArgs)
 	       	 	memmove(prw->rw_buffer, &prw->rw_buffer[u32len], prw->u32rw_buf_index);	
 			}
 		}
-		
+
 		/* 接收数据处理 */
 		_wk_imu_socket_receive_mng();
 	}
@@ -655,7 +659,6 @@ static td_s32 wk_imu_unix_socket_send(td_u8 *buf, td_u8 size)
 {
     int nRet;
 	wk_imu_socket_rw_s* prw = &g_socket_rw;
-	
     nRet = sendto(prw->imu_socket, buf, size, 0, (struct sockaddr*)&prw->imu_addr_remote, sizeof(prw->imu_addr_remote));
 	return nRet;
 }
