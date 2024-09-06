@@ -10,6 +10,7 @@
 #include "git_info/git_info.h"
 #include "wk_log.h"
 #include<myslam/visual_odometry.h>
+#include<wkSlam/System.h>
 
 #define TAG "wkcam_app"
 
@@ -50,17 +51,28 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	myslam::VisualOdometry::Ptr vo( new myslam::VisualOdometry() );
+	if(true)
+	{
+		WK_SLAM::System SLAM("./release/vc.txt", "./EuRoC.yaml", WK_SLAM::System::MONOCULAR, true);
+
+		wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(
+			std::bind(&WK_SLAM::System::TrackMonocular, &SLAM, std::placeholders::_1)
+		);
+	}
+	else
+	{
+		myslam::VisualOdometry::Ptr vo( new myslam::VisualOdometry() );
 
 		if(!vo->Init(argv[1]))
-    {
-        std::cout << "vo->Ini() fail!" << std::endl;
-        return -1;
-    }
+		{
+			std::cout << "vo->Ini() fail!" << std::endl;
+			return -1;
+		}
 
-	wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(
-		std::bind(&myslam::VisualOdometry::Step, vo, std::placeholders::_1)
-	);
+		wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(
+			std::bind(&myslam::VisualOdometry::Step, vo, std::placeholders::_1)
+		);
+	}
 
 	while (1) {
 		//wk_mpp_get_Exptime_gain();

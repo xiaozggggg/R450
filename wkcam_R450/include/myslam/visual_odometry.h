@@ -31,7 +31,7 @@ public:
     /**
      * Make a step forward in dataset
      */
-    int Step(wk_corner_video_frame_s::wk_ptr img_data);
+    void Step(wk_corner_video_frame_s::wk_ptr img_data);
 
     /// 获取前端状态
     FrontendStatus GetFrontendStatus() const { return frontend_->GetStatus(); }

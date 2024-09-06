@@ -21,7 +21,6 @@
 #define INITIALIZER_H
 
 #include<opencv2/opencv.hpp>
-
 using namespace std;
 
 namespace myslam

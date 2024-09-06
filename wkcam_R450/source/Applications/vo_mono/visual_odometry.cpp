@@ -49,7 +49,7 @@ bool VisualOdometry::Init(const std::string& config_file_path)
     return true;
 }
 
-int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
+void VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
 {
     std::cout << "Step begin." << std::endl;
 
@@ -100,7 +100,7 @@ int VisualOdometry::Step(wk_corner_video_frame_s::wk_ptr img_data)
 
     std::cout << "VO cost time: " << time_used.count() << " seconds." << std::endl;
 
-    return success;
+    return;
 }
 
 }  // namespace myslam

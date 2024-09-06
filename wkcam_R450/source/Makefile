@@ -19,6 +19,7 @@ HI_SDK_INC += -I ../Hi3519_MPP/inc/scene_auto
 
 THIRD_INC += -I ../include/
 THIRD_INC += -I ../include/ffmpeg/
+THIRD_INC += -I ../include/wkSlam/
 
 ############ mavlink ############
 MAVLINK_INC = -I../include/mavlink/ -I../include/mavlink/walkera 
@@ -38,6 +39,7 @@ OPENCV_LIB = -L ../lib/opencv 	-lopencv_dnn -lopencv_ml -lopencv_objdetect -lope
 								-lopencv_video -lopencv_photo -lopencv_imgproc -lopencv_flann -lopencv_core
 
 DBoW2_LIB = -L ../lib/DBoW2 -lDBoW2
+g2o_LIB = -L ../lib/g2o -lg2o
 ################# rtsp src #################
 RTSP_INC_PATH1 = ./Libraries/rtsp_srv/inc/net
 RTSP_INC_PATH2 = ./Libraries/rtsp_srv/inc/xop
@@ -74,6 +76,11 @@ VO_MONO_SRC  = $(notdir $(wildcard $(VO_MONO_PATH)/*.cpp))
 VO_MONO_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(VO_MONO_SRC))
 VO_MONO_INC_PATH = -I$(VO_MONO_PATH)
 
+WK_SLAM_PATH = ./Applications/wk_slam
+WK_SLAM_SRC  = $(notdir $(wildcard $(WK_SLAM_PATH)/*.cpp))
+WK_SLAM_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(WK_SLAM_SRC))
+WK_SLAM_INC_PATH = -I$(WK_SLAM_PATH)
+
 ################# drivers src #################
 DRIVERS_PATH = ./Drivers
 DRIVERS_SRC  = $(notdir $(wildcard $(DRIVERS_PATH)/*.cpp))
@@ -99,9 +106,9 @@ GIT_INFO_DEPEND = gitinfo
 
 CUR_INC_PATH = -I./
 ########################################################################
-CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(IMU_INC_PATH)
+CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(IMU_INC_PATH) $(WK_SLAM_INC_PATH)
 CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
-LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(DBoW2_LIB)
+LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(DBoW2_LIB) $(g2o_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
 ################# debug src #################
@@ -119,7 +126,7 @@ $(GIT_INFO_DEPEND):
 	$(GIT_INFO_SHELL_PATH)
 	$(PRINTF_GREEN) "Generate $(GIT_INFO_INC_PATH)"
 
-$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(VO_MONO_OBJS) $(IMU_OBJS)
+$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(VO_MONO_OBJS) $(IMU_OBJS) $(WK_SLAM_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
 
 
@@ -134,6 +141,9 @@ $(OBJPATH)/%.o:$(ST_LK_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(VO_MONO_PATH)/%.cpp
+	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
+
+$(OBJPATH)/%.o:$(WK_SLAM_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(UTILS_C_PATH)/%.c
