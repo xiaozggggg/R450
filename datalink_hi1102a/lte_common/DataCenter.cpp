@@ -632,6 +632,8 @@ void DataCenter::mavlink_decode_FCS(unsigned char byte)
         case MAVLINK_MSG_ID_WK_UPGRADE_FW_INFO:
         case MAVLINK_MSG_ID_WK_UPGRADE_FRAG_DATA:
         case MAVLINK_MSG_ID_WK_UPGRADE_END_ACK:
+		case MAVLINK_MSG_ID_ODOMETRY:	
+		case MAVLINK_MSG_ID_HIGHRES_IMU:
             // printf("==== datalink recv msg id [%d]\n", wkmsg.msgid);
             length = mavlink_msg_to_send_buffer(msgbuff,&wkmsg);
             CamSendHandle(msgbuff,length);
@@ -1299,20 +1301,20 @@ int DataCenter::CamImuHandle(uint8_t *src_buf, uint16_t src_size, uint8_t other[
    	 	memmove(rw_buffer, &rw_buffer[u32ignore_cnt], u32rw_buf_index);			
 	}
 
-	// printf("--- other_size = %d, u32imu_buf_size = %d \n", other_size, u32imu_buf_size);
-	//	if(other_size > 0){
-	//		for(int ifor=0; ifor<other_size; ifor++){
-	//			printf("%02x ", other[ifor]);
-	//		}
-	//		printf("\n");
-	//	}
+//	 printf("--- other_size = %d, u32imu_buf_size = %d \n", other_size, u32imu_buf_size);
+//		if(other_size > 0){
+//			for(int ifor=0; ifor<other_size; ifor++){
+//				printf("%02x ", other[ifor]);
+//			}
+//			printf("\n");
+//		}
 	
-	//	if(u32imu_buf_size > 0){
-	//		for(int ifor=0; ifor<u32imu_buf_size; ifor++){
-	//			printf("%02x ", u8imu_buffer[ifor]);
-	//		}
-	//		printf("\n");
-	//	}
+//		if(u32imu_buf_size > 0){
+//			for(int ifor=0; ifor<u32imu_buf_size; ifor++){
+//				printf("%02x ", u8imu_buffer[ifor]);
+//			}
+//			printf("\n");
+//		}
 
 
 	/* 发送imu数据到相机 */
