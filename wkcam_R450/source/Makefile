@@ -71,6 +71,11 @@ ST_LK_SRC  = $(notdir $(wildcard $(ST_LK_PATH)/*.cpp))
 ST_LK_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(ST_LK_SRC))
 ST_LK_INC_PATH = -I$(ST_LK_PATH)
 
+P_PATH = ./Applications/quaternion
+P_SRC  = $(notdir $(wildcard $(P_PATH)/*.cpp))
+P_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(P_SRC))
+P_INC_PATH = -I$(P_PATH)
+
 VO_MONO_PATH = ./Applications/vo_mono
 VO_MONO_SRC  = $(notdir $(wildcard $(VO_MONO_PATH)/*.cpp))
 VO_MONO_OBJS = $(patsubst %.cpp,$(OBJPATH)/%.o,$(VO_MONO_SRC))
@@ -106,7 +111,7 @@ GIT_INFO_DEPEND = gitinfo
 
 CUR_INC_PATH = -I./
 ########################################################################
-CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(VO_MONO_INC_PATH) $(IMU_INC_PATH) $(WK_SLAM_INC_PATH)
+CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(P_INC_PATH) $(VO_MONO_INC_PATH) $(IMU_INC_PATH) $(WK_SLAM_INC_PATH)
 CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
 LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(DBoW2_LIB) $(g2o_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
@@ -126,7 +131,7 @@ $(GIT_INFO_DEPEND):
 	$(GIT_INFO_SHELL_PATH)
 	$(PRINTF_GREEN) "Generate $(GIT_INFO_INC_PATH)"
 
-$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(VO_MONO_OBJS) $(IMU_OBJS) $(WK_SLAM_OBJS)
+$(ELF):$(APPLICATIONS_OBJS) $(DRIVERS_OBJS) $(UTILS_OBJS) $(RTSP_OBJS) $(UTILS_OBJS_C) $(ST_LK_OBJS) $(P_OBJS) $(VO_MONO_OBJS) $(IMU_OBJS) $(WK_SLAM_OBJS)
 	$(COMPILE_CPP) -o $@ $^ $(LIBS)
 
 
@@ -138,6 +143,9 @@ $(OBJPATH)/%.o:$(IMU_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(ST_LK_PATH)/%.cpp
+	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
+
+$(OBJPATH)/%.o:$(P_PATH)/%.cpp
 	$(COMPILE_CPP) -c $< -o $@ $(CONFIG) -Os
 
 $(OBJPATH)/%.o:$(VO_MONO_PATH)/%.cpp

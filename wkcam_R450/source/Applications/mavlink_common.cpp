@@ -24,6 +24,15 @@ extern void CamSendHandle(char *buf, int size);
 extern void comm_send_data(uint8_t *data, uint16_t length);
 extern void setRtspStop(bool status);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern td_s32 wk_quaternion_push_data(td_float q0, td_float q1, td_float q2, td_float q3, td_u64 pts);
+#ifdef __cplusplus
+}
+#endif
+
+
 int takephotocount = 0;
 int takephotomode = 0;
 
@@ -391,7 +400,12 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 				WK_LOGW("set awb failed!!!\n");
 			}
 			break;}
-
+		case MAVLINK_MSG_ID_ODOMETRY:
+		{
+			mavlink_odometry_t* data = (mavlink_odometry_t *)MessageBuf;
+			wk_quaternion_push_data(data->q[0], data->q[0], data->q[0], data->q[0], data->time_usec);
+			break;
+		}
 		default:{
 			return false;
 			break;}
@@ -408,7 +422,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 void mavlink_decode(unsigned char byte)
 {
 	if (mavlink_parse_char(0, byte, &wkmsg, &wkstatus)) {
-        // printf("============ wkcam_f210 recv wkmsg.msgid[%d]\n",wkmsg.msgid);
+        //WK_LOGI("============ wkcam_f210 recv wkmsg.msgid[%d]\n",wkmsg.msgid);
 		switch (wkmsg.msgid) 
         {
         #if 1
@@ -503,7 +517,14 @@ void mavlink_decode(unsigned char byte)
                 MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_WK_CAMERA_CMD_AWB_MODE ,(char *)&wk_camera_cmd_awb_mode);
                 WK_LOGD("------------------- recv mavlink awb mode!!!\n");
                 break;}
-
+			case MAVLINK_MSG_ID_ODOMETRY:
+			{	  // 获取飞控四元数
+				mavlink_odometry_t wk_odometry;
+				mavlink_msg_odometry_decode(&wkmsg, &wk_odometry);
+				MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_ODOMETRY ,(char *)&wk_odometry);
+				//WK_LOGD("------------------- recv mavlink odometry data!!!\n");
+				break;
+			}
             default:{
                 //printf("-------------------- not found wkmsg.msgid:%d\n" ,wkmsg.msgid);
                 break;}
