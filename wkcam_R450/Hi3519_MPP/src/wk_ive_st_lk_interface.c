@@ -119,7 +119,7 @@ static td_void _wk_ive_st_lk_copy_pyr(ot_svp_src_img _pyr_src[], ot_svp_dst_img 
 }
 
 /* 创建用户帧 */
-static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info *user_frame_info)
+td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info *user_frame_info)
 {
     td_s32 ret;
     sample_vi_get_frame_vb_cfg vb_cfg;
@@ -141,7 +141,7 @@ static td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info
 }
 
 /* 释放用户帧 */
-static td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_frame_info[], td_s32 frame_cnt)
+td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_frame_info[], td_s32 frame_cnt)
 {
     td_s32 i;
     ot_vb_pool pool_id;
@@ -157,7 +157,7 @@ static td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_
 }
 
 /* 缩放图像帧 */
-static td_s32 _wk_scale_task(ot_video_frame_info *src_frame, ot_video_frame_info *dst_frame)
+td_s32 _wk_scale_task(ot_video_frame_info *src_frame, ot_video_frame_info *dst_frame)
 {
     td_s32 ret;
     ot_vgs_handle handle = -1;

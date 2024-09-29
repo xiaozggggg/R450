@@ -12,6 +12,8 @@
 #include "sample_comm.h"
 #include "sample_common_ive.h"
 #include "wk_corner_info.h"
+#include "wk_ive_st_lk_interface.h"
+
 
 
 /* 建立vgs任务，进行图像绘点 */

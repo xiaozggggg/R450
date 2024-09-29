@@ -7,6 +7,7 @@
 **************************************************************************************/
 #ifdef DEBUG_ST_LK_POINTS_PREVIEW
 
+
 /* 描点图发送至venc中 */
 static td_s32 _wk_st_lk_draw_points_send_venc(ot_video_frame_info *_pframe)
 {
@@ -97,15 +98,20 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, wk_
 	td_u32 ifor = 0, u32ponits_cnt = 0;
 	ot_svp_point_s25q7  ponits[1024] = {0};
 
-	if(_frame == NULL || _points == NULL){
+	if(_frame == NULL){
 		sample_print_err("vgs draw ponits param error!\n");
 		return ret;
 	}
 
 	/* 无描点，直接发送venc */
 	if(_points_num == 0){
-		_wk_st_lk_draw_points_send_venc(_frame);
-		return TD_SUCCESS;
+		memcpy_s(&vgs_task.img_out, sizeof(ot_video_frame_info),_frame, sizeof(ot_video_frame_info));
+		goto scale_handle;
+	}
+
+	if( _points == NULL){
+		sample_print_err("vgs draw ponits param error!\n");
+		return ret;
 	}
 
 	/* 循环对图像进行绘点 */
@@ -159,9 +165,32 @@ td_s32 wk_st_lk_vgs_draw_ponits_send_venc_debug(ot_video_frame_info* _frame, wk_
 	    }
 	}
 
-	/* 将经过绘点后图片发送到venc */
-	_wk_st_lk_draw_points_send_venc(&vgs_task.img_out);
+scale_handle:
+	/* 进行图像放大，放大到720p */
+	ot_size frame_size;
+	frame_size.width = 1280;
+	frame_size.height = 720;
+    sample_vi_user_frame_info pic_frame_info;
 	
+    ret = _wk_create_user_frame(&frame_size, &pic_frame_info);
+    if (ret != TD_SUCCESS) {
+        return ret;
+    }
+	pic_frame_info.frame_info.mod_id = vgs_task.img_out.mod_id;
+	pic_frame_info.frame_info.video_frame.pts = vgs_task.img_out.video_frame.pts;
+	pic_frame_info.frame_info.video_frame.time_ref = vgs_task.img_out.video_frame.time_ref;
+		
+	ret = _wk_scale_task(&vgs_task.img_out, &pic_frame_info.frame_info);
+    if (ret != TD_SUCCESS) {
+        WK_LOGE("add vgs scale task failed.\n");
+		goto task_err;
+    }
+		
+	/* 将经过绘点后图片发送到venc */
+	_wk_st_lk_draw_points_send_venc(&pic_frame_info.frame_info);
+
+task_err:
+	_wk_create_user_release_frame_blk(&pic_frame_info, 1);
 vgs_draw_ponits_fail:
 	ss_mpi_vgs_cancel_job(vgs_handle);
 	return ret;

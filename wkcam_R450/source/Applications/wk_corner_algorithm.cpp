@@ -13,8 +13,10 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 {
 	wk_st_lk_middle* middle = wk_st_lk_middle::wk_st_lk_get_instance();
 
-	//middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, 0);
-
+#if 1
+	middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, 0);
+	return;
+#else
 	if(falg == false){
 		falg = true;
 		
@@ -71,17 +73,23 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 	}
 	 
 	return;
+#endif	
 }
 
 void fun_wk_get_imu_cb(wk_imu_data_s::wk_ptr _info)
 {
+	
 	WK_LOGD("gyro -- %f\t%f\t%f\t accel ---- %f\t%f\t%f   ----  %ld\n", 
 		_info->gyro_x, _info->gyro_y, _info->gyro_z, _info->accel_x, _info->accel_y, _info->accel_z, _info->u64pts);
 
 	return;
 }
 
-
+void fun_wk_get_quaternion_cb(wk_quaternion_data_s::wk_ptr _info)
+{
+	WK_LOGD("quaternion -- %f\t%f\t%f\t%f\t ----  %ld\n", 
+		_info->q[0], _info->q[1], _info->q[2], _info->q[3], _info->u64pts);
+}
 
 int middle_test()
 {
@@ -89,8 +97,11 @@ int middle_test()
 	middle->wk_register_get_frame_cb(fun_wk_get_frame_cb);
 
 	
-	wk_imu_middle* imu_middle = wk_imu_middle::wk_imu_get_instance();
-	imu_middle->wk_register_get_imu_cb(fun_wk_get_imu_cb);
+	//wk_imu_middle* imu_middle = wk_imu_middle::wk_imu_get_instance();
+	//imu_middle->wk_register_get_imu_cb(fun_wk_get_imu_cb);
+
+	//wk_quaternion_middle* p_middle = wk_quaternion_middle::wk_quaternion_get_instance();
+	//p_middle->wk_register_get_quaternion_cb(fun_wk_get_quaternion_cb);
 
 	return 0;
 }

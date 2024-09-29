@@ -79,6 +79,14 @@ td_s32 wk_ive_lk_get_points(wk_ive_st_lk_info *_lk_info,
 								ot_svp_point_s25q7* _prev_points_src,
 								td_u16 _points_num);
 
+/* 创建用户帧 */
+td_s32 _wk_create_user_frame(ot_size *dst_size, sample_vi_user_frame_info *user_frame_info);
+/* 释放用户帧 */
+td_void _wk_create_user_release_frame_blk(sample_vi_user_frame_info user_frame_info[], td_s32 frame_cnt);
+/* 缩放图像帧 */
+td_s32 _wk_scale_task(ot_video_frame_info *src_frame, ot_video_frame_info *dst_frame);
+
+
 
 #ifdef __cplusplus
 }
