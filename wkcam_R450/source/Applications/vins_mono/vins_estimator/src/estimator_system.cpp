@@ -64,6 +64,12 @@ Eigen::Matrix3d relocalize_r{Eigen::Matrix3d::Identity()};
 
 nav_msgs::Path  loop_path;
 
+EstimatorSystem::EstimatorSystem()
+{
+    m_qs.clear();
+    m_current_q = Eigen::Quaterniond::Identity();
+}
+
 void EstimatorSystem::run(void)
 {
     std::thread measurement_process{&EstimatorSystem::process, this};
@@ -513,7 +519,12 @@ void EstimatorSystem::process()
                 assert(z == 1);
                 image[feature_id].emplace_back(camera_id, Vector3d(x, y, z));
             }
-            estimator.processImage(image, img_msg->header);
+
+            bool reset = false;
+            estimator.processImage(image, img_msg->header, reset);
+
+            if(reset)
+                reset_q();
             /**
             *** start build keyframe database for loop closure
             **/
@@ -604,7 +615,7 @@ void EstimatorSystem::process()
             }
             TicToc ttt_s;
             pubOdometry(estimator, header, relocalize_t, relocalize_r);
-            SendResult(estimator.Ps[WINDOW_SIZE], estimator.Rs[WINDOW_SIZE], img_msg->img_data, img_msg->track_num);
+            SendResult(relocalize_t, relocalize_r, img_msg->img_data, img_msg->track_num);
             std::cout << "####pubOdometry: " << ttt_s.toc() << std::endl;
             //    pubKeyPoses(estimator, header, relocalize_t, relocalize_r);
             //    pubCameraPose(estimator, header, relocalize_t, relocalize_r);
@@ -899,35 +910,114 @@ void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp
     }
 }
 
-void EstimatorSystem::SendResult(const Vector3d& t, const Matrix3d& r, wk_corner_video_frame_s::wk_ptr img_data, int track_num)
+void EstimatorSystem::q_callback(Eigen::Quaterniond q, unsigned long long ts)
 {
-    static Eigen::Isometry3d T1w = Isometry3d::Identity();
+    std::lock_guard<std::mutex> lck(m_lck_q);
+    if(m_qs.size() > 2000)
+        m_qs.erase(m_qs.begin());
 
-    Eigen::Quaterniond q(r);
-    Eigen::Isometry3d Tcw(q);
-    Tcw.pretranslate(t);
+    std::ifstream file5("5");
+    m_qs.push_back(std::make_pair(ts/1000, file5.good() ? q.inverse() : q));
+}
 
-    Eigen::Isometry3d Tcl =  Tcw * T1w.inverse();
-    Eigen::Quaterniond qcl(Tcl.rotation());
+void EstimatorSystem::reset_q(void)
+{
+    std::lock_guard<std::mutex> lck(m_lck_q);
+    unsigned long long initial_timestamp = estimator.initial_timestamp * 1000;
+    auto match_one = std::find_if(m_qs.begin(), m_qs.end(), [&](const std::pair<unsigned long long, Eigen::Quaterniond>& one)
+    {
+        return std::abs(long(one.first-initial_timestamp)) <= 5;
+    });
 
-    wk_location_result_s::wk_ptr result = std::make_shared<wk_location_result_s>();
+    if(match_one != m_qs.end())
+    {
+        m_current_q = match_one->second;
+        std::cout << "#####Initialization finish match!" << std::endl;
+    }
+    else
+    {
+        if(!m_qs.empty())
+            std::cout << "#####Initialization finish no match initial_timestamp:" << initial_timestamp << " backTime:" << m_qs.back().first << std::endl;
+        else
+            std::cout << "#####Initialization finish no match m_qs.empty() initial_timestamp:" << initial_timestamp << std::endl;
+    }
+}
 
-    result->x = Tcl.translation().x();
-    result->y = Tcl.translation().y();
-    result->z = Tcl.translation().z();
+void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, wk_corner_video_frame_s::wk_ptr img_data, int track_num)
+{
+    if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+    {
+        static Eigen::Isometry3d T1w = Isometry3d::Identity();
 
-    result->x = t.x();
-    result->y = t.y();
-    result->z = t.z();
+        Vector3d correct_t;
+        Vector3d correct_v;
+        Quaterniond correct_q;
+        correct_t = loop_correct_r * estimator.Ps[WINDOW_SIZE] + loop_correct_t;
+        correct_q = loop_correct_r * estimator.Rs[WINDOW_SIZE];
+        correct_v = loop_correct_r * estimator.Vs[WINDOW_SIZE];
 
-    result->q[0] = qcl.x();
-    result->q[1] = qcl.y();
-    result->q[2] = qcl.z();
-    result->q[3] = qcl.w();
-    result->frame = img_data;
-    result->corner_num = track_num + 30;
+        Eigen::Isometry3d Tcw(correct_q);
+        Tcw.pretranslate(correct_t);
 
-    T1w = Tcw;
+        Eigen::Isometry3d Tcl =  Tcw * T1w.inverse();
+        Eigen::Quaterniond qcl(Tcl.rotation());
 
-    wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
+        wk_location_result_s::wk_ptr result = std::make_shared<wk_location_result_s>();
+
+        result->x = correct_t.x();
+        result->y = correct_t.y();
+        result->z = correct_t.z();
+
+        std::ifstream file1("1");
+        std::ifstream file2("2");
+        std::ifstream file3("3");
+        std::ifstream file4("4");
+
+        if(file1.good())
+        {
+            result->x = Tcl.translation().x();
+            result->y = Tcl.translation().y();
+            result->z = Tcl.translation().z();
+            std::cout << "111111111" << std::endl;
+        }
+        else if(file2.good())
+        {
+            Vector3d v;
+            v.x() = Tcl.translation().x();
+            v.y() = Tcl.translation().y();
+            v.z() = Tcl.translation().z();
+
+            v = m_current_q.toRotationMatrix() * v;
+            result->x = v.x();
+            result->y = v.y();
+            result->z = v.z();
+            std::cout << "222222222" << std::endl;
+        }
+        else if(file3.good())
+        {
+            result->x = correct_v.x();
+            result->y = correct_v.y();
+            result->z = correct_v.z();
+            std::cout << "333333333" << std::endl;
+        }
+        else if(file4.good())
+        {
+            correct_v = m_current_q.toRotationMatrix() * correct_v;
+            result->x = correct_v.x();
+            result->y = correct_v.y();
+            result->z = correct_v.z();
+            std::cout << "444444444" << std::endl;
+        }
+
+        result->q[0] = qcl.x();
+        result->q[1] = qcl.y();
+        result->q[2] = qcl.z();
+        result->q[3] = qcl.w();
+        result->frame = img_data;
+        result->corner_num = track_num + 30;
+
+        T1w = Tcw;
+
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
+    }
 }

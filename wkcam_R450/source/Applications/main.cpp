@@ -13,6 +13,7 @@
 //#include <wkSlam/System.h>
 #include <vins_mono/vins_estimator/src/estimator_system.h>
 #include "wk_imu_middle.h"
+#include "wk_quaternion_middle.h"
 
 #define TAG "wkcam_app"
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 
-			cv::resize(image, image, cv::Size(), 0.5, 0.5, cv::INTER_NEAREST);
+			cv::resize(image, image, cv::Size(), 1.0, 1.0, cv::INTER_NEAREST);
 
 			std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 			wk_corner_video_frame_s::wk_ptr img_data = std::make_shared<wk_corner_video_frame_s>();
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
 			if(tmp1%60==0)
 			{
 				std::cout << "--------ImgCallBack!--------" << std::endl;
-				std::cout << "img_data->pts: " << img_data->pts << " timestamp: " << timestamp << std::endl;
+				std::cout << "img_data->pts: " << img_data->pts << "us  timestamp: " << timestamp << "s." << std::endl;
 			}
 
 			tmp1++;
@@ -176,7 +177,7 @@ int main(int argc, char *argv[])
 			if(tmp2%200==0)
 			{
 				std::cout << "--------IMUCallBack!--------" << std::endl;
-				std::cout << "imu_data->u64pts: " << imu_data->u64pts << " timestamp: " << timestamp << std::endl;
+				std::cout << "imu_data->u64pts: " << imu_data->u64pts << "us  timestamp: " << timestamp << "s." << std::endl;
 			}
 
 			tmp2++;
@@ -195,9 +196,31 @@ int main(int argc, char *argv[])
 			es.imu_callback(imudata);
 		};
 
+		auto QCallBack = [&](wk_quaternion_data_s::wk_ptr q_data)
+		{
+			static int tmp3 = 0;
+
+			if(tmp3%200==0)
+			{
+				std::cout << "--------QCallBack!--------" << std::endl;
+				std::cout << "q_data->u64pts: " << q_data->u64pts << " us" << std::endl;
+			}
+
+			tmp3++;
+
+			Eigen::Quaterniond q;
+			q.x() = q_data->q[0];
+			q.y() = q_data->q[1];
+			q.z() = q_data->q[2];
+			q.w() = q_data->q[3];
+			es.q_callback(q, q_data->u64pts);
+		};
+
 		wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(ImgCallBack);
 
 		wk_imu_middle::wk_imu_get_instance()->wk_register_get_imu_cb(IMUCallBack);
+
+		wk_quaternion_middle::wk_quaternion_get_instance()->wk_register_get_quaternion_cb(QCallBack);
 	}
 
 #if 0

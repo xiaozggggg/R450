@@ -108,7 +108,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
 
 }
 
-void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image, const std_msgs::Header &header)
+void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image, const std_msgs::Header &header, bool &reset)
 {
    // ROS_DEBUG("new image coming ------------------------------------------");
   //  ROS_DEBUG("Adding feature points %lu", image.size());
@@ -160,6 +160,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image,
             }
             if(result)
             {
+                reset = true;
                 solver_flag = NON_LINEAR;
                 solveOdometry();
                 slideWindow();
