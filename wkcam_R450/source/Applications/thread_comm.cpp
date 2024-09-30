@@ -113,7 +113,7 @@ void *SocketRecvThread(void *arg)
                 }
             }
 
-            usleep(5*1000);
+            //usleep(5*1000);
         }
     }
 }

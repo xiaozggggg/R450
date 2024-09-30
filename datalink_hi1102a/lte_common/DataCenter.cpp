@@ -851,6 +851,7 @@ void DataCenter::LoggerAnalysisThread(void)
 
     while(1)
     {
+    	//printf("rt_ringbuffer_data_len = %d\n", rt_ringbuffer_data_len(&rb_queue));
         rb_lenght = rt_ringbuffer_get(&rb_queue, buffer, MAX_CMDLENGTH);
         for(i = 0;i<rb_lenght;i++){
             mavlink_decode_FCS(buffer[i]);
@@ -903,7 +904,7 @@ void DataCenter::LoggerAnalysisThread(void)
             }
         }  
 
-        usleep(11*1000);
+        usleep(5*1000);
     }
 }
 
