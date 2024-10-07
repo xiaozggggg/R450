@@ -14,7 +14,8 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 	wk_st_lk_middle* middle = wk_st_lk_middle::wk_st_lk_get_instance();
 
 #if 1
-	middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, 0);
+	//WK_LOGD("####### frame pts --- %ld\n", _info->pts);
+	//middle->wk_frame_pionts_venc_debug(_info, prev_pionts_test->points, 0);
 	return;
 #else
 	if(falg == false){
@@ -97,11 +98,28 @@ int middle_test()
 	middle->wk_register_get_frame_cb(fun_wk_get_frame_cb);
 
 	
-	//wk_imu_middle* imu_middle = wk_imu_middle::wk_imu_get_instance();
-	//imu_middle->wk_register_get_imu_cb(fun_wk_get_imu_cb);
+	wk_imu_middle* imu_middle = wk_imu_middle::wk_imu_get_instance();
+	imu_middle->wk_register_get_imu_cb(fun_wk_get_imu_cb);
 
-	//wk_quaternion_middle* p_middle = wk_quaternion_middle::wk_quaternion_get_instance();
-	//p_middle->wk_register_get_quaternion_cb(fun_wk_get_quaternion_cb);
+	wk_quaternion_middle* p_middle = wk_quaternion_middle::wk_quaternion_get_instance();
+	p_middle->wk_register_get_quaternion_cb(fun_wk_get_quaternion_cb);
+
+	wk_mqtt_debug* mqtt_debug = wk_mqtt_debug::wk_mqtt_get_instance();
+	wk_mqtt_debug_data_s::wk_ptr debug_data(new wk_mqtt_debug_data_s);
+	memset(debug_data.get(), 0, sizeof(wk_mqtt_debug_data_s));
+	debug_data->x = 12.3;
+	debug_data->y = 13.2;
+	debug_data->z = 3.12;
+	debug_data->q[0] = 2.2;
+	debug_data->q[1] = 3.3;
+	debug_data->q[2] = 4.4;
+	debug_data->q[3] = 5.5;
+	debug_data->str = "hea~~";
+
+	while(1){
+		mqtt_debug->wk_mqtt_debug_data_push(debug_data);
+		sleep(1);
+	}
 
 	return 0;
 }

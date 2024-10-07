@@ -462,7 +462,7 @@ void file_logger(int loglevel, const char* buf, int len) {
 
 
 void wk_log_handle(int loglevel, const char* buf, int len) {
-    stderr_logger(loglevel, buf, len);  // 日志输出到标准输出
+    stdout_logger(loglevel, buf, len);  // 日志输出到标准输出
     file_logger(loglevel, buf, len);   // 日志输出到文件
     
     return;

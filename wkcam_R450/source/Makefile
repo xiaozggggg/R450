@@ -59,6 +59,10 @@ RTSP_INC_PATH = -I$(RTSP_INC_PATH1) -I$(RTSP_INC_PATH2)
 RTSP_LIBS = -std=c++11
 RTSP_OBJS = $(RTSP_OBJS1) $(RTSP_OBJS2)
 
+################# mosquitto lib #################
+MOSQU_INC = -I ../include/mosquitto/
+MOSQU_LIB = -L ../lib/mosquitto -lmosquitto -lssl -lcrypto
+
 ################# applications src #################
 APPLICATIONS_PATH = ./Applications
 APPLICATIONS_SRC  = $(notdir $(wildcard $(APPLICATIONS_PATH)/*.cpp))
@@ -196,8 +200,8 @@ GIT_INFO_DEPEND = gitinfo
 CUR_INC_PATH = -I./
 ########################################################################
 CONFIG = $(APPLICATIONS_INC_PATH) $(DRIVERS_INC_PATH) $(RTSP_INC_PATH) $(UTILS_INC_PATH) $(UTILS_C_INC_PATH) $(ST_LK_INC_PATH) $(IMU_INC_PATH) $(P_INC_PATH) $(VINS_CMS_INC_PATH) $(VINS_CALIB_INC_PATH) $(VINS_CM_INC_PATH) $(VINS_CB_INC_PATH) $(VINS_GPL_INC_PATH) $(VINS_SG_INC_PATH) $(VINS_VES_INC_PATH) $(VINS_VESF_INC_PATH) $(VINS_VESFT_INC_PATH) $(VINS_VESI_INC_PATH) $(VINS_VESLC_INC_PATH) $(VINS_VESLCTV_INC_PATH) $(VINS_VESLCTU_INC_PATH) $(VINS_VESLCTD_INC_PATH) $(VINS_VESLCT_INC_PATH) $(VINS_VESU_INC_PATH)
-CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC)
-LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(ceres_LIB) $(BOOST_LIB)
+CONFIG += $(MAVLINK_INC) $(HI_SDK_INC) $(THIRD_INC) $(OPENCV_INC) $(MOSQU_INC)
+LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(ceres_LIB) $(BOOST_LIB) $(MOSQU_LIB)
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
 ################# debug src #################

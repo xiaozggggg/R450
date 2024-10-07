@@ -15,6 +15,7 @@
 #include "wk_st_lk_middle.h"
 #include "wk_imu_middle.h"
 #include "wk_quaternion_middle.h"
+#include "wk_mqtt_debug.h"
 
 using namespace std; 
 
