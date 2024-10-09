@@ -39,13 +39,6 @@ struct wk_mqtt_debug_data_s{
 };
 
 
-typedef void (*connect_ptr)(struct mosquitto *mosq, void *obj, int reason_code);
-typedef void (*publish_ptr)(struct mosquitto *mosq, void *obj, int mid);
-typedef void (*subscribe_ptr)(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos);
-typedef void (*message_ptr)(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg);
-
-
-
 class wk_mqtt_debug 
 {
 public:

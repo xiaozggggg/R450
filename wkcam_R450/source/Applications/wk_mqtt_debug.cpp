@@ -177,7 +177,7 @@ void wk_mqtt_debug::on_subscribe(struct mosquitto *mosq, void *obj, int mid, int
 
 	/* 检查订阅的QoS是否合法 */
 	for(i=0; i<qos_count; i++){
-		WK_LOGE("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+		WK_LOGD("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
 		if(granted_qos[i] <= 2){
 			have_subscription = true;
 		}
@@ -209,16 +209,11 @@ td_s32 wk_mqtt_debug::wk_mqtt_create_client()
 		return TD_FAILURE;
 	}
 
-	connect_ptr on_connect_ptr = wk_mqtt_debug::on_connect;
-	publish_ptr on_publish_ptr = wk_mqtt_debug::on_publish;
-	subscribe_ptr on_subscribe_ptr = wk_mqtt_debug::on_subscribe;
-	message_ptr on_message_ptr = wk_mqtt_debug::on_message;
-
 	/* 绑定回调 */
-	mosquitto_connect_callback_set(mosq, on_connect_ptr);
-	mosquitto_publish_callback_set(mosq, on_publish_ptr);
-	//mosquitto_subscribe_callback_set(mosq, on_subscribe_ptr);
-	//mosquitto_message_callback_set(mosq, on_message_ptr);	
+	mosquitto_connect_callback_set(mosq, wk_mqtt_debug::on_connect);
+	mosquitto_publish_callback_set(mosq, wk_mqtt_debug::on_publish);
+	mosquitto_subscribe_callback_set(mosq, wk_mqtt_debug::on_subscribe);
+	mosquitto_message_callback_set(mosq, wk_mqtt_debug::on_message);	
 
 	/* 进行和代理的链接 */
 	rc = mosquitto_connect(mosq, HOST_ADDR, HOST_POAT, 60);
