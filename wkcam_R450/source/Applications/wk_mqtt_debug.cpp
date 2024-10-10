@@ -215,8 +215,25 @@ td_s32 wk_mqtt_debug::wk_mqtt_create_client()
 	mosquitto_subscribe_callback_set(mosq, wk_mqtt_debug::on_subscribe);
 	mosquitto_message_callback_set(mosq, wk_mqtt_debug::on_message);	
 
+	/* 在文件中获取服务器地址 */
+	td_char server_addr[20] = {0};
+	const char *filename = "./mqtt_server_addr"; 
+    FILE *file = fopen(filename, "r");    
+    if (file == NULL) {
+        WK_LOGE("Error opening file");       // 错误处理
+        return TD_FAILURE;
+    }
+	
+	fseek(file, 0, SEEK_END);
+	int filesize = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	fread(server_addr, 1, filesize, file);
+	server_addr[filesize-1] = '\0';
+	fclose(file);
+	WK_LOGD("mqtt server addr = %s ----\n", server_addr);
+
 	/* 进行和代理的链接 */
-	rc = mosquitto_connect(mosq, HOST_ADDR, HOST_POAT, 60);
+	rc = mosquitto_connect(mosq, server_addr, HOST_POAT, 60);
 	if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
 		WK_LOGE("Error: %s\n", mosquitto_strerror(rc));
