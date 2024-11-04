@@ -403,7 +403,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 		case MAVLINK_MSG_ID_ODOMETRY:
 		{
 			mavlink_odometry_t* data = (mavlink_odometry_t *)MessageBuf;
-			wk_quaternion_push_data(data->q[0], data->q[0], data->q[0], data->q[0], data->time_usec);
+			wk_quaternion_push_data(data->q[0], data->q[1], data->q[2], data->q[3], data->time_usec);
 			break;
 		}
 		default:{
