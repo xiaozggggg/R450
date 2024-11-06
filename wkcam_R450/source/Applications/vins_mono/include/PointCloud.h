@@ -11,8 +11,9 @@
 #include "Header.h"
 #include "Point32.h"
 #include "ChannelFloat32.h"
+#ifndef RUN_ON_PC
 #include "wk_corner_info.h"
-
+#endif
 namespace sensor_msgs
 {
 template <class ContainerAllocator>
@@ -49,8 +50,10 @@ struct PointCloud_
   typedef boost::shared_ptr< sensor_msgs::PointCloud_<ContainerAllocator> > Ptr;
   typedef boost::shared_ptr< sensor_msgs::PointCloud_<ContainerAllocator> const> ConstPtr;
   
+  #ifndef RUN_ON_PC
   wk_corner_video_frame_s::wk_ptr img_data;
-
+  #endif
+  
   int track_num;
 }; // struct PointCloud_
 

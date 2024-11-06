@@ -14,9 +14,12 @@
 #include <string>
 
 // OpenCV
+#ifndef RUN_ON_PC
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-
+#else
+#include <opencv2/highgui.hpp>
+#endif
 // DLoopDetector and DBoW2
 #include "ThirdParty/DBoW/DBoW2.h"
 #include "DLoopDetector.h"

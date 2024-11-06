@@ -1,5 +1,7 @@
 #include "estimator_system.h"
+#ifndef RUN_ON_PC
 #include "wk_st_lk_middle.h"
+#endif
 
 #define SHOW_UNDISTORTION 0
 
@@ -387,7 +389,7 @@ void EstimatorSystem::process_loop_detection()
                     cv::Mat gray_img, loop_match_img;
                     cv::Mat old_img = old_kf->image;
                     cv::hconcat(old_img, current_image, gray_img);
-                    cvtColor(gray_img, loop_match_img, CV_GRAY2RGB);
+                    cvtColor(gray_img, loop_match_img, cv::COLOR_GRAY2RGB);
                     cv::Mat loop_match_img2;
                     loop_match_img2 = loop_match_img.clone();
                     /*
@@ -631,7 +633,11 @@ void EstimatorSystem::process()
             pubOdometry(estimator, header, relocalize_t, relocalize_r);
 
             if(reset)
+            #ifndef RUN_ON_PC
                 SendResult(relocalize_t, relocalize_r, img_msg->img_data, img_msg->track_num);
+            #else
+                SendResult(relocalize_t, relocalize_r, img_msg->track_num);
+            #endif
 
             m_loop_drift.unlock();
             //ROS_ERROR("end: %f, at %f", img_msg->header.stamp.toSec(), ros::Time::now().toSec());
@@ -644,8 +650,12 @@ void EstimatorSystem::process()
         m_buf.unlock();
     }
 }
-
+#ifndef RUN_ON_PC
 void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &timestamp, wk_corner_video_frame_s::wk_ptr img_data)
+#else
+void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &timestamp)
+#endif
+
 {
     int track_num;
 
@@ -746,7 +756,8 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
             break;
     }
 
-
+    #if 0
+    #ifndef RUN_ON_PC
     wk_points_float_s* ps = (wk_points_float_s*)malloc(sizeof(wk_points_float_s)*trackerData[0].cur_pts.size());
     for(int i=0; i<trackerData[0].cur_pts.size(); ++i)
     {
@@ -756,6 +767,8 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
     }
     wk_st_lk_middle::wk_st_lk_get_instance()->wk_frame_pionts_venc_debug(img_data, ps, trackerData[0].cur_pts.size());
     free(ps);
+    #endif
+    #endif
 
 
     if (PUB_THIS_FRAME)
@@ -769,7 +782,9 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         //  feature_points->header = img_msg->header;
         feature_points->header.stamp = timestamp; //here need to double check,because of missing seq variable assignment
         feature_points->header.frame_id = "world";
+        #ifndef RUN_ON_PC
         feature_points->img_data = img_data;
+        #endif
         feature_points->track_num = track_num;
 
         vector<set<int>> hash_ids(NUM_OF_CAM);
@@ -826,7 +841,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
 
         /*----------------add ui ---------------------*/
         /*cv::Mat tmp_img = show_img.rowRange(0, ROW);
-        cv::cvtColor(show_img, tmp_img, CV_GRAY2RGB);
+        cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
         for (unsigned int j = 0; j < trackerData[0].cur_pts.size(); j++)
         {
             double len = std::min(1.0, 1.0 * trackerData[0].track_cnt[j] / WINDOW_SIZE_FEATURE_TRACKER);
@@ -945,8 +960,13 @@ bool EstimatorSystem::reset_q(void)
     }
 } 
 
+#ifndef RUN_ON_PC
 void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, wk_corner_video_frame_s::wk_ptr img_data, int track_num)
+#else
+void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, int track_num)
+#endif
 {
+
     if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
     {
 
@@ -960,6 +980,7 @@ void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d
 
         Eigen::Isometry3d Tcw(correct_q);
 
+        #ifndef RUN_ON_PC
         wk_location_result_s::wk_ptr result = std::make_shared<wk_location_result_s>();
 
         result->x = correct_t.x();
@@ -970,14 +991,16 @@ void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d
         result->q[1] = correct_q.x();
         result->q[2] = correct_q.y();
         result->q[3] = correct_q.z();
-        result->frame = img_data;
         result->corner_num = track_num + 30;
+
+        result->frame = img_data;
+        wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
+        #endif
 
         // Eigen::Vector3d eulerAngle=correct_q.toRotationMatrix().eulerAngles(2,1,0);
         // eulerAngle *= (180 / M_PI);
         // std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
         //  "correct_q "<<correct_q.w()<<" "<<correct_q.x()<<" "<<correct_q.y()<<" "<<correct_q.z() <<std::endl;
 
-        wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
     }
 }

@@ -19,7 +19,9 @@
 #include "../../include/PointCloud.h"
 #include "../../include/Imu.h"
 #include "feature_tracker/feature_tracker.h"
+#ifndef RUN_ON_PC
 #include "wk_corner_info.h"
+#endif
 
 class EstimatorSystem
 {
@@ -57,8 +59,11 @@ public:
 
     // thread: visual-inertial odometry
     void process();
-
+#ifndef RUN_ON_PC
     void img_callback(const cv::Mat &show_img, const ros::Time &timestamp, wk_corner_video_frame_s::wk_ptr img_data);
+#else
+    void img_callback(const cv::Mat &show_img, const ros::Time &timestamp);
+#endif
 
     /******************* load image begin ***********************/
     void LoadImages(const string &strImagePath, const string &strTimesStampsPath, vector<string> &strImagesFileNames, vector<double> &timeStamps);
@@ -73,7 +78,11 @@ public:
 
     bool reset_q();
 
+    #ifndef RUN_ON_PC
     void SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, wk_corner_video_frame_s::wk_ptr img_data, int track_num);
+    #else
+    void SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, int track_num);
+    #endif
 
 private:
     std::mutex m_lck_q;
