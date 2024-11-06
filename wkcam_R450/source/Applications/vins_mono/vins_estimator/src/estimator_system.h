@@ -71,12 +71,12 @@ public:
 
     void q_callback(Eigen::Quaterniond q, unsigned long long ts);
 
-    void reset_q(void);
+    bool reset_q();
 
     void SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d loop_correct_r, wk_corner_video_frame_s::wk_ptr img_data, int track_num);
 
 private:
     std::mutex m_lck_q;
     std::vector<std::pair<unsigned long long, Eigen::Quaterniond>> m_qs;
-    Eigen::Quaterniond m_current_q;
+    Matrix3d delta_R;
 };

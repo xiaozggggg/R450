@@ -9,8 +9,7 @@
 #include <isp_setting.h>
 #include "git_info/git_info.h"
 #include "wk_log.h"
-#include <myslam/visual_odometry.h>
-//#include <wkSlam/System.h>
+#include "wk_st_lk_middle.h"
 #include <vins_mono/vins_estimator/src/estimator_system.h>
 #include "wk_imu_middle.h"
 #include "wk_quaternion_middle.h"
@@ -99,8 +98,6 @@ int main(int argc, char *argv[])
 				cerr << endl << "Failed to load image: " << vStrImagesFileNames[ni] <<endl;
 				return 1;
 			}
-
-			cv::resize(image, image, cv::Size(), 1.0, 1.0, cv::INTER_NEAREST);
 
 			std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 			wk_corner_video_frame_s::wk_ptr img_data = std::make_shared<wk_corner_video_frame_s>();
@@ -198,22 +195,24 @@ int main(int argc, char *argv[])
 
 		auto QCallBack = [&](wk_quaternion_data_s::wk_ptr q_data)
 		{
-			static int tmp3 = 0;
+			Eigen::Quaterniond q;
+			q.w() = q_data->q[0];
+			q.x() = q_data->q[1];
+			q.y() = q_data->q[2];
+			q.z() = q_data->q[3];
+			es.q_callback(q, q_data->u64pts);
 
+			static int tmp3 = 0;
 			if(tmp3%200==0)
 			{
 				std::cout << "--------QCallBack!--------" << std::endl;
 				std::cout << "q_data->u64pts: " << q_data->u64pts << " us" << std::endl;
+				Eigen::Vector3d eulerAngle=q.toRotationMatrix().eulerAngles(2,1,0);
+        		eulerAngle *= (180 / M_PI);
+        		std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
+         		"correct_q "<<q.w()<<" "<<q.x()<<" "<<q.y()<<" "<<q.z() <<std::endl;
 			}
-
 			tmp3++;
-
-			Eigen::Quaterniond q;
-			q.x() = q_data->q[0];
-			q.y() = q_data->q[1];
-			q.z() = q_data->q[2];
-			q.w() = q_data->q[3];
-			es.q_callback(q, q_data->u64pts);
 		};
 
 		wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(ImgCallBack);
@@ -222,27 +221,6 @@ int main(int argc, char *argv[])
 
 		wk_quaternion_middle::wk_quaternion_get_instance()->wk_register_get_quaternion_cb(QCallBack);
 	}
-
-#if 0
-	WK_SLAM::System SLAM("./release/vc.txt", "./EuRoC.yaml", WK_SLAM::System::MONOCULAR, true);
-
-	wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(
-		std::bind(&WK_SLAM::System::TrackMonocular, &SLAM, std::placeholders::_1)
-	);
-#elif 0
-	myslam::VisualOdometry::Ptr vo( new myslam::VisualOdometry() );
-
-	if(!vo->Init(argv[1]))
-	{
-		std::cout << "vo->Ini() fail!" << std::endl;
-		return -1;
-	}
-
-	wk_st_lk_middle::wk_st_lk_get_instance()->wk_register_get_frame_cb(
-		std::bind(&myslam::VisualOdometry::Step, vo, std::placeholders::_1)
-	);
-#endif
-
 
 	while (1) {
 		//wk_mpp_get_Exptime_gain();
