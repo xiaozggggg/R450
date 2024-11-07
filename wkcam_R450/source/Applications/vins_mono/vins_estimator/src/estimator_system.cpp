@@ -172,6 +172,7 @@ EstimatorSystem::imu_img_type EstimatorSystem::getMeasurements()
         if (imu_buf.empty() || feature_buf.empty())
             return measurements;
 
+        #ifndef RUN_ON_PC
         //TODO(cy):四元数总是来得比图像慢
         if(m_qs.empty() && !feature_buf.empty())
             feature_buf.pop();
@@ -184,6 +185,7 @@ EstimatorSystem::imu_img_type EstimatorSystem::getMeasurements()
         }
         if(feature_buf.empty())
             return measurements;
+        #endif
 
         if (!(imu_buf.back()->header.stamp > feature_buf.front()->header.stamp))
         {
@@ -539,9 +541,11 @@ void EstimatorSystem::process()
             estimator.processImage(image, img_msg->header);
             std::cout << "####processImage: " << t_pro_img_s.toc() << std::endl;
 
+            #ifndef RUN_ON_PC
             static bool reset = false;
             if(estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR && !reset)
                 reset = reset_q();
+            #endif
             /**
             *** start build keyframe database for loop closure
             **/
@@ -632,8 +636,8 @@ void EstimatorSystem::process()
             }
             pubOdometry(estimator, header, relocalize_t, relocalize_r);
 
-            if(reset)
             #ifndef RUN_ON_PC
+            if(reset)
                 SendResult(relocalize_t, relocalize_r, img_msg->img_data, img_msg->track_num);
             #else
                 SendResult(relocalize_t, relocalize_r, img_msg->track_num);
@@ -840,16 +844,16 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         feature_callback(feature_points);          //add
 
         /*----------------add ui ---------------------*/
-        /*cv::Mat tmp_img = show_img.rowRange(0, ROW);
+        cv::Mat tmp_img = show_img.rowRange(0, ROW);
         cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
         for (unsigned int j = 0; j < trackerData[0].cur_pts.size(); j++)
         {
             double len = std::min(1.0, 1.0 * trackerData[0].track_cnt[j] / WINDOW_SIZE_FEATURE_TRACKER);
             cv::circle(tmp_img, trackerData[0].cur_pts[j], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
         }
-        cv::namedWindow("vins", CV_WINDOW_NORMAL);
+        cv::namedWindow("vins", cv::WINDOW_NORMAL);
         cv::imshow("vins", tmp_img);
-        cv::waitKey(5);*/
+        cv::waitKey(1);
         /*----------------add ui ---------------------*/
     }
     //  ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
@@ -867,14 +871,21 @@ void EstimatorSystem::LoadImages(const string &strImagePath, const string &strTi
     {
         string s;
         getline(fTimes,s);
+        if(s[0] == '#')
+            continue;
+
         if(!s.empty())
         {
             stringstream ss;
             ss << s;
-            strImagesFileNames.push_back(strImagePath + "/" + ss.str() + ".png");
+
             double t;
             ss >> t;
+            unsigned long long t_temp = t;
             timeStamps.push_back(t/1e9);
+
+            strImagesFileNames.push_back(strImagePath + "/" + std::to_string(t_temp) + ".png");
+            
         }
     }
 }

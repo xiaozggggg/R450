@@ -165,9 +165,9 @@ int main(int argc, char *argv[])
 
 #else
 
-	if (argc == 5)
+	if (argc != 5)
 	{
-		std::cout << "para err" << std::endl;
+		std::cout << "para err, argc = " << argc << std::endl;
 		return -1;
 	}
 
@@ -220,18 +220,18 @@ int main(int argc, char *argv[])
 		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 		double timeSpent = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 
-		// wait to load the next frame image
-		double T = 0;
-		if (ni < imageNum - 1)
-			T = vTimeStamps[ni + 1] - tframe; // interval time between two consecutive frames,unit:second
-		else if (ni > 0)					  // lastest frame
-			T = tframe - vTimeStamps[ni - 1];
+		// // wait to load the next frame image
+		// double T = 0;
+		// if (ni < imageNum - 1)
+		// 	T = vTimeStamps[ni + 1] - tframe; // interval time between two consecutive frames,unit:second
+		// else if (ni > 0)					  // lastest frame
+		// 	T = tframe - vTimeStamps[ni - 1];
 
-		if (timeSpent < T)
-			usleep((T - timeSpent) * 1e6); // sec->us:1e6
-		else
-			cerr << endl
-				 << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
+		// if (timeSpent < T)
+		// 	usleep((T - timeSpent) * 1e6); // sec->us:1e6
+		// else
+		// 	cerr << endl
+		// 		 << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
 	}
 #endif
 

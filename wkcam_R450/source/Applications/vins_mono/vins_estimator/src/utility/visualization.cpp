@@ -319,21 +319,29 @@ void pubOdometry(const Estimator &estimator, const std_msgs::Header &header, Eig
         pub_loop_path.publish(loop_path);
 */
         // write result to file
+
+//tum timestamp tx ty tz qx qy qz qw
+// #ifndef RUN_ON_PC
         ofstream foutC(VINS_RESULT_PATH, ios::app);
         foutC.setf(ios::fixed, ios::floatfield);
         foutC.precision(0);
-        foutC << header.stamp.toSec() * 1e9 << ",";
+        foutC << header.stamp.toSec() * 1e9 << " ";
         foutC.precision(5);
-        foutC << correct_t.x() << ","
-              << correct_t.y() << ","
-              << correct_t.z() << ","
-              << correct_q.w() << ","
-              << correct_q.x() << ","
-              << correct_q.y() << ","
-              << correct_q.z() << ","
-              << correct_v(0) << ","
-              << correct_v(1) << ","
-              << correct_v(2) << "," << endl;
+        foutC << correct_t.x() << " "
+              << correct_t.y() << " "
+              << correct_t.z() << " "
+              << correct_q.x() << " "
+              << correct_q.y() << " "
+              << correct_q.z() << " " 
+              << correct_q.w() << endl;
         foutC.close();
+// #else
+//         FILE *fp_out = fopen("result.txt", "w");
+//         fprintf(fp_out, "%lf %f %f %f %f %f %f %f\n",
+//                 header.stamp.toSec() * 1e9,
+//                 correct_t.x(), correct_t.y(), correct_t.z(),
+//                 correct_q.w(), correct_q.x(), correct_q.y(), correct_q.z());
+//         fclose(fp_out);
+// #endif
     }
 }
