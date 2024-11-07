@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
 
 	es.run();
 
+	double total_t = 0;
 	for (ni = 0; ni < imageNum; ni++)
 	{
 		double tframe = vTimeStamps[ni]; // timestamp
@@ -219,20 +220,23 @@ int main(int argc, char *argv[])
 		es.img_callback(image, image_timestamp);
 		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 		double timeSpent = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		total_t+=timeSpent;
 
-		// // wait to load the next frame image
-		// double T = 0;
-		// if (ni < imageNum - 1)
-		// 	T = vTimeStamps[ni + 1] - tframe; // interval time between two consecutive frames,unit:second
-		// else if (ni > 0)					  // lastest frame
-		// 	T = tframe - vTimeStamps[ni - 1];
+		//得加上这部分，不然后端处理不过来就结束了
+		double T = 0;
+		if (ni < imageNum - 1)
+			T = vTimeStamps[ni + 1] - tframe; // interval time between two consecutive frames,unit:second
+		else if (ni > 0)					  // lastest frame
+			T = tframe - vTimeStamps[ni - 1];
 
-		// if (timeSpent < T)
-		// 	usleep((T - timeSpent) * 1e6); // sec->us:1e6
-		// else
-		// 	cerr << endl
-		// 		 << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
+		if (timeSpent < T)
+			usleep((T - timeSpent) * 1e6); // sec->us:1e6
+		else
+			cerr << endl
+				 << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
 	}
+        std::cout << "########img_callback mean time : " << (total_t * 1000) / imageNum<< std::endl;
+
 #endif
 
 	return 0;

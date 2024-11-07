@@ -503,6 +503,8 @@ void EstimatorSystem::process_pose_graph()
 
 void EstimatorSystem::process()
 {
+    double total_t;
+    double img_num = 0;
     while (true)
     {
         std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
@@ -513,8 +515,10 @@ void EstimatorSystem::process()
         });
         lk.unlock();
 
+        TicToc t_pro_img_s;
         for (auto &measurement : measurements)
         {
+            img_num++;
             for (auto &imu_msg : measurement.first)
                 send_imu(imu_msg);
 
@@ -537,9 +541,7 @@ void EstimatorSystem::process()
                 image[feature_id].emplace_back(camera_id, Vector3d(x, y, z));
             }
 
-            TicToc t_pro_img_s;
             estimator.processImage(image, img_msg->header);
-            std::cout << "####processImage: " << t_pro_img_s.toc() << std::endl;
 
             #ifndef RUN_ON_PC
             static bool reset = false;
@@ -652,6 +654,9 @@ void EstimatorSystem::process()
             update();
         m_state.unlock();
         m_buf.unlock();
+        total_t+=t_pro_img_s.toc();
+        std::cout << "####backen process on Image mean time : " << total_t / img_num << std::endl;
+
     }
 }
 #ifndef RUN_ON_PC
@@ -842,7 +847,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         feature_points->channels.push_back(u_of_point);
         feature_points->channels.push_back(v_of_point);
         feature_callback(feature_points);          //add
-
+#ifdef RUN_ON_PC
         /*----------------add ui ---------------------*/
         cv::Mat tmp_img = show_img.rowRange(0, ROW);
         cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
@@ -855,6 +860,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         cv::imshow("vins", tmp_img);
         cv::waitKey(1);
         /*----------------add ui ---------------------*/
+#endif
     }
     //  ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
 
