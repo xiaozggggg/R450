@@ -70,33 +70,38 @@ int main(int argc, char *argv[])
 
 	auto ImgCallBack = [&](wk_corner_video_frame_s::wk_ptr img_data)
 	{
-		static int tmp1 = 0;
+		static int imageNum = 0;
+		static double total_t = 0;
 
 		cv::Mat im;
 		double timestamp = img_data->pts;
 		timestamp /= 1e6;
 
-		if (tmp1 % 60 == 0)
+		if (imageNum % 60 == 0)
 		{
 			std::cout << "--------ImgCallBack!--------" << std::endl;
 			std::cout << "img_data->pts: " << img_data->pts << "us  timestamp: " << timestamp << "s." << std::endl;
 		}
 
-		tmp1++;
+		imageNum++;
 
 		wk_st_lk_middle::wk_st_lk_get_instance()->wk_frame_to_mat(img_data, im);
 
-		if (tmp1 % 2000 == 0 || tmp1 == 1)
-			cv::imwrite(std::to_string(tmp1) + std::string(".jpg"), im);
-
-		cv::resize(im, im, cv::Size(), factor, factor, cv::INTER_NEAREST);
+		// if (imageNum % 2000 == 0 || imageNum == 1)
+		// 	cv::imwrite(std::to_string(imageNum) + std::string(".jpg"), im);
+		if(factor != 1)
+			cv::resize(im, im, cv::Size(), factor, factor, cv::INTER_NEAREST);
 
 		uint32_t sec = timestamp;
 		uint32_t nsec = (timestamp - sec) * 1e9;
 		nsec = (nsec / 1000) * 1000 + 500;
 		ros::Time image_timestamp = ros::Time(sec, nsec);
 
+		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 		es.img_callback(im, image_timestamp, img_data);
+		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		total_t += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "########img_callback mean time : " << (total_t * 1000) / imageNum<< std::endl;
 	};
 
 	auto IMUCallBack = [&](wk_imu_data_s::wk_ptr imu_data)
