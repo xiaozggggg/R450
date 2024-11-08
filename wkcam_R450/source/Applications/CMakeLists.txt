@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.0)
 
 project(slam_pc)
 
@@ -6,6 +6,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
 
 add_definitions(-DRUN_ON_PC)
+
+# Debug / Release / RelWithDebInfo
+set(CMAKE_BUILD_TYPE Release)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/vins_mono/include)

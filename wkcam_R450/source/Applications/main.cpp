@@ -31,6 +31,16 @@ void wk_mpp_get_Exptime_gain()
 
 int main(int argc, char *argv[])
 {
+
+	cv::FileStorage fsSettings(argv[1], cv::FileStorage::READ);
+
+	if (!fsSettings.isOpened())
+	{
+		std::cerr << "ERROR: Wrong path to settings " << argv[1] << std::endl;
+		return -1;
+	}
+
+	double factor = static_cast<double>(fsSettings["factor"]);
 #ifndef RUN_ON_PC
 	int ret = 0;
 
@@ -60,13 +70,6 @@ int main(int argc, char *argv[])
 	es.init(argv[1]);
 
 	es.run();
-
-	cv::FileStorage fsSettings(argv[1], cv::FileStorage::READ);
-
-	if (!fsSettings.isOpened())
-		std::cerr << "ERROR: Wrong path to settings " << argv[1] << std::endl;
-
-	double factor = static_cast<double>(fsSettings["factor"]);
 
 	auto ImgCallBack = [&](wk_corner_video_frame_s::wk_ptr img_data)
 	{
@@ -225,6 +228,9 @@ int main(int argc, char *argv[])
 				 << "Failed to load image: " << vStrImagesFileNames[ni] << endl;
 			return 1;
 		}
+
+		if(factor != 1)
+			cv::resize(image, image, cv::Size(), factor, factor, cv::INTER_NEAREST);
 
 		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 		es.img_callback(image, image_timestamp);
