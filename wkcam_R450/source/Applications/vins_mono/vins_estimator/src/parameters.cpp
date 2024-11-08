@@ -68,7 +68,7 @@ void readParameters(const string & config_file)
     VINS_FOLDER_PATH = getcwd(NULL,FILENAMEPATH_MAX);
  //   fsSettings["output_path"] >> VINS_RESULT_PATH;
 
-    std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAa"<< std::endl;
+    std::cout<<"readParameters"<< std::endl;
     fsSettings["image_topic"] >> IMAGE_TOPIC;
     fsSettings["imu_topic"] >> IMU_TOPIC;
     fsSettings["visualLookAtX"] >> VISUALLOOKATX;

@@ -178,6 +178,11 @@ int main(int argc, char *argv[])
 
 	ifstream fImus;
 	fImus.open(argv[4]);
+	if(!fImus.is_open())
+	{
+		std::cout<<"con not open imu file "<<argv[4]<<std::endl;
+		return -1;
+	}
 
 	cv::Mat image;
 	int ni; // num image

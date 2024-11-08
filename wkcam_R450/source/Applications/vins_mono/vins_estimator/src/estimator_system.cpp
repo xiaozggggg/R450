@@ -871,6 +871,12 @@ void EstimatorSystem::LoadImages(const string &strImagePath, const string &strTi
 {
     ifstream fTimes;
     fTimes.open(strTimesStampsPath.c_str());
+    if(!fTimes.is_open())
+    {
+        std::cout<<"read "<<strTimesStampsPath<<" fail"<<std::endl;
+        assert(0);
+    }
+
     timeStamps.reserve(5000); //reserve vector space
     strImagesFileNames.reserve(5000);
     while(!fTimes.eof())
