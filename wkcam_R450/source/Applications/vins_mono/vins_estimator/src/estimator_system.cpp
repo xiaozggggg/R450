@@ -170,7 +170,13 @@ EstimatorSystem::imu_img_type EstimatorSystem::getMeasurements()
     {
 
         if (imu_buf.empty() || feature_buf.empty())
+        {
+            if(imu_buf.empty())
+                std::cout<<"imu empty"<<std::endl;
+            if(feature_buf.empty())
+                std::cout<<"feature empty"<<std::endl;
             return measurements;
+        }
 
         #ifndef RUN_ON_PC
         //TODO(cy):四元数总是来得比图像慢
@@ -190,7 +196,9 @@ EstimatorSystem::imu_img_type EstimatorSystem::getMeasurements()
         if (!(imu_buf.back()->header.stamp > feature_buf.front()->header.stamp))
         {
             //     ROS_WARN("wait for imu, only should happen at the beginning");
-            cout << "WARN: wait for imu, only should happen at the beginning" << endl;
+            cout << "WARN: wait for imu, only should happen at the beginning! imu :"
+            <<imu_buf.front()->header.stamp.toSec()
+            <<" feature feature_buf.front()->header.stamp "<<feature_buf.front()->header.stamp.toSec()<< endl;
             sum_of_wait++;
             return measurements;
         }
@@ -902,7 +910,7 @@ void EstimatorSystem::LoadImages(const string &strImagePath, const string &strTi
     }
 }
 
-void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp)
+void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp, double timeshift_cam_imu)
 {
 
     while(!fImus.eof())
@@ -929,6 +937,7 @@ void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp
                     ss.ignore();
             }
             data[0] *=1e-9; //convert to second unit
+            data[0] -=timeshift_cam_imu;
             sensor_msgs::ImuPtr imudata(new sensor_msgs::Imu);
             imudata->angular_velocity.x = data[1];
             imudata->angular_velocity.y = data[2];
@@ -938,11 +947,14 @@ void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp
             imudata->linear_acceleration.z = data[6];
             uint32_t  sec = data[0];
             uint32_t nsec = (data[0]-sec)*1e9;
-            nsec = (nsec/1000)*1000+500;
+            // nsec = (nsec/1000)*1000+500;//????????
             imudata->header.stamp = ros::Time(sec,nsec);
             imu_callback(imudata);
             if (imudata->header.stamp > imageTimestamp)       //load all imu data produced in interval time between two consecutive frams
+            {
+                std::cout<<"imudata->header.stamp "<<imudata->header.stamp.toSec()<<" imageTimestamp "<<imageTimestamp.toSec()<<std::endl;
                 break;
+            }    
         }
     }
 }

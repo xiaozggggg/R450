@@ -234,7 +234,7 @@ bool Estimator::initialStructure()
         //ROS_WARN("IMU variation %f!", var);
         if(var < 0.25)
         {
-          //  ROS_INFO("IMU excitation not enouth!");
+            std::cout<<"IMU excitation not enouth!"<<std::endl;
             //return false;
         }
     }
@@ -262,7 +262,7 @@ bool Estimator::initialStructure()
     int l;
     if (!relativePose(relative_R, relative_T, l))
     {
-     //   ROS_INFO("Not enough features or parallax; Move device around");
+       std::cout<<"Not enough features or parallax; Move device around"<<std::endl;;
         return false;
     }
 	std::cout << "relative_R:" << std::endl;

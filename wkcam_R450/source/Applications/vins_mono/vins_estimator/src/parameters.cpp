@@ -166,6 +166,7 @@ void readParameters(const string & config_file)
     MIN_DIST = fsSettings["min_dist"];
     ROW = fsSettings["image_height"];
     COL = fsSettings["image_width"];
+    MIN_DIST *= factor;
     ROW*=factor;
     COL*=factor;
    FREQ = fsSettings["freq"];

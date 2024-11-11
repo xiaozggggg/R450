@@ -71,7 +71,7 @@ public:
 
     /******************* load IMU begin ***********************/
 
-    void LoadImus(ifstream & fImus, const ros::Time &imageTimestamp);
+    void LoadImus(ifstream & fImus, const ros::Time &imageTimestamp, double timeshift_cam_imu);
     /******************* load IMU end ***********************/
 
     void q_callback(Eigen::Quaterniond q, unsigned long long ts);

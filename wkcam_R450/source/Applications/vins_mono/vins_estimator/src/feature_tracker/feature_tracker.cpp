@@ -83,7 +83,7 @@ int FeatureTracker::readImage(const cv::Mat &_img)
     TicToc t_r;
     int track_num = 0;
 
-    if (EQUALIZE)
+    if (EQUALIZE)//TODO:(cy) 使用图像mean到第一层来规避这个
     {
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
         TicToc t_c;

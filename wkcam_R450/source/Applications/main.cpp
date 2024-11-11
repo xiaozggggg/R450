@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
 	}
 
 	double factor = static_cast<double>(fsSettings["factor"]);
+	double timeshift_cam_imu = static_cast<double>(fsSettings["timeshift_cam_imu"]);
+
 #ifndef RUN_ON_PC
 	int ret = 0;
 
@@ -113,6 +115,7 @@ int main(int argc, char *argv[])
 
 		double timestamp = imu_data->u64pts;
 		timestamp /= 1e6;
+		timestamp -=timeshift_cam_imu;
 
 		if (tmp2 % 200 == 0)
 		{
@@ -217,7 +220,7 @@ int main(int argc, char *argv[])
 		nsec = (nsec / 1000) * 1000 + 500;
 		ros::Time image_timestamp = ros::Time(sec, nsec);
 		// read imu data
-		es.LoadImus(fImus, image_timestamp);
+		es.LoadImus(fImus, image_timestamp, timeshift_cam_imu);
 
 		// read image from file
 		image = cv::imread(vStrImagesFileNames[ni], cv::IMREAD_UNCHANGED);
