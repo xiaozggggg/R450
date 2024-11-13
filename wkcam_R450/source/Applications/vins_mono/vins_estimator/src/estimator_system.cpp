@@ -100,7 +100,10 @@ void EstimatorSystem::init(const std::string& yamlPath)
 
     estimator.setParameter();
     for (int i = 0; i < NUM_OF_CAM; i++)
+    {
         trackerData[i].readIntrinsicParameter(CAM_NAMES[i]); //add
+        trackerData[i].setImgSize(cv::Size(IMAGE_COL,IMAGE_ROW));
+    }
 }
 
 void EstimatorSystem::generateCameraFromYamlFile(void)
@@ -689,79 +692,9 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
     }
     PUB_THIS_FRAME = true;
 
-    //  cv_bridge::CvImageConstPtr ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
-    //  cv::Mat show_img = ptr->image;
+
     TicToc t_r;
-    for (int i = 0; i < NUM_OF_CAM; i++)
-    {
-        // ROS_DEBUG("processing camera %d", i);
-        if (i != 1 || !STEREO_TRACK)
-            //trackerData[i].readImage(ptr->image.rowRange(ROW * i, ROW * (i + 1)));
-            track_num = trackerData[i].readImage(show_img.rowRange(ROW * i, ROW * (i + 1)));
-        else
-        {
-            if (EQUALIZE)
-            {
-                cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                // clahe->apply(ptr->image.rowRange(ROW * i, ROW * (i + 1)), trackerData[i].cur_img);
-                clahe->apply(show_img.rowRange(ROW * i, ROW * (i + 1)), trackerData[i].cur_img);
-            }
-            else
-                //  trackerData[i].cur_img = ptr->image.rowRange(ROW * i, ROW * (i + 1));
-                trackerData[i].cur_img = show_img.rowRange(ROW * i, ROW * (i + 1));
-        }
-
-#if SHOW_UNDISTORTION
-        trackerData[i].showUndistortion("undistrotion_" + std::to_string(i));
-#endif
-    }
-
-    if ( PUB_THIS_FRAME && STEREO_TRACK && trackerData[0].cur_pts.size() > 0)
-    {
-        pub_count++;
-        r_status.clear();
-        r_err.clear();
-        TicToc t_o;
-        cv::calcOpticalFlowPyrLK(trackerData[0].cur_img, trackerData[1].cur_img, trackerData[0].cur_pts, trackerData[1].cur_pts, r_status, r_err, cv::Size(21, 21), 3);
-        //     ROS_DEBUG("spatial optical flow costs: %fms", t_o.toc());
-        vector<cv::Point2f> ll, rr;
-        vector<int> idx;
-        for (unsigned int i = 0; i < r_status.size(); i++)
-        {
-            if (!inBorder(trackerData[1].cur_pts[i]))
-                r_status[i] = 0;
-
-            if (r_status[i])
-            {
-                idx.push_back(i);
-
-                Eigen::Vector3d tmp_p;
-                trackerData[0].m_camera->liftProjective(Eigen::Vector2d(trackerData[0].cur_pts[i].x, trackerData[0].cur_pts[i].y), tmp_p);
-                tmp_p.x() = FOCAL_LENGTH * tmp_p.x() / tmp_p.z() + COL / 2.0;
-                tmp_p.y() = FOCAL_LENGTH * tmp_p.y() / tmp_p.z() + ROW / 2.0;
-                ll.push_back(cv::Point2f(tmp_p.x(), tmp_p.y()));
-
-                trackerData[1].m_camera->liftProjective(Eigen::Vector2d(trackerData[1].cur_pts[i].x, trackerData[1].cur_pts[i].y), tmp_p);
-                tmp_p.x() = FOCAL_LENGTH * tmp_p.x() / tmp_p.z() + COL / 2.0;
-                tmp_p.y() = FOCAL_LENGTH * tmp_p.y() / tmp_p.z() + ROW / 2.0;
-                rr.push_back(cv::Point2f(tmp_p.x(), tmp_p.y()));
-            }
-        }
-        if (ll.size() >= 8)
-        {
-            vector<uchar> status;
-            TicToc t_f;
-            cv::findFundamentalMat(ll, rr, cv::FM_RANSAC, 1.0, 0.5, status);
-            //   ROS_DEBUG("find f cost: %f", t_f.toc());
-            int r_cnt = 0;
-            for (unsigned int i = 0; i < status.size(); i++)
-            {
-                if (status[i] == 0)
-                    r_status[idx[i]] = 0;
-                r_cnt += r_status[idx[i]];
-            }
-        }
-    }
+    track_num = trackerData[0].readImage(show_img.rowRange(0, ROW));
 
     for (unsigned int i = 0;; i++)
     {
@@ -823,10 +756,10 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
 
                     feature_points->points.push_back(p);
                     id_of_point.values.push_back(p_id * NUM_OF_CAM + i);
-                    u_of_point.values.push_back(cur_pts[j].x);
-                    v_of_point.values.push_back(cur_pts[j].y);
+                    u_of_point.values.push_back(cur_pts[j].pt.x);
+                    v_of_point.values.push_back(cur_pts[j].pt.y);
                     //   ROS_ASSERT(inBorder(cur_pts[j]));
-                    assert(inBorder(cur_pts[j]));
+                    assert(inBorder(cur_pts[j].pt));
                 }
             }
             else if (STEREO_TRACK)
@@ -859,14 +792,25 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         /*----------------add ui ---------------------*/
         cv::Mat tmp_img = show_img.rowRange(0, ROW);
         cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
+        int s_grid_rows = trackerData[0].deature_detector_->getSmallGridRows();
+        int s_grid_cols = trackerData[0].deature_detector_->getSmallGridCols();
+        int s_g_r_size = trackerData[0].deature_detector_->getSmallGridRowSize();
+        int s_g_c_size = trackerData[0].deature_detector_->getSmallGridColSize();
+        IMGUtility::DrawGridInImg(s_grid_rows, s_grid_cols, s_g_r_size * 2, s_g_c_size * 2, tmp_img, cv::Scalar(0, 255, 255));
+        int b_grid_rows = trackerData[0].deature_detector_->getBigGridRows();
+        int b_grid_cols = trackerData[0].deature_detector_->getBigGridCols();
+        int b_g_r_size = trackerData[0].deature_detector_->getBigGridRowSize();
+        int b_g_c_size = trackerData[0].deature_detector_->getBigGridColSize();
+        IMGUtility::DrawGridInImg(b_grid_rows, b_grid_cols, b_g_r_size * 2, b_g_c_size * 2, tmp_img);
+
         for (unsigned int j = 0; j < trackerData[0].cur_pts.size(); j++)
         {
             double len = std::min(1.0, 1.0 * trackerData[0].track_cnt[j] / WINDOW_SIZE_FEATURE_TRACKER);
-            cv::circle(tmp_img, trackerData[0].cur_pts[j], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
+            cv::circle(tmp_img, trackerData[0].cur_pts[j].pt, 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
         }
         cv::namedWindow("vins", cv::WINDOW_NORMAL);
         cv::imshow("vins", tmp_img);
-        cv::waitKey(1);
+        cv::waitKey(0);
         /*----------------add ui ---------------------*/
 #endif
     }
@@ -1032,10 +976,10 @@ void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d
         wk_st_lk_middle::wk_st_lk_get_instance()->wk_result_export(result);
         #endif
 
-        // Eigen::Vector3d eulerAngle=correct_q.toRotationMatrix().eulerAngles(2,1,0);
-        // eulerAngle *= (180 / M_PI);
-        // std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
-        //  "correct_q "<<correct_q.w()<<" "<<correct_q.x()<<" "<<correct_q.y()<<" "<<correct_q.z() <<std::endl;
+        Eigen::Vector3d eulerAngle=correct_q.toRotationMatrix().eulerAngles(2,1,0);
+        eulerAngle *= (180 / M_PI);
+        std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
+         "correct_q "<<correct_q.w()<<" "<<correct_q.x()<<" "<<correct_q.y()<<" "<<correct_q.z() <<std::endl;
 
     }
 }
