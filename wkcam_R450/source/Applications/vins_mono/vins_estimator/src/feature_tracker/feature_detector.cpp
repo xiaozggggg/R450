@@ -34,6 +34,7 @@ void FeatureDetector::ClearGrid(std::vector<cv::KeyPoint> &grid_occ_)
   {
     grid_occ_[i].class_id = -1; // new point
     grid_occ_[i].response = 0;  // empty
+    grid_occ_[i].angle = -1;  // 
   }
 }
 
@@ -80,6 +81,8 @@ void FeatureDetector::PutOldPtsInGrid(const std::vector<cv::KeyPoint> &old_pts, 
         small_sub += small_grid_cols_ - BIG_SMALL_RATE_COL;
       }
     }
+    else
+      status[i] = 0;
   }
 }
 
@@ -294,7 +297,7 @@ void FeatureDetector::refine_kp_in_larger_img(const cv::Mat &img, std::vector<cv
     assert(local_kps.size() > 0);
 
     // 有可能小图上是特征点大图上旧不就不是了
-    minEigenVal(img, &local_kps, harris_block_size);
+    minEigenVal(img, &local_kps, harris_block_size);//TODO:(cy) 会越界
     float score_total = 0;
     float x_weighted_sum = 0;
     float y_weighted_sum = 0;
@@ -391,17 +394,16 @@ void FeatureDetector::DetectNewPts(const cv::Mat &img, const cv::Mat &div_1, con
 
             int small_grid_sub = (r * BIG_SMALL_RATE_ROW + row + 1) * small_grid_cols_ + c * BIG_SMALL_RATE_COL + col + 1; // TODO(cy): 直接计算好关系，直接拿来用就可以了
 
-            small_grid_occ_[small_grid_sub].pt.x = max_p.x + x + grid_start_x;
-            small_grid_occ_[small_grid_sub].pt.y = max_p.y + y + grid_start_y;
+            cv::Point2f p(max_p.x + x + grid_start_x, max_p.y + y + grid_start_y);
+            if (p.x <= 8 || p.x >= img.cols - 8 || p.y <= 8 || p.y >= img.rows - 8)
+              continue;
+
+            small_grid_occ_[small_grid_sub].pt = p;
             small_grid_occ_[small_grid_sub].response = max;
             detect_small_sub.push_back(small_grid_sub);
-            std::cout<<" "<<small_grid_sub;
-            assert(small_grid_sub>=0);
-            assert(small_grid_sub<small_grid_occ_.size());
 
           }
         }
-        std::cout<<std::endl;
         detect_big_small_sub.push_back(std::make_pair(sub, detect_small_sub));
       }
       sub++;

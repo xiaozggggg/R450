@@ -514,7 +514,7 @@ void EstimatorSystem::process_pose_graph()
 
 void EstimatorSystem::process()
 {
-    double total_t;
+    double total_t = 0;
     double img_num = 0;
     while (true)
     {
