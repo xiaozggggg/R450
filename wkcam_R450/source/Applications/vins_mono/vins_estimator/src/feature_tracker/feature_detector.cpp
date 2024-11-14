@@ -66,9 +66,12 @@ void FeatureDetector::PutOldPtsInGrid(const std::vector<cv::KeyPoint> &old_pts, 
 
     if(old_pts[i].response > small_grid_occ_[ssub].response)
     {
-      status[small_grid_occ_[ssub].angle] = 0;
+      //old point
+      if(small_grid_occ_[ssub].response != 0)
+        status[small_grid_occ_[ssub].angle] = 0;
+
       small_grid_occ_[ssub] = old_pts[i];
-      small_grid_occ_[ssub].angle = i;
+      small_grid_occ_[ssub].angle = i;//所有点记录下标
     }
     else
       status[i] = 0;
@@ -655,7 +658,9 @@ void putOldPtsBack(cv::Mat& eig, const std::vector<cv::KeyPoint> &old_pts)
 {
   for (size_t i = 0; i < old_pts.size(); i++)
   {
-    eig.at<float>(old_pts[i].pt) = __FLT_MAX__;
+    int x = old_pts[i].pt.x /2;
+    int y = old_pts[i].pt.y /2;
+    eig.at<float>(y,x) = __FLT_MAX__;
   }
   
 }

@@ -13,10 +13,10 @@
             //     "~/work/dataset/euroc/MH_01_easy/mav0/imu0/data.csv"
             // ],
             "args": [
-                "/home/cy/work/dataset/wk/wk_drone_config_cy.yaml",
-                "/home/cy/work/dataset/wk/1/cam0/data",
-                "/home/cy/work/dataset/wk/1/cam0/data.csv",
-                "/home/cy/work/dataset/wk/1/imu0/data.csv"
+                "~/work/dataset/wk/wk_drone_config_cy.yaml",
+                "~/work/dataset/wk/1/cam0/data",
+                "~/work/dataset/wk/1/cam0/data.csv",
+                "~/work/dataset/wk/1/imu0/data.csv"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
