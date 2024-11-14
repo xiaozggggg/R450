@@ -12,7 +12,7 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
   std::cout<<"image pyr buf size "<<(int(size * 1.4 + 3) & ~3)<<std::endl;
   // gradient x y ,int16
   prev_div_pyramids_buffer_ = std::shared_ptr<int16_t>(
-      new int16_t[int(size * 0.4 * 2 * 2 + 3) & ~3]); // 金字塔0层不需要计算
+      new int16_t[int(size * 0.4 * 2 * 2 + 3) & ~3]); // 金字塔0层不需要计算,双通道，int16_t俩字节
   curr_div_pyramids_buffer_ = std::shared_ptr<int16_t>(
       new int16_t[int(size * 0.4 * 2 * 2 + 3) & ~3]);
 
@@ -32,8 +32,8 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
   curr_div_pyramids_.resize(MaxPyraLevel + 1);
 
   // pyr buffer offset
-  int img_off_set = size;
-  int div_off_set = -2 * 2 * size >> 2;
+  int img_off_set = 0;
+  int div_off_set = 0;
   cv::Size pyr_img_size = img_size;
   cv::Size div_img_size = img_size / 4;
 
@@ -48,13 +48,16 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
     }
     if (i != 0)
     {
-      img_off_set += size >> i * 2;
+      img_off_set += size >> (i - 1) * 2;
       prev_img_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_8UC1, prev_img_pyramids_buffer_.get() + img_off_set);
       curr_img_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_8UC1, curr_img_pyramids_buffer_.get() + img_off_set);
-      std::cout<<"img_off_set i "<< i << " " <<img_off_set<<std::endl;
-      std::cout<<"curr_img_pyramids_[i] size "<< curr_img_pyramids_[i].size().height << " " <<curr_img_pyramids_[i].size().width<<std::endl;
+      std::cout << "img_off_set i " << i << " " << img_off_set << std::endl;
+      std::cout << "curr_img_pyramids_[i] size " << curr_img_pyramids_[i].size().height << " " << curr_img_pyramids_[i].size().width << std::endl;
       // div
-      div_off_set += 2 * 2 * (size >> (i * 2));
+      if (i == 1)
+        div_off_set = 0;
+      else
+        div_off_set += 2 * 2 * (size >> ((i - 1) * 2));
       prev_div_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_16SC2, prev_div_pyramids_buffer_.get() + div_off_set);
       curr_div_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_16SC2, curr_div_pyramids_buffer_.get() + div_off_set);
     }
@@ -93,7 +96,6 @@ void Pyramid::build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::
     {
       // cal
       // build left img pyr
-      std::cout << "build level " << i << std::endl;
       fast_pyra_down_internal(img_pyr[i - 1], &img_pyr[i]);
       // TODO(cy): need to set hyper para track and detect level
       // build deriv img; do not cal level 0, so in op flow ont track level 0

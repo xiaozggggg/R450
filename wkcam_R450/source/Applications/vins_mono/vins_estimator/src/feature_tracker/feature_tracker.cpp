@@ -100,11 +100,18 @@ int FeatureTracker::readImage(const cv::Mat &_img)
 
     rejectWithF();
 
-    cv::Mat db_op = img_pyr_->getCurrPyrImg(0).clone();
-    IMGUtility::DrawGridInImg(deature_detector_->getBigGridRows(), deature_detector_->getBigGridCols(),
-                              deature_detector_->getBigGridRowSize() * 2, deature_detector_->getBigGridColSize() * 2, db_op);
-    cv::Mat db_op_bgr = IMGUtility::drawPoints(db_op, cur_pts, -1);
-    IMGUtility::showImg(db_op_bgr, "db_op_bgr");
+    vector<uchar> status;
+    deature_detector_->PutOldPtsInGrid(cur_pts, status); // 访问grid,并且不让点粘在一个小grid里面
+    reduceVector(prev_pts, status);
+    reduceVector(cur_pts, status);
+    reduceVector(ids, status);
+    reduceVector(track_cnt, status);
+
+    // cv::Mat db_op = img_pyr_->getCurrPyrImg(0).clone();
+    // IMGUtility::DrawGridInImg(deature_detector_->getBigGridRows(), deature_detector_->getBigGridCols(),
+    //                           deature_detector_->getBigGridRowSize() * 2, deature_detector_->getBigGridColSize() * 2, db_op);
+    // cv::Mat db_op_bgr = IMGUtility::drawPoints(db_op, cur_pts, -1);
+    // IMGUtility::showImg(db_op_bgr, "db_op_bgr");
 
     for (auto &n : track_cnt)
         n++;
@@ -116,7 +123,8 @@ int FeatureTracker::readImage(const cv::Mat &_img)
     {
         n_pts.clear();
         //TODO(cy): 将跟踪到同一个grid里面的点只留一个
-        deature_detector_->DetectNewPts(img_pyr_->getCurrPyrImg(0), img_pyr_->getCurrDivPyrImg(1), cur_pts, n_pts);
+        // deature_detector_->DetectNewPts(img_pyr_->getCurrPyrImg(0), img_pyr_->getCurrDivPyrImg(1), cur_pts, n_pts);
+        deature_detector_->DetectNewPts(img_pyr_->getCurrImgPyr(), cur_pts, n_pts, n_max_cnt);
         std::cout << "########cy feature detect: " << t_t.toc() << " n_max_cnt: " << n_max_cnt << " n_pts.size(): " << n_pts.size() << std::endl;
 
     }
@@ -133,10 +141,10 @@ int FeatureTracker::readImage(const cv::Mat &_img)
 
 void FeatureTracker::rejectWithF()
 {
-    vector<uchar> status;
-    status.resize(cur_pts.size(), 1);
     if (cur_pts.size() >= 8)
     {
+        vector<uchar> status;
+
         // ROS_DEBUG("FM ransac begins");
         TicToc t_f;
         vector<cv::Point2f> un_prev_pts(prev_pts.size()), un_forw_pts(cur_pts.size());
@@ -156,18 +164,17 @@ void FeatureTracker::rejectWithF()
 
         cv::findFundamentalMat(un_prev_pts, un_forw_pts, cv::FM_RANSAC, F_THRESHOLD, 0.99, status);
         int size_a = prev_pts.size();
+        assert(prev_pts.size() == cur_pts.size());
+        assert(ids.size() == cur_pts.size());
+        assert(ids.size() == track_cnt.size());
+        reduceVector(prev_pts, status);
+        reduceVector(cur_pts, status);
+        reduceVector(ids, status);
+        reduceVector(track_cnt, status);
 
         //  ROS_DEBUG("FM ransac: %d -> %lu: %f", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
         //  ROS_DEBUG("FM ransac costs: %fms", t_f.toc());
     }
-    deature_detector_->PutOldPtsInGrid(cur_pts, status);
-    assert(prev_pts.size() == cur_pts.size());
-    assert(ids.size() == cur_pts.size());
-    assert(ids.size() == track_cnt.size());
-    reduceVector(prev_pts, status);
-    reduceVector(cur_pts, status);
-    reduceVector(ids, status);
-    reduceVector(track_cnt, status);
 }
 
 bool FeatureTracker::updateID(unsigned int i)

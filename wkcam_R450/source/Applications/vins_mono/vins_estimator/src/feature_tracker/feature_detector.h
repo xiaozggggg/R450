@@ -24,7 +24,24 @@ class IdGenerator {
 #define BIG_GRID_COL 5
 #define BIG_SMALL_RATE_ROW 3
 #define BIG_SMALL_RATE_COL 4
+#define DROP_BORDER 4
 
+struct SmallCell
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+struct BigCell
+{
+    int x;
+    int y;
+    int w;
+    int h;
+    std::vector<SmallCell> small_cells_;
+};
 
 class FeatureDetector
 {
@@ -39,7 +56,7 @@ private:
     int small_g_r_size_;
     int small_g_c_size_;
 
-    std::vector<cv::KeyPoint> big_grid_occ_;
+    std::vector<uchar> big_grid_occ_;
     std::vector<cv::KeyPoint> small_grid_occ_; // have border
 
     int* small_neib;
@@ -49,11 +66,14 @@ private:
 
 public:
     
-    void DetectNewPts(const cv::Mat& img, const cv::Mat& div_1, const std::vector<cv::KeyPoint>& old_pts, std::vector<cv::KeyPoint>& new_pts);
+    // void DetectNewPts(const cv::Mat& img, const cv::Mat& div_1, const std::vector<cv::KeyPoint>& old_pts, std::vector<cv::KeyPoint>& new_pts);
+    void DetectNewPts(const std::vector<cv::Mat>& pyr, const std::vector<cv::KeyPoint>& old_pts, std::vector<cv::KeyPoint>& new_pts, int num);
+
     FeatureDetector(cv::Size img_s);
     ~FeatureDetector();
     //old_pts在原图像上的，grid是缩放之后的了
     void PutOldPtsInGrid(const std::vector<cv::KeyPoint>& old_pts, std::vector<uchar>& status);
+    void PutOldPtsInGrid(const std::vector<cv::KeyPoint> &old_pts);
     int getBigGridRows(){return big_grid_rows_;}
     int getBigGridCols(){return big_grid_cols_;}
     int getBigGridRowSize(){return big_g_r_size_;}
@@ -68,8 +88,11 @@ public:
 
 private:
 void putSmallToBigGrid(const std::vector<std::pair<int, std::vector<int>>> &detect_big_small_sub);
+void SmallGridMaxFillter(const std::vector<int>& detect_s_g_r, std::vector<cv::KeyPoint>& big33Pts);
 void ClearGrid(std::vector<cv::KeyPoint>& grid_occ_);
-void refine_kp_in_larger_img(const cv::Mat &img, std::vector<cv::KeyPoint> &t_key_pnts_ptr);
+void ClearGrid(std::vector<uchar> &grid_occ_);
+// void refine_kp_in_larger_img(const cv::Mat &img, std::vector<cv::KeyPoint> &t_key_pnts_ptr);
+void refine_kp_in_larger_img(const cv::Mat &img, const std::vector<cv::KeyPoint> &smallPs, std::vector<cv::KeyPoint> &bigPs);
 
 };
 
