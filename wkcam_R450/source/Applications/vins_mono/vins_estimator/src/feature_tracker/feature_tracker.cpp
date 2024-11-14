@@ -74,7 +74,8 @@ int FeatureTracker::readImage(const cv::Mat &_img)
         cv::KeyPoint::convert(prev_pts,pre_temp);
 
         cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(21, 21), 3);
-        cur_pts.resize(cur_temp.size());
+
+        assert(cur_pts.size() == cur_temp.size());
         for (int i = 0; i < cur_temp.size(); i++)
         {
             if (status[i])
@@ -122,7 +123,6 @@ int FeatureTracker::readImage(const cv::Mat &_img)
     if (n_max_cnt > 0)
     {
         n_pts.clear();
-        //TODO(cy): 将跟踪到同一个grid里面的点只留一个
         // deature_detector_->DetectNewPts(img_pyr_->getCurrPyrImg(0), img_pyr_->getCurrDivPyrImg(1), cur_pts, n_pts);
         deature_detector_->DetectNewPts(img_pyr_->getCurrImgPyr(), cur_pts, n_pts, n_max_cnt);
         std::cout << "########cy feature detect: " << t_t.toc() << " n_max_cnt: " << n_max_cnt << " n_pts.size(): " << n_pts.size() << std::endl;

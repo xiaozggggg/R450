@@ -69,6 +69,7 @@ nav_msgs::Path  loop_path;
 EstimatorSystem::EstimatorSystem()
 {
     m_qs.clear();
+    delta_R.setIdentity();
 }
 
 void EstimatorSystem::run(void)
