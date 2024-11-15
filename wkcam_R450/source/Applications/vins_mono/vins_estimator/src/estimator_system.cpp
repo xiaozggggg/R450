@@ -796,16 +796,16 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         /*----------------add ui ---------------------*/
         cv::Mat tmp_img = show_img.rowRange(0, ROW);
         cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
-        int s_grid_rows = trackerData[0].deature_detector_->getSmallGridRows();
-        int s_grid_cols = trackerData[0].deature_detector_->getSmallGridCols();
-        int s_g_r_size = trackerData[0].deature_detector_->getSmallGridRowSize();
-        int s_g_c_size = trackerData[0].deature_detector_->getSmallGridColSize();
-        IMGUtility::DrawGridInImg(s_grid_rows, s_grid_cols, s_g_r_size * 2, s_g_c_size * 2, tmp_img, cv::Scalar(0, 255, 255));
-        int b_grid_rows = trackerData[0].deature_detector_->getBigGridRows();
-        int b_grid_cols = trackerData[0].deature_detector_->getBigGridCols();
-        int b_g_r_size = trackerData[0].deature_detector_->getBigGridRowSize();
-        int b_g_c_size = trackerData[0].deature_detector_->getBigGridColSize();
-        IMGUtility::DrawGridInImg(b_grid_rows, b_grid_cols, b_g_r_size * 2, b_g_c_size * 2, tmp_img);
+        // int s_grid_rows = trackerData[0].deature_detector_->getSmallGridRows();
+        // int s_grid_cols = trackerData[0].deature_detector_->getSmallGridCols();
+        // int s_g_r_size = trackerData[0].deature_detector_->getSmallGridRowSize();
+        // int s_g_c_size = trackerData[0].deature_detector_->getSmallGridColSize();
+        // IMGUtility::DrawGridInImg(s_grid_rows, s_grid_cols, s_g_r_size * 2, s_g_c_size * 2, tmp_img, cv::Scalar(0, 255, 255));
+        // int b_grid_rows = trackerData[0].deature_detector_->getBigGridRows();
+        // int b_grid_cols = trackerData[0].deature_detector_->getBigGridCols();
+        // int b_g_r_size = trackerData[0].deature_detector_->getBigGridRowSize();
+        // int b_g_c_size = trackerData[0].deature_detector_->getBigGridColSize();
+        // IMGUtility::DrawGridInImg(b_grid_rows, b_grid_cols, b_g_r_size * 2, b_g_c_size * 2, tmp_img);
 
         for (unsigned int j = 0; j < trackerData[0].cur_pts.size(); j++)
         {
@@ -814,7 +814,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         }
         cv::namedWindow("vins", cv::WINDOW_NORMAL);
         cv::imshow("vins", tmp_img);
-        cv::waitKey(0);
+        cv::waitKey(1);
         /*----------------add ui ---------------------*/
 #endif
     }

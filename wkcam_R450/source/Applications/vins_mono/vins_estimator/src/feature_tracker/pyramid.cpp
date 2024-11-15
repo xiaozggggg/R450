@@ -72,7 +72,10 @@ Pyramid::~Pyramid()
 void Pyramid::update_img_pyramids()
 {
   curr_img_pyramids_.swap(prev_img_pyramids_);
+  curr_div_pyramids_.swap(prev_div_pyramids_);
   curr_img_pyramids_buffer_.swap(prev_img_pyramids_buffer_);
+  curr_div_pyramids_buffer_.swap(prev_div_pyramids_buffer_);
+
 }
 
 // 因为后面的参数想用默认参数，所以使用指针不用引用
@@ -218,7 +221,7 @@ inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_
 void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
 {
   int rows = src.rows, cols = src.cols, cn = src.channels(), colsn = cols * cn;
-#ifdef _XP_OPTICAL_FLOW_DEBUG_MODE_
+#ifdef _WK_OPTICAL_FLOW_DEBUG_MODE_
   int depth = src.depth();
   CHECK_EQ(depth, CV_8U);
   CHECK_NOTNULL(dst->data);

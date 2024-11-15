@@ -194,7 +194,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image,
 
         TicToc t_margin;
         slideWindow();
-        f_manager.removeFailures();
+        f_manager.removeFailures();//TODO(cy):没有告诉前端，那么前端还是会去跟踪这些点
     //    ROS_DEBUG("marginalization costs: %fms", t_margin.toc());
         // prepare output of VINS
         key_poses.clear();
