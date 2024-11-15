@@ -78,7 +78,7 @@ void FeatureDetector::PutOldPtsInGrid(const std::vector<cv::KeyPoint> &old_pts, 
   }
 }
 
-void calCov(const cv::Mat &div, cv::Mat &cov, int block_size)
+void calCov(const cv::Mat &div, cv::Mat &cov, int block_size = 3)
 {
   cv::Size size = div.size();
   int i, j;
@@ -120,6 +120,7 @@ void calCov(const cv::Mat &div, cv::Mat &cov, int block_size)
   boxFilter(cov, cov, cov.depth(), cv::Size(block_size, block_size),
             cv::Point(-1, -1), false);
 }
+//验证过数值与上面的相同
 void calCov(const cv::Mat &div, int x, int y, int width, int height, cv::Mat &cov, int block_size = 3)
 {
   assert(cov.cols == width);
@@ -428,96 +429,6 @@ void HarrisResponses(const cv::Mat &img,
   }
 }
 
-// void FeatureDetector::refine_kp_in_larger_img(const cv::Mat &img, std::vector<cv::KeyPoint> &t_key_pnts_ptr)
-// {
-//   int refineNewPointNum = 0;
-//   std::vector<cv::KeyPoint> local_kps;
-//   constexpr int harris_block_size = 7; // 5 does not give correct results
-//   constexpr int compress_ratio = 2;
-
-//   for (int kp_small_idx = 0; kp_small_idx < big_grid_occ_.size(); ++kp_small_idx)
-//   {
-//     const cv::KeyPoint &key_pnt_small = big_grid_occ_[kp_small_idx];
-//     if (key_pnt_small.class_id != -1 || key_pnt_small.response == 0) // old track point in raw img; or empty
-//       continue;
-//     local_kps.clear();
-//     local_kps.reserve(compress_ratio * 2 * compress_ratio * 2);
-//     for (int y = key_pnt_small.pt.y * compress_ratio - compress_ratio + 1;
-//          y < key_pnt_small.pt.y * compress_ratio + compress_ratio; y++)
-//     {
-//       for (int x = key_pnt_small.pt.x * compress_ratio - compress_ratio + 1;
-//            x < key_pnt_small.pt.x * compress_ratio + compress_ratio; x++)
-//       {
-//         cv::KeyPoint local_kp = key_pnt_small;
-//         local_kp.pt.x = x;
-//         local_kp.pt.y = y;
-//         local_kps.push_back(local_kp);
-//       }
-//     }
-
-//     assert(local_kps.size() > 0);
-
-//     // 有可能小图上是特征点大图上旧不就不是了
-//     minEigenVal(img, &local_kps, harris_block_size);//TODO:(cy) 会越界，且计算不对感觉
-//     float score_total = 0;
-//     float x_weighted_sum = 0;
-//     float y_weighted_sum = 0;
-//     float highest_score = -std::numeric_limits<float>::max();
-//     int best_local_kp_id = -1;
-//     for (size_t i = 0; i < local_kps.size(); i++)
-//     {
-//       if (local_kps[i].response > 0)
-//       {
-//         // ignore points whose harris response is less than 0
-//         score_total += local_kps[i].response;
-//         x_weighted_sum += local_kps[i].pt.x * local_kps[i].response;
-//         y_weighted_sum += local_kps[i].pt.y * local_kps[i].response;
-//         if (local_kps[i].response > highest_score)
-//         {
-//           highest_score = local_kps[i].response;
-//           best_local_kp_id = i;
-//         }
-//       }
-// #ifndef __FEATURE_UTILS_NO_DEBUG__
-//       // VLOG(3) << "local_kp.response " << local_kps[i].response
-//       //         << " local_kp.pt " << local_kps[i].pt
-//       //         << " score_total " << score_total;
-// #endif
-//     }
-//     if (best_local_kp_id < 0)
-//     {
-//       // no good point,remove
-//       big_grid_occ_[kp_small_idx].response = key_pnt_small.response;
-//       continue;
-//     }
-//     //?使用响应的质心是为了获得亚像素，可是真的该这么去使用么？还是说因为只是3*3所以可以这么玩？
-//     cv::KeyPoint best_local_kp = local_kps[best_local_kp_id]; // copy scale score etc.
-//     // use weighted average
-//     if (highest_score > 1e-9)
-//     {
-//       best_local_kp.pt.x = round(x_weighted_sum / score_total);
-//       best_local_kp.pt.y = round(y_weighted_sum / score_total);
-//       best_local_kp.class_id = id_generator_.get();
-// #ifndef __FEATURE_UTILS_NO_DEBUG__
-//       // VLOG(3) << "refine best_local_kp for kp_small[" << kp_small_idx
-//       //         << "]: pt = " << best_local_kp.pt;
-// #endif
-//       best_local_kp.response = key_pnt_small.response;//细化之后的response没必要记录，因为还要用来和检测时候的response进行比较
-//       big_grid_occ_[kp_small_idx] = best_local_kp;
-//       t_key_pnts_ptr.push_back(best_local_kp);
-//       refineNewPointNum++;
-//     }
-//     else
-//     {
-//       assert(0);
-// #ifndef __FEATURE_UTILS_NO_DEBUG__
-//       // VLOG(3) << "refine best_local_kp for kp_small[" << kp_small_idx
-//       //         << "] fails: weak harris response = " << highest_score;
-// #endif
-//     }
-//   }
-//   // std::cout<<"refineNewPointNum "<<refineNewPointNum<<std::endl;
-// }
 
 void FeatureDetector::refine_kp_in_larger_img(const cv::Mat &img, const std::vector<cv::KeyPoint> &smallPs, std::vector<cv::KeyPoint> &bigPs)
 {
@@ -592,67 +503,73 @@ void FeatureDetector::refine_kp_in_larger_img(const cv::Mat &img, const std::vec
   // std::cout<<"refineNewPointNum "<<refineNewPointNum<<std::endl;
 }
 
+//比下面的更快，但是结果貌似有点儿不太对
+void FeatureDetector::DetectNewPts(const cv::Mat& img, const cv::Mat& div_1, const std::vector<cv::KeyPoint> &old_pts, std::vector<cv::KeyPoint> &new_pts, int num)
+{
+  
+  // select grid to detect
+  int sub = 0;
+  std::vector<int> detect_s_g_r;
+  for (size_t br = 0; br < big_grid_rows_; br++)
+  {
+    for (size_t bc = 0; bc < big_grid_cols_; bc++)
+    {
+      if (!big_grid_occ_[sub])
+      {
+        int x = bc * big_g_c_size_;
+        int y = br * big_g_r_size_;
 
-// void FeatureDetector::DetectNewPts(const cv::Mat &img, const cv::Mat &div_1, const std::vector<cv::KeyPoint> &old_pts, std::vector<cv::KeyPoint> &new_pts)
-// {
-//   IMGUtility::drawGrid(big_grid_occ_,big_grid_rows_,big_grid_cols_, "big_grid_occ_",1);
+        cv::Mat cov = cv::Mat(big_g_r_size_, big_g_c_size_, CV_32FC3); // 这部分必须是要开辟出来数组的
+        calCov(div_1, x, y, big_g_c_size_, big_g_r_size_, cov);
 
-//   // select grid to detect
-//   int sub = 0;
-//   std::vector<std::pair<int, std::vector<int>>> detect_big_small_sub;
-//   detect_big_small_sub.reserve(big_grid_occ_.size());
-//   for (size_t r = 0; r < big_grid_rows_; r++)
-//   {
-//     for (size_t c = 0; c < big_grid_cols_; c++)
-//     {
-//       if (big_grid_occ_[sub].response == 0)
-//       {
-//         int x = c * big_g_c_size_;
-//         int y = r * big_g_r_size_;
+        cv::Mat min_eigen_mat;
+        min_eigen_mat.create(cov.size(), CV_32FC1);
+        calcMinEigenVal(cov, min_eigen_mat); // TODO(cy):可以直接在这里得到最小值,这样能省略下面这一大堆的计算
 
-//         cv::Mat cov = cv::Mat(big_g_r_size_, big_g_c_size_, CV_32FC3); // 这部分必须是要开辟出来数组的
-//         calCov(div_1, x, y, big_g_c_size_, big_g_r_size_, cov);
-//         cv::Mat min_eigen_mat;
-//         min_eigen_mat.create(cov.size(), CV_32FC1);
-//         calcMinEigenVal(cov, min_eigen_mat); // TODO(cy):可以直接在这里得到最小值,这样能省略下面这一大堆的计算
+        double min, max;
+        cv::Point2i min_p, max_p;
+        std::vector<int> detect_small_sub;
+        detect_small_sub.reserve(BIG_SMALL_RATE_ROW * BIG_SMALL_RATE_COL);
+        for (size_t sr = 0; sr < BIG_SMALL_RATE_ROW; sr++)
+        {
+          int grid_start_y = sr * small_g_r_size_;
+          for (size_t sc = 0; sc < BIG_SMALL_RATE_COL; sc++)
+          {
+            int grid_start_x = sc * small_g_c_size_;
+            cv::Mat s_grid = min_eigen_mat(cv::Rect( grid_start_x, grid_start_y, small_g_c_size_, small_g_r_size_));
+            cv::minMaxLoc(s_grid, &min, &max, &min_p, &max_p);
 
-//         double min, max;
-//         cv::Point2i min_p, max_p;
-//         std::vector<int> detect_small_sub;
-//         detect_small_sub.reserve(BIG_SMALL_RATE_ROW * BIG_SMALL_RATE_COL);
-//         for (size_t row = 0; row < BIG_SMALL_RATE_ROW; row++)
-//         {
-//           int grid_start_y = row * small_g_r_size_;
-//           for (size_t col = 0; col < BIG_SMALL_RATE_COL; col++)
-//           {
-//             int grid_start_x = col * small_g_c_size_;
-//             cv::Mat s_grid = min_eigen_mat(cv::Rect(grid_start_x, grid_start_y, small_g_c_size_, small_g_r_size_));
-//             cv::minMaxLoc(s_grid, &min, &max, &min_p, &max_p);
+            int small_grid_sub = (br * BIG_SMALL_RATE_ROW + sr + 1) * small_grid_cols_ + bc * BIG_SMALL_RATE_COL + sc + 1; // TODO(cy): 直接计算好关系，直接拿来用就可以了
 
-//             int small_grid_sub = (r * BIG_SMALL_RATE_ROW + row + 1) * small_grid_cols_ + c * BIG_SMALL_RATE_COL + col + 1; // TODO(cy): 直接计算好关系，直接拿来用就可以了
+            cv::Point2f p(max_p.x + x + grid_start_x, max_p.y + y + grid_start_y);
+            if (p.x <= 8 || p.x >= div_1.cols - 8 || p.y <= 8 || p.y >= div_1.rows - 8)
+              continue;
 
-//             cv::Point2f p(max_p.x + x + grid_start_x, max_p.y + y + grid_start_y);
-//             if (p.x <= 8 || p.x >= img.cols - 8 || p.y <= 8 || p.y >= img.rows - 8)
-//               continue;
+            small_grid_occ_[small_grid_sub].pt = p;
+            small_grid_occ_[small_grid_sub].response = max;
+            detect_s_g_r.push_back(small_grid_sub);
 
-//             small_grid_occ_[small_grid_sub].pt = p;
-//             small_grid_occ_[small_grid_sub].response = max;
-//             detect_small_sub.push_back(small_grid_sub);
+          }
+        }
 
-//           }
-//         }
-//         detect_big_small_sub.push_back(std::make_pair(sub, detect_small_sub));
-//       }
-//       sub++;
-//     }
-//   }
+      }
+      sub++;
+    }
+  }
 
-//   IMGUtility::drawGrid(small_grid_occ_,small_grid_rows_,small_grid_cols_, "small_grid_occ_",1);
+  // IMGUtility::drawGrid(small_grid_occ_, small_grid_rows_, small_grid_cols_, "small_grid_occ_", 1);
 
-//   putSmallToBigGrid(detect_big_small_sub);
+  std::vector<cv::KeyPoint> big33Pts;
+  SmallGridMaxFillter(detect_s_g_r, big33Pts);
 
-//   refine_kp_in_larger_img(img, new_pts); // only append new point in key_pnts
-// }
+  std::sort(big33Pts.begin(), big33Pts.end(), [](const cv::KeyPoint &p1, const cv::KeyPoint &p2)
+            { return p1.response > p2.response; });
+
+  if(big33Pts.size() > num)
+    big33Pts.resize(num);
+
+  refine_kp_in_larger_img(img, big33Pts, new_pts); // only append new point in key_pnts
+}
 
 void putOldPtsBack(cv::Mat& eig, const std::vector<cv::KeyPoint> &old_pts)
 {

@@ -65,9 +65,8 @@ private:
     IdGenerator id_generator_;
 
 public:
-    
-    // void DetectNewPts(const cv::Mat& img, const cv::Mat& div_1, const std::vector<cv::KeyPoint>& old_pts, std::vector<cv::KeyPoint>& new_pts);
-    void DetectNewPts(const std::vector<cv::Mat>& pyr, const std::vector<cv::KeyPoint>& old_pts, std::vector<cv::KeyPoint>& new_pts, int num);
+    void DetectNewPts(const cv::Mat &img, const cv::Mat &div_1, const std::vector<cv::KeyPoint> &old_pts, std::vector<cv::KeyPoint> &new_pts, int num);
+    void DetectNewPts(const std::vector<cv::Mat> &pyr, const std::vector<cv::KeyPoint> &old_pts, std::vector<cv::KeyPoint> &new_pts, int num);
 
     FeatureDetector(cv::Size img_s);
     ~FeatureDetector();

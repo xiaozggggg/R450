@@ -695,7 +695,9 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
 
 
     TicToc t_r;
+    TicToc t_readImg;
     track_num = trackerData[0].readImage(show_img.rowRange(0, ROW));
+    printf("whole readImage processing costs: %f\n", t_readImg.toc());
 
     for (unsigned int i = 0;; i++)
     {
@@ -743,7 +745,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         {
             if (i != 1 || !STEREO_TRACK)
             {
-                auto un_pts = trackerData[i].undistortedPoints();
+                auto un_pts = trackerData[i].undistortedPoints();//TODO(cy):可以建立查找表
                 auto &cur_pts = trackerData[i].cur_pts;
                 auto &ids = trackerData[i].ids;
                 for (unsigned int j = 0; j < ids.size(); j++)
@@ -789,6 +791,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         feature_points->channels.push_back(u_of_point);
         feature_points->channels.push_back(v_of_point);
         feature_callback(feature_points);          //add
+        printf("whole feature tracker processing costs: %f\n", t_r.toc());
 #ifdef RUN_ON_PC
         /*----------------add ui ---------------------*/
         cv::Mat tmp_img = show_img.rowRange(0, ROW);
@@ -815,7 +818,6 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         /*----------------add ui ---------------------*/
 #endif
     }
-    //  ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
 
 }
 

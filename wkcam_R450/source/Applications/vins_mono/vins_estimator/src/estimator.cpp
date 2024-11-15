@@ -211,33 +211,33 @@ bool Estimator::initialStructure()
 {
     TicToc t_sfm;
     //check imu observibility
-    {
-        map<double, ImageFrame>::iterator frame_it;
-        Vector3d sum_g;
-        for (frame_it = all_image_frame.begin(), frame_it++; frame_it != all_image_frame.end(); frame_it++)
-        {
-            double dt = frame_it->second.pre_integration->sum_dt;
-            Vector3d tmp_g = frame_it->second.pre_integration->delta_v / dt;
-            sum_g += tmp_g;
-        }
-        Vector3d aver_g;
-        aver_g = sum_g * 1.0 / ((int)all_image_frame.size() - 1);
-        double var = 0;
-        for (frame_it = all_image_frame.begin(), frame_it++; frame_it != all_image_frame.end(); frame_it++)
-        {
-            double dt = frame_it->second.pre_integration->sum_dt;
-            Vector3d tmp_g = frame_it->second.pre_integration->delta_v / dt;
-            var += (tmp_g - aver_g).transpose() * (tmp_g - aver_g);
-            //cout << "frame g " << tmp_g.transpose() << endl;
-        }
-        var = sqrt(var / ((int)all_image_frame.size() - 1));
-        //ROS_WARN("IMU variation %f!", var);
-        if(var < 0.25)
-        {
-            std::cout<<"IMU excitation not enouth!"<<std::endl;
-            //return false;
-        }
-    }
+    // {
+    //     map<double, ImageFrame>::iterator frame_it;
+    //     Vector3d sum_g;
+    //     for (frame_it = all_image_frame.begin(), frame_it++; frame_it != all_image_frame.end(); frame_it++)
+    //     {
+    //         double dt = frame_it->second.pre_integration->sum_dt;
+    //         Vector3d tmp_g = frame_it->second.pre_integration->delta_v / dt;
+    //         sum_g += tmp_g;
+    //     }
+    //     Vector3d aver_g;
+    //     aver_g = sum_g * 1.0 / ((int)all_image_frame.size() - 1);
+    //     double var = 0;
+    //     for (frame_it = all_image_frame.begin(), frame_it++; frame_it != all_image_frame.end(); frame_it++)
+    //     {
+    //         double dt = frame_it->second.pre_integration->sum_dt;
+    //         Vector3d tmp_g = frame_it->second.pre_integration->delta_v / dt;
+    //         var += (tmp_g - aver_g).transpose() * (tmp_g - aver_g);
+    //         //cout << "frame g " << tmp_g.transpose() << endl;
+    //     }
+    //     var = sqrt(var / ((int)all_image_frame.size() - 1));
+    //     //ROS_WARN("IMU variation %f!", var);
+    //     if(var < 0.25)
+    //     {
+    //         std::cout<<"IMU excitation not enouth!"<<std::endl;
+    //         //return false;
+    //     }
+    // }
     // global sfm
     Quaterniond Q[frame_count + 1];
     Vector3d T[frame_count + 1];
