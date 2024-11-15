@@ -120,13 +120,12 @@ int FeatureTracker::readImage(const cv::Mat &_img)
 
     TicToc t_t;
     int n_max_cnt = MAX_CNT - static_cast<int>(cur_pts.size());
+    n_pts.clear();
     if (n_max_cnt > 0)
     {
-        n_pts.clear();
         // deature_detector_->DetectNewPts(img_pyr_->getCurrPyrImg(0), img_pyr_->getCurrDivPyrImg(1), cur_pts, n_pts);
         deature_detector_->DetectNewPts(img_pyr_->getCurrImgPyr(), cur_pts, n_pts, n_max_cnt);
         std::cout << "########cy feature detect: " << t_t.toc() << " n_max_cnt: " << n_max_cnt << " n_pts.size(): " << n_pts.size() << std::endl;
-
     }
 
 

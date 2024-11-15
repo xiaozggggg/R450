@@ -1,4 +1,5 @@
 #include "pyramid.h"
+#include "utility.hpp"
 
 Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
 {

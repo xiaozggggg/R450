@@ -198,7 +198,7 @@ class IntegrationBase
     Eigen::Matrix<double, 15, 18> step_V;
     Eigen::Matrix<double, 18, 18> noise;
 
-    double sum_dt;
+    double sum_dt = 0;
     Eigen::Vector3d delta_p;
     Eigen::Quaterniond delta_q;
     Eigen::Vector3d delta_v;

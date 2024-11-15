@@ -31,15 +31,15 @@ public:
   void build_pyramids(const cv::Mat *left_img, const cv::Mat *right_img = NULL);
   void update_img_pyramids();
 
-  std::vector<cv::Mat> getPreImgPyr() { return prev_img_pyramids_; }
-  cv::Mat getPrePyrImg(int level = 0) { return prev_img_pyramids_[level]; }
-  std::vector<cv::Mat> getCurrImgPyr() { return curr_img_pyramids_; }
-  cv::Mat getCurrPyrImg(int level = 0) { return curr_img_pyramids_[level]; }
+  const std::vector<cv::Mat>& getPreImgPyr() { return prev_img_pyramids_; }
+  const cv::Mat& getPrePyrImg(int level = 0) { return prev_img_pyramids_[level]; }
+  const std::vector<cv::Mat>& getCurrImgPyr() { return curr_img_pyramids_; }
+  const cv::Mat& getCurrPyrImg(int level = 0) { return curr_img_pyramids_[level]; }
 
-  std::vector<cv::Mat> getPreDivPyr() { return prev_div_pyramids_; }
-  cv::Mat getPreDivPyrImg(int level = 1) { return prev_div_pyramids_[level]; }
-  std::vector<cv::Mat> getCurrDivPyr() { return curr_div_pyramids_; }
-  cv::Mat getCurrDivPyrImg(int level = 1) { return curr_div_pyramids_[level]; }
+  const std::vector<cv::Mat>& getPreDivPyr() { return prev_div_pyramids_; }
+  const cv::Mat& getPreDivPyrImg(int level = 1) { return prev_div_pyramids_[level]; }
+  const std::vector<cv::Mat>& getCurrDivPyr() { return curr_div_pyramids_; }
+  const cv::Mat& getCurrDivPyrImg(int level = 1) { return curr_div_pyramids_[level]; }
 
 private:
   void build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::vector<cv::Mat> &div_pyr);
