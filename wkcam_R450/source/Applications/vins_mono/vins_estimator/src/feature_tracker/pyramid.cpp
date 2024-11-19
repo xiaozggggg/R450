@@ -72,9 +72,11 @@ Pyramid::~Pyramid()
 void Pyramid::update_img_pyramids()
 {
   curr_img_pyramids_.swap(prev_img_pyramids_);
+  curr_div_pyramids_.swap(prev_div_pyramids_);
   curr_img_pyramids_buffer_.swap(prev_img_pyramids_buffer_);
-}
+  curr_div_pyramids_buffer_.swap(prev_div_pyramids_buffer_);
 
+}
 // 因为后面的参数想用默认参数，所以使用指针不用引用
 void Pyramid::build_pyramids(const cv::Mat *left_img, const cv::Mat *right_img)
 {
