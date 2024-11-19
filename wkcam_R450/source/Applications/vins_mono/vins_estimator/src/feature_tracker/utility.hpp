@@ -13,7 +13,7 @@ public:
         cv::waitKey(deley);
     }
 
-    static cv::Mat drawPoints(cv::Mat &img, const std::vector<cv::KeyPoint> &pts, int line = 1)
+    static cv::Mat drawPoints(const cv::Mat &img, const std::vector<cv::KeyPoint> &pts, int line = 1)
     {
         cv::Mat bgrimg;
         if (img.channels() != 3)
@@ -34,7 +34,7 @@ public:
         return bgrimg;
     }
 
-    static cv::Mat drawPoints(cv::Mat &img, const std::vector<cv::Point2f> &pts, int line = 1)
+    static cv::Mat drawPoints(const cv::Mat &img, const std::vector<cv::Point2f> &pts, int line = 1)
     {
         cv::Mat bgrimg;
         if (img.channels() != 3)
@@ -55,7 +55,7 @@ public:
         return bgrimg;
     }
 
-    static void drawSortedMatchese(cv::Mat &img1, cv::Mat &img2, const std::vector<cv::KeyPoint> &pts1, const std::vector<cv::KeyPoint> &pts2, std::string name = "img", int deley = 1)
+    static void drawSortedMatchese(const cv::Mat &img1, const cv::Mat &img2, const std::vector<cv::KeyPoint> &pts1, const std::vector<cv::KeyPoint> &pts2, std::string name = "img", int deley = 1)
     {
         cv::Mat bgrimg1 = drawPoints(img1, pts1);
         cv::Mat bgrimg2 = drawPoints(img2, pts2);
@@ -89,7 +89,7 @@ public:
         showImg(macthImg, name, deley);
     }
 
-    static void drawSortedMatchese(cv::Mat &img1, cv::Mat &img2, const std::vector<cv::Point2f> &pts1, const std::vector<cv::Point2f> &pts2, const std::vector<uchar> &status, std::string name = "img", int deley = 1)
+    static void drawSortedMatchese(const cv::Mat &img1, const cv::Mat &img2, const std::vector<cv::Point2f> &pts1, const std::vector<cv::Point2f> &pts2, const std::vector<uchar> &status, std::string name = "img", int deley = 1)
     {
         cv::Mat bgrimg1 = drawPoints(img1, pts1);
         cv::Mat bgrimg2 = drawPoints(img2, pts2);

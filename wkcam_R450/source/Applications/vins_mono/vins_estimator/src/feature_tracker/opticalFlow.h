@@ -150,7 +150,7 @@ void WKcalcOpticalFlowPyrLK(const std::vector<cv::Mat> &_prevPyramids,
                             cv::TermCriteria _criteria =
                                 cv::TermCriteria(cv::TermCriteria::COUNT +
                                                  cv::TermCriteria::EPS,
-                                             30, 0.01),
+                                             20, 0.01),
                             int _flags = 0, double _minEigThreshold = 1e-4);
 
 typedef struct WKTrackerInvoker

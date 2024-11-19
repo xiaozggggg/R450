@@ -322,12 +322,12 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
   __builtin_prefetch(J_patch.data, 1, 3);
   for (int ptidx = range.start; ptidx < range.end; ++ptidx)
   {
-    cv::Point2f prevPt = prevPts[ptidx].pt * static_cast<float>(1. / (1 << (level - start_level)));
+    cv::Point2f prevPt = prevPts[ptidx].pt * static_cast<float>(1. / (1 << (level)));
     cv::Point2f nextPt;
     if (level == maxLevel)
     {
       if (flags & cv::OPTFLOW_USE_INITIAL_FLOW)
-        nextPt = nextPts[ptidx] * static_cast<float>(1. / (1 << (level - start_level)));
+        nextPt = nextPts[ptidx] * static_cast<float>(1. / (1 << (level)));
       else
         nextPt = prevPt;
     }
@@ -746,6 +746,15 @@ void WKcalcOpticalFlowPyrLK(const std::vector<cv::Mat> &_prevPyramids,
                      _win_size, _criteria, level, _max_level, _start_level,
                      _flags, static_cast<float>(_minEigThreshold))
         .operator()(cv::Range(0, npoints));
+  }
+
+  if (_start_level != 0)
+  {
+    for (size_t i = 0; i < _nextPts->size(); ++i)
+    {
+      (*_nextPts)[i].x *= 2;
+      (*_nextPts)[i].y *= 2;
+    }
   }
 }
 /* End of file. */
