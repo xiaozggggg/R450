@@ -113,6 +113,8 @@ int FeatureTracker::readImage(const cv::Mat &_img)
     //                           deature_detector_->getBigGridRowSize() * 2, deature_detector_->getBigGridColSize() * 2, db_op);
     // cv::Mat db_op_bgr = IMGUtility::drawPoints(db_op, cur_pts, -1);
     // IMGUtility::showImg(db_op_bgr, "db_op_bgr");
+    // if (prev_pts.size() > 0)
+    //     IMGUtility::drawMatchesePts(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), prev_pts, cur_pts, "match");
 
     for (auto &n : track_cnt)
         n++;

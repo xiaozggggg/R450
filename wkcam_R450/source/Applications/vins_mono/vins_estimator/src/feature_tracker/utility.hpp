@@ -13,7 +13,7 @@ public:
         cv::waitKey(deley);
     }
 
-    static cv::Mat drawPoints(cv::Mat &img, const std::vector<cv::KeyPoint> &pts, int line = 1)
+    static cv::Mat drawPoints(const cv::Mat &img, const std::vector<cv::KeyPoint> &pts, int line = 1)
     {
         cv::Mat bgrimg;
         if (img.channels() != 3)
@@ -34,7 +34,7 @@ public:
         return bgrimg;
     }
 
-    static cv::Mat drawPoints(cv::Mat &img, const std::vector<cv::Point2f> &pts, int line = 1)
+    static cv::Mat drawPoints(const cv::Mat &img, const std::vector<cv::Point2f> &pts, int line = 1)
     {
         cv::Mat bgrimg;
         if (img.channels() != 3)
@@ -55,8 +55,9 @@ public:
         return bgrimg;
     }
 
-    static void drawSortedMatchese(cv::Mat &img1, cv::Mat &img2, const std::vector<cv::KeyPoint> &pts1, const std::vector<cv::KeyPoint> &pts2, std::string name = "img", int deley = 1)
+    static void drawMatchesePts(const cv::Mat &img1,const cv::Mat &img2, const std::vector<cv::KeyPoint> &pts1, const std::vector<cv::KeyPoint> &pts2, std::string name = "img", int deley = 1)
     {
+        assert(pts1.size() == pts2.size());
         cv::Mat bgrimg1 = drawPoints(img1, pts1);
         cv::Mat bgrimg2 = drawPoints(img2, pts2);
 
@@ -65,26 +66,17 @@ public:
         cv::RNG rng(5465);
         cv::Point2f off_set = cv::Point2f(img1.cols, 0);
 
-        int j = 0;
-        int i = 0;
         int nMatch = 0;
-        while (i < pts1.size() && j < pts2.size())
+        for (size_t i = 0; i < pts1.size(); i++)
         {
-            if (pts1[i].class_id == pts2[j].class_id)
-            {
-                int b = rng.uniform(0, 255);
-                int g = rng.uniform(0, 255);
-                int r = rng.uniform(0, 255);
-                cv::line(macthImg, pts1[i].pt, pts2[j].pt + off_set, cv::Scalar(b, g, r));
-                i++;
-                j++;
-                nMatch++;
-            }
-            if (pts1[i].class_id > pts2[j].class_id)
-                j++;
-            if (pts1[i].class_id < pts2[j].class_id)
-                i++;
+            int b = rng.uniform(0, 255);
+            int g = rng.uniform(0, 255);
+            int r = rng.uniform(0, 255);
+            cv::line(macthImg, pts1[i].pt, pts2[i].pt + off_set, cv::Scalar(b, g, r));
+
+            nMatch++;
         }
+
         std::cout << "matchse size " << nMatch << std::endl;
         showImg(macthImg, name, deley);
     }

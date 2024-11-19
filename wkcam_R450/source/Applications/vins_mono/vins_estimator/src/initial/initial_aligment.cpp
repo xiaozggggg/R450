@@ -5,26 +5,26 @@ void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
     Matrix3d A;
     Vector3d b;
     Vector3d delta_bg;
-    A.setZero();
+    A.setZero();   // Ax=B的 A 和 B矩阵
     b.setZero();
     map<double, ImageFrame>::iterator frame_i;
     map<double, ImageFrame>::iterator frame_j;
     for (frame_i = all_image_frame.begin(); next(frame_i) != all_image_frame.end(); frame_i++)
     {
-        frame_j = next(frame_i);
+        frame_j = next(frame_i);  // 相邻两个关键帧
         MatrixXd tmp_A(3, 3);
         tmp_A.setZero();
         VectorXd tmp_b(3);
         tmp_b.setZero();
         Eigen::Quaterniond q_ij(frame_i->second.R.transpose() * frame_j->second.R);
-        tmp_A = frame_j->second.pre_integration->jacobian.template block<3, 3>(O_R, O_BG);
-        tmp_b = 2 * (frame_j->second.pre_integration->delta_q.inverse() * q_ij).vec();
-        A += tmp_A.transpose() * tmp_A;
+        tmp_A = frame_j->second.pre_integration->jacobian.template block<3, 3>(O_R, O_BG); // A = 1/2* Jacobian[r/bg] 旋转矩阵对陀螺仪的偏导数
+        tmp_b = 2 * (frame_j->second.pre_integration->delta_q.inverse() * q_ij).vec();  // r[bk+1<-rbk] * r[bk<-c0] * r[co<-bk+1]  去虚部x.y.z
+
+        A += tmp_A.transpose() * tmp_A;   
         b += tmp_A.transpose() * tmp_b;
 
     }
     delta_bg = A.ldlt().solve(b);
-  //  ROS_WARN_STREAM("gyroscope bias initial calibration " << delta_bg.transpose());
     cout << "gyroscope bias initial calibration " << delta_bg.transpose() << endl;
 
     for (int i = 0; i <= WINDOW_SIZE; i++)
@@ -33,7 +33,7 @@ void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
     for (frame_i = all_image_frame.begin(); next(frame_i) != all_image_frame.end( ); frame_i++)
     {
         frame_j = next(frame_i);
-        frame_j->second.pre_integration->repropagate(Vector3d::Zero(), Bgs[0]);
+        frame_j->second.pre_integration->repropagate(Vector3d::Zero(), Bgs[0]);  // 把零都按照第一个算重新算了一遍预积分
     }
 }
 

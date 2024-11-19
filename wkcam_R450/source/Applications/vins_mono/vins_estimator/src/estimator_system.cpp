@@ -263,10 +263,10 @@ void EstimatorSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &fe
 void EstimatorSystem::send_imu(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     double t = imu_msg->header.stamp.toSec();
-    if (current_time < 0)
+        if (current_time < 0)
+            current_time = t;
+        double dt = t - current_time;
         current_time = t;
-    double dt = t - current_time;
-    current_time = t;
 
     double ba[]{0.0, 0.0, 0.0};//TODO(cy) :没有标定imu的bias吗？而且还写固定了
     double bg[]{0.0, 0.0, 0.0};
@@ -280,7 +280,7 @@ void EstimatorSystem::send_imu(const sensor_msgs::ImuConstPtr &imu_msg)
     double rz = imu_msg->angular_velocity.z - bg[2];
     //ROS_DEBUG("IMU %f, dt: %f, acc: %f %f %f, gyr: %f %f %f", t, dt, dx, dy, dz, rx, ry, rz);
 
-    estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+        estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
 }
 
 void EstimatorSystem::process_loop_detection()
@@ -796,16 +796,16 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         /*----------------add ui ---------------------*/
         cv::Mat tmp_img = show_img.rowRange(0, ROW);
         cv::cvtColor(show_img, tmp_img, cv::COLOR_GRAY2RGB);
-        int s_grid_rows = trackerData[0].deature_detector_->getSmallGridRows();
-        int s_grid_cols = trackerData[0].deature_detector_->getSmallGridCols();
-        int s_g_r_size = trackerData[0].deature_detector_->getSmallGridRowSize();
-        int s_g_c_size = trackerData[0].deature_detector_->getSmallGridColSize();
-        IMGUtility::DrawGridInImg(s_grid_rows, s_grid_cols, s_g_r_size * 2, s_g_c_size * 2, tmp_img, cv::Scalar(0, 255, 255));
-        int b_grid_rows = trackerData[0].deature_detector_->getBigGridRows();
-        int b_grid_cols = trackerData[0].deature_detector_->getBigGridCols();
-        int b_g_r_size = trackerData[0].deature_detector_->getBigGridRowSize();
-        int b_g_c_size = trackerData[0].deature_detector_->getBigGridColSize();
-        IMGUtility::DrawGridInImg(b_grid_rows, b_grid_cols, b_g_r_size * 2, b_g_c_size * 2, tmp_img);
+        // int s_grid_rows = trackerData[0].deature_detector_->getSmallGridRows();
+        // int s_grid_cols = trackerData[0].deature_detector_->getSmallGridCols();
+        // int s_g_r_size = trackerData[0].deature_detector_->getSmallGridRowSize();
+        // int s_g_c_size = trackerData[0].deature_detector_->getSmallGridColSize();
+        // IMGUtility::DrawGridInImg(s_grid_rows, s_grid_cols, s_g_r_size * 2, s_g_c_size * 2, tmp_img, cv::Scalar(0, 255, 255));
+        // int b_grid_rows = trackerData[0].deature_detector_->getBigGridRows();
+        // int b_grid_cols = trackerData[0].deature_detector_->getBigGridCols();
+        // int b_g_r_size = trackerData[0].deature_detector_->getBigGridRowSize();
+        // int b_g_c_size = trackerData[0].deature_detector_->getBigGridColSize();
+        // IMGUtility::DrawGridInImg(b_grid_rows, b_grid_cols, b_g_r_size * 2, b_g_c_size * 2, tmp_img);
 
         for (unsigned int j = 0; j < trackerData[0].cur_pts.size(); j++)
         {
@@ -814,7 +814,7 @@ void EstimatorSystem::img_callback(const cv::Mat &show_img, const ros::Time &tim
         }
         cv::namedWindow("vins", cv::WINDOW_NORMAL);
         cv::imshow("vins", tmp_img);
-        cv::waitKey(0);
+        cv::waitKey(1);
         /*----------------add ui ---------------------*/
 #endif
     }
