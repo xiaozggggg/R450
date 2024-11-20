@@ -454,7 +454,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
           std::abs(off.y) > half_diff.y ||
           j == 0)
       {
-#ifndef CV_SSE2
+#if CV_SSE2
         for (int m = 0; m < iter_cache_size.height + 1; ++m)
         {
           uchar *dst = const_cast<uchar *>(J_patch.ptr<uchar>(m));
