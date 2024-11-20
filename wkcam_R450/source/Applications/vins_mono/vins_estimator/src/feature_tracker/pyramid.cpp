@@ -107,7 +107,7 @@ void Pyramid::build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::
   }
 }
 
-#ifndef __ARM_NEON__
+#ifdef CV_SSE2
 /******************************************************************************
  * fast_pyra_down_internal       This interface should not used directly
  * @param[in]   img_in_smooth    input image
@@ -215,7 +215,7 @@ inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_
     data1_ptr += width_step_in;
   }
 }
-#endif // __ARM_NEON__
+#endif
 
 void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
 {
@@ -234,7 +234,7 @@ void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
 
 #if CV_SSE2
   __m128i z = _mm_setzero_si128(), c3 = _mm_set1_epi16(3), c10 = _mm_set1_epi16(10);
-#elif __ARM_NEON__
+#else
   const uint16x8_t q8 = vdupq_n_u16(3);
   const uint8x8_t d18 = vdup_n_u8(10);
 
@@ -265,7 +265,7 @@ void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
       _mm_store_si128(reinterpret_cast<__m128i *>(trow0 + x), t0);
       _mm_store_si128(reinterpret_cast<__m128i *>(trow1 + x), t1);
     }
-#elif __ARM_NEON__
+#else
     for (; x <= colsn - 8; x += 8)
     {
       uint8x8_t d0 = vld1_u8(static_cast<const uint8_t *>(&srow0[x]));
@@ -319,7 +319,7 @@ void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
       _mm_storeu_si128(reinterpret_cast<__m128i *>(drow + x * 2), t2);
       _mm_storeu_si128(reinterpret_cast<__m128i *>(drow + x * 2 + 8), t0);
     }
-#elif __ARM_NEON__
+#else
     for (; x <= colsn - 8; x += 8)
     {
       int16x8_t q0 = vld1q_s16(static_cast<const int16_t *>(&trow0[x + cn]));

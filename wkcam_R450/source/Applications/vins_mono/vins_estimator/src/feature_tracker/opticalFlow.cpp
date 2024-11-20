@@ -6,6 +6,10 @@
 #include <iostream>
 #include "opticalFlow.h"
 
+#ifndef CV_SSE2
+#include <arm_neon.h>
+#endif
+
 
 #define DBG_WK_PYRAMID(msg) \
   {                         \
@@ -40,7 +44,7 @@ static std::shared_ptr<deriv_type> xy_gradient_buffer_prev(
     reinterpret_cast<deriv_type *>(aligned_alloc(64, 640 * 480 * sizeof(deriv_type) * 2)));
 
 #define CV_DESCALE(x, n) (((x) + (1 << ((n) - 1))) >> (n))
-#ifdef __ARM_NEON__
+#if !CV_SSE2
 inline int32x4_t compute_bilinear_interpolation(const int16x8_t &top_row,
                                                 const int16x8_t &bottom_row,
                                                 const int16x4_t &w00,
@@ -95,7 +99,7 @@ WKTrackerInvoker::WKTrackerInvoker(
   minEigThreshold = _minEigThreshold;
 }
 
-#if defined __arm__ && !__ARM_NEON__
+#ifndef CV_SSE2
 typedef int64_t acctype;
 typedef int32_t itemtype;
 #else
@@ -118,7 +122,7 @@ void WKTrackerInvoker::compute_covariance_matrix_and_update_patch(const cv::Poin
   __m128i qdelta_d = _mm_set1_epi32(1 << (inter_param.w_bits - 1));
   __m128i qdelta = _mm_set1_epi32(1 << (inter_param.w_bits - 5 - 1));
   __m128 qA11 = _mm_setzero_ps(), qA12 = _mm_setzero_ps(), qA22 = _mm_setzero_ps();
-#elif __ARM_NEON__
+#else
   int32x4_t CV_DECL_ALIGNED(16) nA11 = vdupq_n_s32(0);
   int32x4_t CV_DECL_ALIGNED(16) nA12 = vdupq_n_s32(0);
   int32x4_t CV_DECL_ALIGNED(16) nA22 = vdupq_n_s32(0);
@@ -199,7 +203,7 @@ void WKTrackerInvoker::compute_covariance_matrix_and_update_patch(const cv::Poin
       qA12 = _mm_add_ps(qA12, _mm_mul_ps(fx, fy));
       qA11 = _mm_add_ps(qA11, _mm_mul_ps(fx, fx));
     }
-#elif __ARM_NEON__
+#else
     for (; x <= winSize.width * cn - 4; x += 4,
                                         dsrc_row0 += 4 * 2, dsrc_row1 += 4 * 2, dIptr += 4 * 2)
     {
@@ -263,7 +267,7 @@ void WKTrackerInvoker::compute_covariance_matrix_and_update_patch(const cv::Poin
   iA11 += A11buf[0] + A11buf[1] + A11buf[2] + A11buf[3];
   iA12 += A12buf[0] + A12buf[1] + A12buf[2] + A12buf[3];
   iA22 += A22buf[0] + A22buf[1] + A22buf[2] + A22buf[3];
-#elif __ARM_NEON__
+#else
   iA11 += static_cast<float>(vgetq_lane_s32(nA11, 0) +
                              vgetq_lane_s32(nA11, 1) +
                              vgetq_lane_s32(nA11, 2) +
@@ -369,7 +373,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
     __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
     __m128i z = _mm_setzero_si128();
     __m128i qdelta = _mm_set1_epi32(1 << (W_BITS - 5 - 1));
-#elif __ARM_NEON__
+#else
     int32x4_t CV_DECL_ALIGNED(16) nA11 = vdupq_n_s32(0);
     int32x4_t CV_DECL_ALIGNED(16) nA12 = vdupq_n_s32(0);
     int32x4_t CV_DECL_ALIGNED(16) nA22 = vdupq_n_s32(0);
@@ -450,7 +454,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
           std::abs(off.y) > half_diff.y ||
           j == 0)
       {
-#ifndef __ARM_NEON__
+#ifndef CV_SSE2
         for (int m = 0; m < iter_cache_size.height + 1; ++m)
         {
           uchar *dst = const_cast<uchar *>(J_patch.ptr<uchar>(m));
@@ -487,7 +491,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
       qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
       qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
       __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps();
-#elif __ARM_NEON__
+#else
       int32x4_t CV_DECL_ALIGNED(16) nb1 = vdupq_n_s32(0);
       int32x4_t CV_DECL_ALIGNED(16) nb2 = vdupq_n_s32(0);
 
@@ -545,7 +549,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
           qb0 = _mm_add_ps(qb0, _mm_cvtepi32_ps(v00));
           qb1 = _mm_add_ps(qb1, _mm_cvtepi32_ps(v10));
         }
-#elif __ARM_NEON__
+#else
         for (; x <= winSize.width - 4; x += 4, dIptr += 8)
         {
           union
@@ -604,7 +608,7 @@ void WKTrackerInvoker::operator()(const cv::Range &range) const
       _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
       ib1 += bbuf[0] + bbuf[2];
       ib2 += bbuf[1] + bbuf[3];
-#elif __ARM_NEON__
+#else
       ib1 += vgetq_lane_s32(nb1, 0) +
              vgetq_lane_s32(nb1, 1) +
              vgetq_lane_s32(nb1, 2) +

@@ -260,7 +260,7 @@ void minEigenVal(const cv::Mat &img,
   }
 }
 
-#ifdef __ARM_NEON__
+#ifndef CV_SSE2
   // this function only handles block size 7 & 8
     static inline void accumulate_matrix_coeff(const uint8x16_t* top_row,
                                  const uint8x16_t* mid_row,
@@ -386,9 +386,9 @@ void HarrisResponses(const cv::Mat &img,
                      float harris_k,
                      std::vector<cv::KeyPoint> *pts)
 {
-#ifdef __ARM_NEON__
+#ifndef CV_SSE2
   return HarrisResponses_neon(img, blockSize, harris_k, pts);
-#endif  // __ARM_NEON__
+#endif
   CV_Assert(img.type() == CV_8UC1 && blockSize * blockSize <= 2048);
 
   size_t ptidx, ptsize = pts->size();
