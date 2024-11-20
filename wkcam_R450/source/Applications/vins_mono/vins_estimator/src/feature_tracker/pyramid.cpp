@@ -220,7 +220,7 @@ inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_
 void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
 {
   int rows = src.rows, cols = src.cols, cn = src.channels(), colsn = cols * cn;
-#ifdef _XP_OPTICAL_FLOW_DEBUG_MODE_
+#ifdef _WK_OPTICAL_FLOW_DEBUG_MODE_
   int depth = src.depth();
   CHECK_EQ(depth, CV_8U);
   CHECK_NOTNULL(dst->data);

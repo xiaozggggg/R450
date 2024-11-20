@@ -1,3 +1,4 @@
+#include "opticalFlow.h"
 #include "feature_tracker.h"
 
 int FeatureTracker::n_id = 0;
@@ -69,11 +70,21 @@ int FeatureTracker::readImage(const cv::Mat &_img)
         TicToc t_o;
         vector<uchar> status;
         vector<float> err;
-        std::vector<cv::Point2f> pre_temp;
         std::vector<cv::Point2f> cur_temp;
-        cv::KeyPoint::convert(prev_pts,pre_temp);
 
-        cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(21, 21), 3);
+        std::vector<WKKeyPoint> pre_temp;
+        WKKeyPoint::convert(prev_pts, pre_temp);
+        WKcalcOpticalFlowPyrLK(img_pyr_->getPreImgPyr(),
+                               img_pyr_->getCurrImgPyr(),
+                               img_pyr_->getPreDivPyr(),
+                               &pre_temp,
+                               &cur_temp,//TODO(cy): predict point
+                               &status,
+                               &err);
+
+        // std::vector<cv::Point2f> pre_temp;
+        // cv::KeyPoint::convert(prev_pts,pre_temp);
+        // cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(21, 21), 3);
 
         assert(cur_pts.size() == cur_temp.size());
         for (int i = 0; i < cur_temp.size(); i++)
