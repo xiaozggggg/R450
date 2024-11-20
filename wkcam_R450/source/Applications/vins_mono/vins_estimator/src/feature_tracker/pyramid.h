@@ -2,6 +2,7 @@
 #define PYTAMID_H_
 
 #include <opencv2/opencv.hpp>
+#include <memory>
 
 #define MaxPyraLevel 3
 
