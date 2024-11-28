@@ -1,6 +1,6 @@
 #include "initial_alignment.h"
 
-void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
+bool solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
 {
     Matrix3d A;
     Vector3d b;
@@ -26,6 +26,8 @@ void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
     delta_bg = A.ldlt().solve(b);
   //  ROS_WARN_STREAM("gyroscope bias initial calibration " << delta_bg.transpose());
     cout << "gyroscope bias initial calibration " << delta_bg.transpose() << endl;
+    if(delta_bg.norm()>0.1)
+        return false;
 
     for (int i = 0; i <= WINDOW_SIZE; i++)
         Bgs[i] += delta_bg;
@@ -35,6 +37,7 @@ void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
         frame_j = next(frame_i);
         frame_j->second.pre_integration->repropagate(Vector3d::Zero(), Bgs[0]);
     }
+    return true;
 }
 
 
@@ -201,7 +204,8 @@ bool LinearAlignment(map<double, ImageFrame> &all_image_frame, Vector3d &g, Vect
 
 bool VisualIMUAlignment(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs, Vector3d &g, VectorXd &x)
 {
-    solveGyroscopeBias(all_image_frame, Bgs);
+    if(!solveGyroscopeBias(all_image_frame, Bgs))
+        return false;
 
     if(LinearAlignment(all_image_frame, g, x))
         return true;
