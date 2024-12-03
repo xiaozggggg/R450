@@ -756,8 +756,8 @@ void WKcalcOpticalFlowPyrLK(const std::vector<cv::Mat> &_prevPyramids,
   {
     for (size_t i = 0; i < _nextPts->size(); ++i)
     {
-      (*_nextPts)[i].x *= 2;
-      (*_nextPts)[i].y *= 2;
+      (*_nextPts)[i].x *= 1<<_start_level;
+      (*_nextPts)[i].y *= 1<<_start_level;
     }
   }
 }

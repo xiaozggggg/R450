@@ -38,9 +38,10 @@ FeatureTracker::~FeatureTracker()
     // delete deature_detector_;
 }
 
-void FeatureTracker::setImgSize(cv::Size img_size)
+void FeatureTracker::setPara(cv::Size img_size, int track_level)
 {
-    img_pyr_ = new Pyramid(img_size);
+    track_level_ = track_level;
+    img_pyr_ = new Pyramid(img_size, track_level);
     deature_detector_ = new FeatureDetector(img_size);
 }
 
@@ -78,9 +79,12 @@ int FeatureTracker::readImage(const cv::Mat &_img)
                                img_pyr_->getCurrImgPyr(),
                                img_pyr_->getPreDivPyr(),
                                &pre_temp,
-                               &cur_temp,//TODO(cy): predict point
+                               &cur_temp, // TODO(cy): predict point
                                &status,
-                               &err);
+                               &err,
+                               cv::Size(7, 7),
+                               MaxPyraLevel,
+                               track_level_);
 
         // std::vector<cv::Point2f> pre_temp;
         // cv::KeyPoint::convert(prev_pts,pre_temp);

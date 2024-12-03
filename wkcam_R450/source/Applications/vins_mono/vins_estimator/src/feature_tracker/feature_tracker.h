@@ -35,7 +35,7 @@ public:
   FeatureTracker();
   ~FeatureTracker();
 
-  void setImgSize(cv::Size img_size);
+  void setPara(cv::Size img_size, int track_level);
 
   int readImage(const cv::Mat &_img);
 
@@ -63,4 +63,5 @@ public:
 
   Pyramid *img_pyr_;
   FeatureDetector *deature_detector_;
+  int track_level_ = 0;
 };

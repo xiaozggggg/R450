@@ -44,8 +44,11 @@ public:
 
 private:
   void build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::vector<cv::Mat> &div_pyr);
-  void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_in_small);
-  void calcSharrDeriv(const cv::Mat &src, cv::Mat *dst);
+  void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat &img_in_small);
+  void calcSharrDeriv(const cv::Mat &src, cv::Mat &dst);
+  int detect_level_;
+  int track_level_;
+
 };
 
 #endif

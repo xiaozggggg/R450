@@ -4,18 +4,26 @@
 Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
 {
   img_size_ = img_size;
+  detect_level_ = detect_lvl;
+  track_level_ = track_lvl;
+  assert(track_lvl == 0 || track_lvl == 1);
+
   // Allocated buffer for pyramids
   const int size = img_size.width * img_size.height;
+  int img_pyr_size = int(size * 1.4 + 3) & ~3;
   prev_img_pyramids_buffer_ = std::shared_ptr<uchar>(
-      new uchar[int(size * 1.4 + 3) & ~3]); // 1+1/4+1/16+1/64约等于1.4 后面部分是向上取整成4的倍数，对齐内存
+      new uchar[img_pyr_size]); // 1+1/4+1/16+1/64约等于1.4 后面部分是向上取整成4的倍数，对齐内存
   curr_img_pyramids_buffer_ = std::shared_ptr<uchar>(
-      new uchar[int(size * 1.4 + 3) & ~3]);
-  std::cout<<"image pyr buf size "<<(int(size * 1.4 + 3) & ~3)<<std::endl;
+      new uchar[img_pyr_size]);
+
   // gradient x y ,int16
+  int div_pyr_size = int(size * 0.4 * 2 * 2 + 3) & ~3;
+  if (track_level_ == 0)
+    div_pyr_size = int(size * 1.4 * 2 * 2 + 3) & ~3;
   prev_div_pyramids_buffer_ = std::shared_ptr<int16_t>(
-      new int16_t[int(size * 0.4 * 2 * 2 + 3) & ~3]); // 金字塔0层不需要计算,双通道，int16_t俩字节
+      new int16_t[div_pyr_size]); // 金字塔0层不需要计算,双通道，int16_t俩字节
   curr_div_pyramids_buffer_ = std::shared_ptr<int16_t>(
-      new int16_t[int(size * 0.4 * 2 * 2 + 3) & ~3]);
+      new int16_t[div_pyr_size]);
 
   if (prev_img_pyramids_buffer_ == nullptr ||
       curr_img_pyramids_buffer_ == nullptr ||
@@ -35,8 +43,6 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
   // pyr buffer offset
   int img_off_set = 0;
   int div_off_set = 0;
-  cv::Size pyr_img_size = img_size;
-  cv::Size div_img_size = img_size / 4;
 
   for (size_t i = 0; i <= MaxPyraLevel; i++)
   {
@@ -46,8 +52,14 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
     {
       prev_img_pyramids_[i] = cv::Mat(img_size, CV_8UC1, prev_img_pyramids_buffer_.get());
       curr_img_pyramids_[i] = cv::Mat(img_size, CV_8UC1, curr_img_pyramids_buffer_.get());
+
+      if (track_level_ == 0)
+      {
+        prev_div_pyramids_[i] = cv::Mat(img_size, CV_16SC2, prev_div_pyramids_buffer_.get());
+        curr_div_pyramids_[i] = cv::Mat(img_size, CV_16SC2, curr_div_pyramids_buffer_.get());
+      }
     }
-    if (i != 0)
+    else
     {
       img_off_set += size >> (i - 1) * 2;
       prev_img_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_8UC1, prev_img_pyramids_buffer_.get() + img_off_set);
@@ -55,10 +67,13 @@ Pyramid::Pyramid(cv::Size img_size, int track_lvl, int detect_lvl)
       std::cout << "img_off_set i " << i << " " << img_off_set << std::endl;
       std::cout << "curr_img_pyramids_[i] size " << curr_img_pyramids_[i].size().height << " " << curr_img_pyramids_[i].size().width << std::endl;
       // div
-      if (i == 1)
+      if (i == 1 && track_level_ != 0)
         div_off_set = 0;
       else
         div_off_set += 2 * 2 * (size >> ((i - 1) * 2));
+
+      std::cout << "div_off_set i " << i << " " << div_off_set << std::endl;
+      
       prev_div_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_16SC2, prev_div_pyramids_buffer_.get() + div_off_set);
       curr_div_pyramids_[i] = cv::Mat(img_size.height >> i, img_size.width >> i, CV_16SC2, curr_div_pyramids_buffer_.get() + div_off_set);
     }
@@ -93,16 +108,20 @@ void Pyramid::build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::
   for (size_t i = 0; i <= MaxPyraLevel; i++)
   {
     if (i == 0)
+    {
       // copy
       img_pyr[i] = img->clone(); // TODO(cy): 图像数据产生的时候已经拷贝到储存中一次了，这里又要拷贝到指定的地址上面；因该直接数据i产生的时候就直接把数据拷贝到金字塔第一层的地址那里，省去一次拷贝
+      if(track_level_ == 0)
+        calcSharrDeriv(img_pyr[i], div_pyr[i]);
+    }
     else
     {
       // cal
       // build left img pyr
-      fast_pyra_down_internal(img_pyr[i - 1], &img_pyr[i]);
+      fast_pyra_down_internal(img_pyr[i - 1], img_pyr[i]);
       // TODO(cy): need to set hyper para track and detect level
       // build deriv img; do not cal level 0, so in op flow ont track level 0
-      calcSharrDeriv(img_pyr[i], &div_pyr[i]);
+      calcSharrDeriv(img_pyr[i], div_pyr[i]);
     }
   }
 }
@@ -114,14 +133,13 @@ void Pyramid::build_pyr(const cv::Mat *img, std::vector<cv::Mat> &img_pyr, std::
  * @param[out]  _img_in_small    output image, the memory of _img_in_small must
  *                               be pre-allocated before calling this function
  */
-void Pyramid::fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_in_small)
+void Pyramid::fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat &img_in_small)
 {
   // CHECK_NOTNULL(_img_in_small);
-  // CHECK_NOTNULL(_img_in_small->data);
+  // CHECK_NOTNULL(_img_in_small.data);
   // CHECK_EQ(img_in_smooth.type(), CV_8U);
   // CHECK_EQ(img_in_smooth.rows & 1, 0);
   // CHECK_EQ(img_in_smooth.cols & 3, 0);
-  cv::Mat &img_in_small = *_img_in_small;
 
   // use our own pyra down for faster performance
   const int width_step_in = img_in_smooth.step1();
@@ -169,14 +187,13 @@ void Pyramid::fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_im
   }
 }
 #else
-inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_in_small)
+inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat& img_in_small)
 {
   CHECK_NOTNULL(_img_in_small);
   CHECK_NOTNULL(_img_in_small->data);
   CHECK_EQ(img_in_smooth.type(), CV_8U);
   CHECK_EQ(img_in_smooth.rows & 1, 0);
 
-  cv::Mat &img_in_small = *_img_in_small;
 
   // use our own pyra down for faster performance
   const int width_step_in = img_in_smooth.step1();
@@ -217,15 +234,15 @@ inline void fast_pyra_down_internal(const cv::Mat &img_in_smooth, cv::Mat *_img_
 }
 #endif
 
-void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
+void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat &dst)
 {
   int rows = src.rows, cols = src.cols, cn = src.channels(), colsn = cols * cn;
 #ifdef _WK_OPTICAL_FLOW_DEBUG_MODE_
   int depth = src.depth();
   CHECK_EQ(depth, CV_8U);
-  CHECK_NOTNULL(dst->data);
-  CHECK_EQ(dst->channels(), 2); // x and y gradient
-  CHECK_EQ(dst->depth(), DataType<int16_t>::depth);
+  CHECK_NOTNULL(dst.data);
+  CHECK_EQ(dst.channels(), 2); // x and y gradient
+  CHECK_EQ(dst.depth(), DataType<int16_t>::depth);
 #endif
 
   int x, y, delta = static_cast<int>(cv::alignSize((cols + 2) * cn, 16));
@@ -249,7 +266,7 @@ void Pyramid::calcSharrDeriv(const cv::Mat &src, cv::Mat *dst)
     const uchar *srow1 = src.ptr<uchar>(y);
     const uchar *srow2 = src.ptr<uchar>(y < rows - 1 ? y + 1 : rows > 1 ? rows - 2
                                                                         : 0);
-    int16_t *drow = dst->ptr<int16_t>(y);
+    int16_t *drow = dst.ptr<int16_t>(y);
 
     // do vertical convolution
     x = 0;

@@ -1,4 +1,5 @@
 #include "estimator_system.h"
+#include "parameters.h"
 #ifndef RUN_ON_PC
 #include "wk_st_lk_middle.h"
 #endif
@@ -103,7 +104,7 @@ void EstimatorSystem::init(const std::string& yamlPath)
     for (int i = 0; i < NUM_OF_CAM; i++)
     {
         trackerData[i].readIntrinsicParameter(CAM_NAMES[i]); //add
-        trackerData[i].setImgSize(cv::Size(IMAGE_COL,IMAGE_ROW));
+        trackerData[i].setPara(cv::Size(IMAGE_COL,IMAGE_ROW), TRACK_LEVEL);
     }
 }
 

@@ -37,6 +37,7 @@ int MAX_KEYFRAME_NUM;
 //feature tracker section
 std::vector<std::string> CAM_NAMES;
 std::string FISHEYE_MASK;
+int TRACK_LEVEL;
 int MAX_CNT;
 int MIN_DIST;
 int WINDOW_SIZE_FEATURE_TRACKER;
@@ -162,6 +163,7 @@ void readParameters(const string & config_file)
     // feature tracker
     fsSettings["image_topic"] >> IMAGE_TOPIC;
     fsSettings["imu_topic"] >> IMU_TOPIC;
+    TRACK_LEVEL = fsSettings["track_level"];
     MAX_CNT = fsSettings["max_cnt"];
     MIN_DIST = fsSettings["min_dist"];
     ROW = fsSettings["image_height"];
