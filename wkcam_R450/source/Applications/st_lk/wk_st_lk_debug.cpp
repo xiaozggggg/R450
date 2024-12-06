@@ -5,8 +5,6 @@
 *	brief: 该代码用于将st lk输出的点描绘在图像上，后推入venc进行编码
 *	注意：代码仅用于测试！！！！
 **************************************************************************************/
-#ifdef DEBUG_ST_LK_POINTS_PREVIEW
-
 
 /* 描点图发送至venc中 */
 static td_s32 _wk_st_lk_draw_points_send_venc(ot_video_frame_info *_pframe)
@@ -195,8 +193,6 @@ vgs_draw_ponits_fail:
 	ss_mpi_vgs_cancel_job(vgs_handle);
 	return ret;
 }
-
-#endif
 
 
 

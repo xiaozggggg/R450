@@ -89,6 +89,7 @@ td_s32 ot_scene_set_static_ae(ot_vi_pipe vi_pipe, td_u8 index)
     exposure_attr.ae_run_interval = get_pipe_params()[index].static_ae.ae_run_interval;
     exposure_attr.auto_attr.sys_gain_range.max = get_pipe_params()[index].static_ae.auto_sys_gain_max;
     exposure_attr.auto_attr.exp_time_range.max = get_pipe_params()[index].static_ae.auto_exp_time_max;
+	exposure_attr.auto_attr.exp_time_range.min = get_pipe_params()[index].static_ae.auto_exp_time_min; /* add:<2024-12-5> 添加设置最小曝光时间 */
     exposure_attr.auto_attr.speed = get_pipe_params()[index].static_ae.auto_speed;
     exposure_attr.auto_attr.tolerance = get_pipe_params()[index].static_ae.auto_tolerance;
     exposure_attr.auto_attr.ae_delay_attr.black_delay_frame = get_pipe_params()[index].static_ae.auto_black_delay_frame;

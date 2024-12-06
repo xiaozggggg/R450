@@ -369,6 +369,7 @@ typedef struct {
     td_u16 auto_black_delay_frame;
     td_u16 auto_white_delay_frame;
     td_u32 auto_exp_time_max;
+	td_u32 auto_exp_time_min; /* add:<2024-12-5> 添加设置最小曝光时间 */
 } ot_scene_static_ae;
 
 typedef struct {
