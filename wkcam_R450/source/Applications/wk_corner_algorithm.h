@@ -19,7 +19,6 @@
 
 using namespace std; 
 
-int middle_test();
-
+int middle_test(char* argv);
 
 #endif /* __WK_CORNER_ALGORITHM_H__ */

@@ -28,6 +28,7 @@ extern void setRtspStop(bool status);
 extern "C" {
 #endif
 extern td_s32 wk_quaternion_push_data(td_float q0, td_float q1, td_float q2, td_float q3, td_u64 pts);
+extern td_s32 wk_imu_push_data(td_float* _imu_data, td_u8 _size,td_u64 _pts);
 #ifdef __cplusplus
 }
 #endif
@@ -400,10 +401,23 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 				WK_LOGW("set awb failed!!!\n");
 			}
 			break;}
-		case MAVLINK_MSG_ID_ODOMETRY:
+		case MAVLINK_MSG_ID_ODOMETRY:  // push 四元数
 		{
 			mavlink_odometry_t* data = (mavlink_odometry_t *)MessageBuf;
 			wk_quaternion_push_data(data->q[0], data->q[1], data->q[2], data->q[3], data->time_usec);
+			break;
+		}
+		case MAVLINK_MSG_ID_HIGHRES_IMU: // push imu数据
+		{
+			mavlink_highres_imu_t* data = (mavlink_highres_imu_t *)MessageBuf;
+			td_float imu_data[6] = {0};
+			imu_data[0] = (td_float)data->xgyro;
+			imu_data[1] = (td_float)data->ygyro;
+			imu_data[2] = (td_float)data->zgyro;
+			imu_data[3] = (td_float)data->xacc;
+			imu_data[4] = (td_float)data->yacc;
+			imu_data[5] = (td_float)data->zacc;
+			wk_imu_push_data(imu_data, 6, data->time_usec);
 			break;
 		}
 		default:{
@@ -522,6 +536,14 @@ void mavlink_decode(unsigned char byte)
 				mavlink_odometry_t wk_odometry;
 				mavlink_msg_odometry_decode(&wkmsg, &wk_odometry);
 				MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_ODOMETRY ,(char *)&wk_odometry);
+				//WK_LOGD("------------------- recv mavlink odometry data!!!\n");
+				break;
+			}
+			case MAVLINK_MSG_ID_HIGHRES_IMU:
+			{	  // 获取飞控imu数据
+				mavlink_highres_imu_t wk_imu;
+				mavlink_msg_highres_imu_decode(&wkmsg, &wk_imu);
+				MavlinkCmdOnDealDate((int)MAVLINK_MSG_ID_HIGHRES_IMU ,(char *)&wk_imu);
 				//WK_LOGD("------------------- recv mavlink odometry data!!!\n");
 				break;
 			}

@@ -38,9 +38,6 @@ extern "C"{
 #define SOCKET_SERVER   "/tmp/sock_server" 
 #define SOCKET_CLIENT   "/tmp/sock_client" 
 
-#define SOCKET_IMU_SERVER   "/tmp/imu_sock_server" 
-#define SOCKET_IMU_CLIENT   "/tmp/imu_sock_client" 
-
 
 #define FRAME_FCS 	    0xdddd
 #define FRAME_GRD 	    0xdddf
@@ -174,13 +171,6 @@ public:
     //===== process watchdog =====//
     int wkcam_process_enable;
 
-    //===== local imu socket and rw_buf =====//
-    struct sockaddr_un imu_addr_un_remote;
-    int Imu_Sock_cam = -1;
-	uint8_t rw_buffer[MAX_CMDLENGTH*2];
-	uint16_t u32rw_buf_index;
-	uint64_t u64sync_pts_last_ms;
-
 private:
     //====== 4G server communicate =====//
     unsigned char OnlineServerIp[20];
@@ -220,14 +210,6 @@ public:
     void CamRecvThread(void);
     int  CamSendHandle(unsigned char *buf,int size);
     void sendRTSPcmd(uint8_t status);
-
-    //================ process imu communicate ================//
-    int CamImuUnixSocketCreate(void);
-    int  CamImuSendHandle(uint8_t *buf, uint32_t size);
-	uint8_t CamImuDatasum(uint8_t* data, uint8_t length);
-	int CamImuHandle(uint8_t *src_buf, uint16_t src_size, uint8_t other[], uint16_t* out_size);
-	int CamImuInit();
-	int CamImuDeInit();
 
     //================ fcs communicate ================//
     void UartRevThread(void);

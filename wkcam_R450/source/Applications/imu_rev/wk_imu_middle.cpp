@@ -71,4 +71,10 @@ td_bool wk_imu_middle::wk_imu_data_reported(wk_imu_data_s& _data)
 	return TD_TRUE;
 }
 
+#ifdef DEBUG_SAVE_IMU_FRAME
+td_s32 wk_imu_middle::wk_imu_save_file_enable(td_bool _enable)
+{
+	return wk_imu_to_file_enable(_enable);
+}
+#endif
 

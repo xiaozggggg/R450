@@ -34,8 +34,7 @@ int imp_system_init(void)
     OnInitCameraParams();
 
     wk_scence_mode = 0;
-
-	//middle_test();  // 测试中间接口层使用
+	
     return 1;
 }
 

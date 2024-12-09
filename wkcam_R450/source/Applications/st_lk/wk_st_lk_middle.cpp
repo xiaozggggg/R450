@@ -213,3 +213,9 @@ td_bool wk_st_lk_middle::wk_result_export(wk_location_result_s::wk_ptr& _result)
 	return wk_st_lk_protocol_handle(_result.get());
 }
 
+#ifdef DEBUG_SAVE_IMU_FRAME
+td_s32 wk_st_lk_middle::wk_frame_save_file_enable(td_bool _enable)
+{
+	return wk_frame_to_file_enable(_enable);
+}
+#endif

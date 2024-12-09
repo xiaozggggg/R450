@@ -214,6 +214,7 @@ static td_s32 scene_load_static_ae(const td_char *module, ot_scene_static_ae *st
     scene_load_int(module, "static_ae:ae_route_ex_valid", static_ae->ae_route_ex_valid, td_bool);
     scene_load_int(module, "static_ae:auto_sys_gain_max", static_ae->auto_sys_gain_max, td_u32);
     scene_load_int(module, "static_ae:auto_exp_time_max", static_ae->auto_exp_time_max, td_u32);
+	scene_load_int(module, "static_ae:auto_exp_time_min", static_ae->auto_exp_time_min, td_u32);  /* add:<2024-12-5> 添加设置最小曝光时间 */
     scene_load_int(module, "static_ae:auto_speed", static_ae->auto_speed, td_u8);
     scene_load_int(module, "static_ae:auto_tolerance", static_ae->auto_tolerance, td_u8);
     scene_load_int(module, "static_ae:auto_black_delay_frame", static_ae->auto_black_delay_frame, td_u16);

@@ -31,6 +31,238 @@ typedef struct {
 static wk_st_lk_mng_info_s g_st_lk_mng_info;
 
 
+#ifdef DEBUG_SAVE_IMU_FRAME
+/*========== 用于标定的调试性代码 =================*/
+#define WK_PNG_SAVE_FILE_PATH  "/mnt/sdcard/frame/"  /* 存储目录 */
+
+typedef struct {
+	td_u64 cur_pts;
+	
+	td_u32 frame_size;
+	td_char* frame_buf;
+}wk_save_frame_info;
+
+typedef struct {
+	pthread_t proc_id;
+	pthread_mutex_t mutex;
+	
+	int fd;
+	td_bool b_save_frame;	/* 图像是否保存标志 */
+
+	std::list<wk_save_frame_info> frame_list;
+}wk_save_frame_mng;
+
+static wk_save_frame_mng g_sf_mng;
+
+
+/* 将图像保存为png图，仅调试用于标定使用 */
+static td_s32 wk_frame_in_list(ot_video_frame_info* _pframe)
+{
+	static td_u32 frame_cnt=0, frame_flag=0;
+	if(frame_flag == 1){
+		frame_flag = 0;
+		return 0;
+	}
+	frame_flag++;
+
+
+	td_u16 u16wight = 0, u16hight = 0;
+	td_u32 phy_addr = 0, size = 0;
+	td_char *ppage_addr = NULL;
+	
+	if (OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420 == _pframe->video_frame.pixel_format){
+		size = (_pframe->video_frame.stride[0]) * (_pframe->video_frame.height) * 3 / 2;
+	}
+	u16wight = _pframe->video_frame.width;
+	u16hight = _pframe->video_frame.height;
+	phy_addr = _pframe->video_frame.phys_addr[0];
+
+	ppage_addr = (td_char *)ss_mpi_sys_mmap_cached(phy_addr, size);
+	if(TD_NULL == ppage_addr) {
+		WK_LOGE("ppage_addr is NULL\n");
+		return -1;
+	}
+
+	wk_save_frame_info info;
+	info.cur_pts = _pframe->video_frame.pts*1000;
+	info.frame_size = _pframe->video_frame.width * _pframe->video_frame.height;
+	info.frame_buf = (td_char*)malloc(info.frame_size);
+	if(TD_NULL == info.frame_buf) {
+		WK_LOGE("info.frame_buf is NULL\n");
+		return -1;
+	}
+	memcpy(info.frame_buf, ppage_addr, info.frame_size);
+
+
+	pthread_mutex_lock(&g_sf_mng.mutex);
+	g_sf_mng.frame_list.push_back(info);
+	pthread_mutex_unlock(&g_sf_mng.mutex);
+
+	WK_LOGD("cached frame ---- %d\n", g_sf_mng.frame_list.size());
+
+	ss_mpi_sys_munmap(ppage_addr, size);
+    ppage_addr = TD_NULL;
+	
+	return TD_SUCCESS; 
+}
+
+static void * _wk_list_save_in_file(void* _pArgs) 
+{
+	static td_u32 frame_cnt=0;
+	while(1) {
+		while(!g_sf_mng.frame_list.empty())
+		{
+			pthread_mutex_lock(&g_sf_mng.mutex);
+			wk_save_frame_info tmp = g_sf_mng.frame_list.front();
+			g_sf_mng.frame_list.pop_front();
+			pthread_mutex_unlock(&g_sf_mng.mutex);
+		
+			uint32_t now_ms = system_time_ms_get();
+			uint32_t last_ms = now_ms;
+			int times = 0;
+			td_char tmp_cmd[256] = {0};
+			td_u32 tmp_cnt = 0, w_one = 0;
+
+			if(tmp.frame_buf == NULL) {
+				WK_LOGE("########## ltmp.frame_buf is NULL!\n");
+				continue;
+			}
+			
+			td_u8 len_tem = write(g_sf_mng.fd, &tmp.cur_pts, sizeof(td_u64));
+			if(len_tem != sizeof(td_u64)){
+				WK_LOGE("########## len write error!\n");
+				continue;
+			}
+
+			while(tmp_cnt < tmp.frame_size){
+				w_one = (tmp.frame_size-tmp_cnt >= 4096) ? 4096 : (tmp.frame_size-tmp_cnt); 
+				w_one = write(g_sf_mng.fd, &tmp.frame_buf[tmp_cnt], w_one);
+				tmp_cnt += w_one;
+			}
+
+			fsync(g_sf_mng.fd);
+
+			static td_u32 u32cnt = 0;
+			if(u32cnt++>20){
+				WK_LOGI("---- save frame pts: %ld\n", tmp.cur_pts);
+				u32cnt = 0;
+			}
+
+			free(tmp.frame_buf);
+			
+			now_ms = system_time_ms_get();
+			times = get_delta_time(now_ms, last_ms);
+			printf("### calculateC times ===> %d ---- %d\n", times, ++frame_cnt);	
+		}
+		usleep(5*1000);
+	}	
+	
+	return NULL;
+}
+
+
+td_s32 wk_frame_to_file_enable(td_bool _enalbe)
+{
+
+	/* 判断有无sd卡，无则返回错误 */
+	if(_enalbe == TD_TRUE) {
+		if(0 != access("/dev/mmcblk0p1", F_OK)){
+			WK_LOGE("No SD card found!\n");
+			return TD_FAILURE;
+		}
+	}
+
+
+	if(false == is_dir_exist(WK_PNG_SAVE_FILE_PATH)) {
+		td_char tmp_cmd[64] = {0};
+		sprintf(tmp_cmd, "mkdir %s", WK_PNG_SAVE_FILE_PATH);
+		system(tmp_cmd);
+	}
+	
+	g_sf_mng.fd = open("/mnt/sdcard/frame/frame_all.yuv", O_RDWR | O_CREAT | O_EXCL );  //| O_SYNC 
+
+	pthread_mutex_init(&g_sf_mng.mutex, NULL);
+	std::list<wk_save_frame_info>().swap(g_sf_mng.frame_list);
+	pthread_create(&g_sf_mng.proc_id, NULL, _wk_list_save_in_file, NULL);
+
+	g_sf_mng.b_save_frame = _enalbe;
+	return TD_SUCCESS;
+}
+
+
+/* 将图像保存为png图，仅调试用于标定使用 */
+static td_s32 wk_frame_to_file_save_png(ot_video_frame_info* _pframe)
+{
+	static td_u32 frame_cnt=0, frame_flag=0;
+	if(frame_flag == 1){
+		frame_flag = 0;
+		return 0;
+	}
+	frame_flag++;
+
+
+	td_u16 u16wight = 0, u16hight = 0;
+	td_u32 phy_addr = 0, size = 0;
+	td_char *ppage_addr = NULL;
+	
+	if (OT_PIXEL_FORMAT_YVU_SEMIPLANAR_420 == _pframe->video_frame.pixel_format){
+		size = (_pframe->video_frame.stride[0]) * (_pframe->video_frame.height) * 3 / 2;
+	}
+	u16wight = _pframe->video_frame.width;
+	u16hight = _pframe->video_frame.height;
+	phy_addr = _pframe->video_frame.phys_addr[0];
+
+	ppage_addr = (td_char *)ss_mpi_sys_mmap_cached(phy_addr, size);
+	if(TD_NULL == ppage_addr) {
+		WK_LOGE("ppage_addr is NULL\n");
+		return -1;
+	}
+
+	uint32_t now_ms = system_time_ms_get();
+	uint32_t last_ms = now_ms;
+	int times = 0;
+
+	td_char tmp_cmd[256] = {0};
+	td_u32 tmp_cnt = 0, w_one = 0;
+	td_u32 u32size = _pframe->video_frame.width * _pframe->video_frame.height;
+	td_u64 pts_tmp = _pframe->video_frame.pts*1000;
+	
+	td_u8 len_tem = write(g_sf_mng.fd, &pts_tmp, sizeof(td_u64));
+	if(len_tem != sizeof(td_u64)){
+		WK_LOGE("########## len write error!\n");
+		return -1;
+	}
+
+	while(tmp_cnt < u32size){
+		w_one = (u32size-tmp_cnt >= 4096) ? 4096 : (u32size-tmp_cnt); 
+		w_one = write(g_sf_mng.fd, &ppage_addr[tmp_cnt], w_one);
+		tmp_cnt += w_one;
+	}
+
+	fsync(g_sf_mng.fd);
+
+	static td_u32 u32cnt = 0;
+	if(u32cnt++>20){
+		WK_LOGI("---- save frame pts: %ld\n", _pframe->video_frame.pts);
+		u32cnt = 0;
+	}
+
+	ss_mpi_sys_munmap(ppage_addr, size);
+    ppage_addr = TD_NULL;
+	
+	now_ms = system_time_ms_get();
+	times = get_delta_time(now_ms, last_ms);
+	printf("### calculateC times ===> %d ---- %d\n", times, ++frame_cnt);	
+
+	return TD_SUCCESS; 
+}
+
+
+
+/*========== 用于标定的调试性代码end =================*/
+#endif /* DEBUG_SAVE_IMU_FRAME */
+
+
 td_bool wk_st_lk_get_image_resolution(ot_size* _sensor_size)
 {
 	sample_comm_sys_get_pic_size(WK_IVE_SENSOR_PIC_SIZE, _sensor_size);
@@ -421,6 +653,14 @@ static void * _wk_st_lk_proc(void* _pArgs)
 
 		#ifndef DEBUG_ST_LK_POINTS_PREVIEW
 		wk_st_lk_vgs_draw_ponits_send_venc_debug(&st_frame_info, NULL, 0);
+		#endif
+
+		#ifdef DEBUG_SAVE_IMU_FRAME
+		/* 调试使用，保存yuv图片为png文件 */
+		if(g_sf_mng.b_save_frame == TD_TRUE) {
+			//wk_frame_to_file_save_png(&st_frame_info);
+			wk_frame_in_list(&st_frame_info);
+		}
 		#endif
 
 		/* 调用算法回调 */
