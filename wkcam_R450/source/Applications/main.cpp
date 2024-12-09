@@ -28,6 +28,26 @@ void wk_mpp_get_Exptime_gain()
 	return;
 }
 
+/* 保存imu、frame的测试函数 */
+extern int middle_test(char* argv);
+int save_imu_frame_test_start(int argc, char *argv[])
+{
+	if(argc != 2) {
+		WK_LOGE("cmd ./wkcam_r450 1/2/3\n");
+		return -1;
+	}
+	
+	middle_test(argv[1]);  // 测试中间接口层使用
+	while (1) {
+		//wk_mpp_get_Exptime_gain();
+		//usleep(10);
+        usleep(2000*1000);
+		system("sync");         //  定时对写磁盘刷新
+	}	
+
+	return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -54,6 +74,11 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	#ifdef DEBUG_SAVE_IMU_FRAME
+	if(save_imu_frame_test_start(argc, argv)){
+		return -1;
+	}
+	#endif
 
 	if(argc == 5)
 	{

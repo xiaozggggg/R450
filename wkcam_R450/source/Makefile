@@ -205,7 +205,8 @@ LIBS  = $(RTSP_LIBS) $(SQLITE_LIB) $(HISI_SDK_LIB) $(OPENCV_LIB) $(ceres_LIB) $(
 LIBS  += -fno-aggressive-loop-optimizations -Wall -W -fPIC -lm -pthread -ldl -std=c++11 -lrt
 
 ################# debug src #################
-CONFIG += -DDEBUG_ST_LK_POINTS_PREVIEW
+CONFIG += -DDEBUG_ST_LK_POINTS_PREVIEW     # 关闭：光流图像直接送流；打开：则需要调用wk_frame_pionts_venc_debug接口送流
+#CONFIG += -DDEBUG_SAVE_IMU_FRAME          # 关闭：关闭imu和图像保存功能；打开：打开imu和图像保存功能
 
 all: $(MKDIR_DEPEND) $(GIT_INFO_DEPEND) $(ELF)
 	$(PRINTF_GREEN) "Compile $(ELF) complete"

@@ -56,6 +56,9 @@ public:
 	 */
 	td_bool wk_imu_data_reported(wk_imu_data_s& _data);
 
+	#ifdef DEBUG_SAVE_IMU_FRAME
+	td_s32 wk_imu_save_file_enable(td_bool _enable);
+	#endif
 
 private:
 	wk_imu_middle();

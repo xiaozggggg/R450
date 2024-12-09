@@ -60,8 +60,9 @@ td_bool wk_lk_set_ctrl_param(td_u16 _min_eig_val, td_u16 _iter_cnt, td_u16 _eps)
 /* 通过lk取点处理*/
 td_s32 wk_lk_get_points(wk_lk_points_input_s* _info, wk_lk_points_output_s* _points);
 
-
-
+#ifdef DEBUG_SAVE_IMU_FRAME
+td_s32 wk_frame_to_file_enable(td_bool _enalbe);
+#endif
 
 /* 协议处理函数 */
 td_bool wk_st_lk_protocol_handle(wk_location_result_s* _result);

@@ -31,6 +31,66 @@ typedef struct {
 
 static wk_imu_mng_s imu_mng;
 
+#ifdef DEBUG_SAVE_IMU_FRAME
+/*========== 用于标定的调试性代码 =================*/
+#define WK_IMU_SAVE_FILE_PATH	"/mnt/sdcard/imu/"
+#define WK_IMU_SAVE_FILE_NAME	"imu.csv"
+#define WK_IMU_FILE_HANDLE		"#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n"
+static td_bool b_save_imu = TD_FALSE;	/* imu数据是否保存标志 */
+FILE *pfd = TD_NULL;
+
+
+td_s32 wk_imu_to_file_enable(td_bool _enalbe)
+{	
+	td_char tmp_cmd[256] = {0};
+	/* 判断有无sd卡，无则返回错误 */
+#if 0													
+	if(_enalbe == TD_TRUE) {
+		if(0 != access("/dev/mmcblk0p1", F_OK)) {
+			WK_LOGE("No SD card found!\n");
+			return TD_FAILURE;
+		}
+	}
+
+	if(false == is_dir_exist(WK_IMU_SAVE_FILE_PATH)) {
+		sprintf(tmp_cmd, "mkdir %s", WK_IMU_SAVE_FILE_PATH);
+		system(tmp_cmd);
+	}
+#endif
+
+	b_save_imu = _enalbe;
+	if(_enalbe == TD_TRUE){
+		pfd = fopen("./imu.csv", "a+");
+		fwrite(WK_IMU_FILE_HANDLE, strlen(WK_IMU_FILE_HANDLE), 1, pfd);
+		fflush(pfd);
+	}
+
+	return TD_SUCCESS;
+}
+
+/* 将图像保存为png图，仅调试用于标定使用 */
+static td_s32 wk_imu_data_to_file_save(struct wk_imu_data_s* _data)
+{
+	td_char tmp_cmd[256] = {0};
+	sprintf(tmp_cmd, "%ld,%f,%f,%f,%f,%f,%f\n",
+						_data->u64pts*1000, 
+						_data->gyro_x, _data->gyro_y, _data->gyro_z,
+						_data->accel_x, _data->accel_y, _data->accel_z);		
+
+	static td_u32 u32cnt = 0;
+	if(u32cnt++>20){
+		WK_LOGI("---- save imu: %d ----- %s", strlen(tmp_cmd), tmp_cmd);
+		u32cnt = 0;
+	}
+
+	fwrite(&tmp_cmd[0], strlen(tmp_cmd), 1, pfd);
+	fflush(pfd);
+
+	return TD_SUCCESS; 
+}
+/*========== 用于标定的调试性代码 end=================*/
+#endif
+
 
 /* 数据发送接口 */
 extern void CamSendHandle(char *buf, int size);
@@ -170,7 +230,13 @@ static void * _wk_imu_data_handle(void* _pArgs)
 			/* 链表数据回调 */
 			wk_imu_data_s data = pmng->imu_data.front();
 			wk_imu_middle::wk_imu_get_instance()->wk_imu_data_reported(data);
-		
+
+			#ifdef DEBUG_SAVE_IMU_FRAME
+			if(b_save_imu == TD_TRUE) {
+				wk_imu_data_to_file_save(&data);
+			}
+			#endif
+			
 			pthread_mutex_lock(&pmng->mutex);
 			pmng->imu_data.pop_front();
 			pthread_mutex_unlock(&pmng->mutex);

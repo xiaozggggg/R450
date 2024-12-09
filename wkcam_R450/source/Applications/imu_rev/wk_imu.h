@@ -28,6 +28,10 @@ td_s32 wk_imu_rev_stop();
 /* 写入imu传感器数据 */
 td_s32 wk_imu_push_data(td_float* _imu_data, td_u8 _size,td_u64 _pts);
 
+#ifdef DEBUG_SAVE_IMU_FRAME
+td_s32 wk_imu_to_file_enable(td_bool _enalbe);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

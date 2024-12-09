@@ -118,6 +118,9 @@ public:
 	 */
 	td_s32 wk_frame_to_mat(wk_corner_video_frame_s::wk_ptr& _frame_yuv, cv::Mat& _mat_yuv);
 
+	#ifdef DEBUG_SAVE_IMU_FRAME
+	td_s32 wk_frame_save_file_enable(td_bool _enable);
+	#endif 
 private:
 	wk_st_lk_middle();
 	wk_st_lk_middle(const wk_st_lk_middle&)=delete;
