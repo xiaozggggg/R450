@@ -13,17 +13,20 @@
 
 #include "wk_log.h"
 #include "wk_imu_middle.h"
-#include "wk_imu_socket_mng.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /* imu数据获取功能开启 */
 td_s32 wk_imu_rev_start();
 
 /* imu数据获取功能停止 */
 td_s32 wk_imu_rev_stop();
+
+/* 写入imu传感器数据 */
+td_s32 wk_imu_push_data(td_float* _imu_data, td_u8 _size,td_u64 _pts);
 
 #ifdef __cplusplus
 }

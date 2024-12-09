@@ -1,172 +1,229 @@
 #include "wk_imu.h"
 
 #define IMU_SYNC_PTS_CHEAK_TIME			(300)   // 同步时间戳间隔
-#define WK_IMU_GYRO_FILIER				(30)	// gyro低通录波参数
-#define WK_IMU_ACCEL_FILIER				(200)   // accel低通录波参数
+
+#define SOCKET_HEADER_FIRST 			(0xAA)
+#define SOCKET_HEADER_SEC  				(0x55)
+
+typedef enum {
+	WK_IMU_SOCKET_START_STOP_CMD  = 0x11,  // 开启/停止数据传输
+	WK_IMU_SOCKET_SYNC_PTS_CMD    = 0x12,  // 时间同步
+	WK_IMU_SOCKET_SENSER_DATA_CMD = 0x21,  // 传输传感器数据上报
+	WK_IMU_SOCKET_MCU_DEBUG_CMD	  = 0x22,  // mcu端调试信息（仅用于mcu端调试）
+	WK_IMU_SOCKET_CMD_BUTT,
+}wk_imu_socket_cmd_e; 
+
+typedef enum {
+	WK_IMU_GYRO  = 0x01,
+	WK_IMU_ACCEL = 0x02,
+	WK_IMU_ELECT = 0x04,
+}wk_imu_type_e;
+	
 
 typedef struct {
-	td_bool init_flag;
-
 	/* 线程id */
 	bool b_proc_running;
     pthread_t proc_id;
 
-	std::list<wk_imu_socket_cmd_e> cmd_list;
-}wk_imu_info_s;
+	pthread_mutex_t mutex;	
+	std::list<wk_imu_data_s> imu_data;
+}wk_imu_mng_s;
 
-static wk_imu_info_s imu_info;
-
-static void _wk_socket_reported_callback(wk_imu_socket_cmd_reply_data_s* _reply_data);
+static wk_imu_mng_s imu_mng;
 
 
-/* 发送开始上报指令 */
-static td_s32 _wk_imu_socket_send_start()
+/* 数据发送接口 */
+extern void CamSendHandle(char *buf, int size);
+static td_s32 _wk_imu_socket_rw_send(td_u8* _data, td_u8 _length)
 {
-	wk_imu_socket_cmd_start_stop_s start_reported;
-	start_reported.bstart_gyro = true;
-	start_reported.bstart_accel = true;
-	start_reported.bstart_elect = false;	
-	return wk_imu_start_stop_cmd_send(&start_reported, _wk_socket_reported_callback);
+	CamSendHandle((char*)_data, _length);
+	return TD_SUCCESS;
+}
+
+/* 求数据帧校验和 */
+static td_u8 _wk_imu_socket_rw_checksum(td_u8* _data, td_u8 _length)
+{
+	td_u8 u8sum = 0;
+	if(_data == NULL || _length <= 0) {
+		WK_LOGE("_data is null");
+		return 0;
+	}
+
+	for(td_u8 ifor=0; ifor<_length; ifor++) {
+		u8sum += _data[ifor];
+	}
+	
+	return u8sum;
+}
+
+/* 开始或停止传感器数据传输命令发送 */
+td_s32 wk_imu_start_stop_cmd_send(td_bool bstart_gyro, td_bool bstart_accel, td_bool bstart_elect)
+{
+	td_s32 ret = -1;
+	td_u8 u8tmp[32] = {0};
+	td_u8* pdata = u8tmp;
+
+	*pdata++ = SOCKET_HEADER_FIRST;
+	*pdata++ = SOCKET_HEADER_SEC;
+	*pdata++ = 0x02;
+	*pdata++ = WK_IMU_SOCKET_START_STOP_CMD;
+	*pdata |= bstart_gyro  ?  WK_IMU_GYRO  : 0;
+	*pdata |= bstart_accel ?  WK_IMU_ACCEL : 0;
+	*pdata |= bstart_elect ?  WK_IMU_ELECT : 0;
+	pdata++;
+	*pdata = _wk_imu_socket_rw_checksum(&u8tmp[2], 3);
+
+	ret = _wk_imu_socket_rw_send(u8tmp, 6);
+	if(ret < 0) {
+		return ret;
+	}
+
+	return ret;
+}
+
+/* 发送时间戳同步 */
+static td_s32 _wk_imu_sync_pts_cmd_send(td_u64 _pts)
+{
+	td_s32 ret = -1;
+	td_u8 u8tmp[32] = {0};
+	td_u8* pdata = u8tmp;
+	static td_u8 tmp_cnt = 0;
+
+	*pdata++ = SOCKET_HEADER_FIRST;
+	*pdata++ = SOCKET_HEADER_SEC;
+	*pdata++ = 0x09;
+	*pdata++ = WK_IMU_SOCKET_SYNC_PTS_CMD;
+	memcpy(pdata, &_pts, sizeof(td_u64));
+	pdata += 8;
+	*pdata = _wk_imu_socket_rw_checksum(&u8tmp[2], sizeof(td_u64)+2);
+
+	ret = _wk_imu_socket_rw_send(u8tmp, sizeof(td_u64) + 5);
+	if(ret < 0) {
+		return ret;
+	}
+	
+	return 0;
 }
 
 
 /* 定时时间同步时间戳 */
-static td_s32 _wk_imu_socket_sync_pts()
+td_s32 wk_imu_socket_sync_pts()
 {
 	td_u64 cur_pts_us;
-	wk_imu_socket_cmd_sync_pts_s sync_pts;
 	static td_u64 u32last_time = 0;
 	
 	td_u32 currtime = system_time_ms_get();
 	if(get_delta_time(currtime, u32last_time) >= IMU_SYNC_PTS_CHEAK_TIME){
 		u32last_time = currtime;
 		ss_mpi_sys_get_cur_pts(&cur_pts_us);
-		sync_pts.u64pts = cur_pts_us/1000;	 // us->ms
-		wk_imu_sync_pts_cmd_send(&sync_pts, NULL);
+		_wk_imu_sync_pts_cmd_send(cur_pts_us/1000);
 	}
 	
 	return 0;
 }
 
-/* 处理送入陀螺仪传感器数据 */
-static td_s32 _wk_imu_gyro_accel_handle(wk_imu_socket_cmd_reply_data_s* _reply_data)
+/* 写入imu传感器数据 */
+td_s32 wk_imu_push_data(td_float* _imu_data, td_u8 _size, td_u64 _pts)
 {
+	wk_imu_mng_s* pmng = &imu_mng;
 	struct wk_imu_data_s data;
 
+	if(pmng->b_proc_running == TD_FALSE){
+		return TD_SUCCESS;
+	}
+
+	if(_size != 6) {
+		WK_LOGE("imu_data size must 6\n");
+		return TD_FAILURE;
+	}
+
 	/* 转换后角速度单位：rad/s(弧度每秒) */
-	data.gyro_x = _reply_data->st_imu_data.gyro_x;
-	data.gyro_y = _reply_data->st_imu_data.gyro_y;
-	data.gyro_z = _reply_data->st_imu_data.gyro_z;
+	data.gyro_x = _imu_data[0];
+	data.gyro_y = _imu_data[1];
+	data.gyro_z = _imu_data[2];
 
 	/* 加速度单位：m/s² */
-	data.accel_x = _reply_data->st_imu_data.accel_x/100.0;
-	data.accel_y = _reply_data->st_imu_data.accel_y/100.0;
-	data.accel_z = _reply_data->st_imu_data.accel_z/100.0;
-	data.u64pts = _reply_data->st_imu_data.u64pts*1000; 	
+	data.accel_x = _imu_data[3]/100.0;
+	data.accel_y = _imu_data[4]/100.0;
+	data.accel_z = _imu_data[5]/100.0;
+	data.u64pts  = _pts*1000; 	
 
 	//WK_LOGD("gyro -- %f\t%f\t%f\t accel ---- %f\t%f\t%f   ----  %ld\n", 
 	//		data.gyro_x, data.gyro_y, data.gyro_z, data.accel_x, data.accel_y, data.accel_z,data.u64pts);
 
-	/* 使用单例进行回调 */
-	wk_imu_middle::wk_imu_get_instance()->wk_imu_data_reported(data);
+	/* 送入链表 */
+	pthread_mutex_lock(&pmng->mutex);
+	pmng->imu_data.push_back(data);
+	pthread_mutex_unlock(&pmng->mutex);
 	
 	return TD_SUCCESS;
 }
 
-/* 串口读取回调 */
-static void _wk_socket_reported_callback(wk_imu_socket_cmd_reply_data_s* _reply_data)
+
+/* imu数据处理线程 */
+static void * _wk_imu_data_handle(void* _pArgs)
 {
-	wk_imu_info_s* pmng = &imu_info;
+	wk_imu_mng_s* pmng = (wk_imu_mng_s*)_pArgs;
 
-	if(_reply_data->e_cmd == WK_IMU_SOCKET_START_STOP_CMD) {
-		/* 该命令暂无使用，目前设计收到时间同步就会开始发送imu数据 */
-		//if(_reply_data->e_result != WK_IMU_SOCKET_ERR_CODE_SUCCESS) {
-		//	WK_LOGD("imu socket start error, result = %d. resend cmd.\n", _reply_data->e_result);
-		//	pmng->cmd_list.push_back(_reply_data->e_cmd);
-		//}
-	}
-	else if(_reply_data->e_cmd == WK_IMU_SOCKET_SYNC_PTS_CMD) {
-		if(_reply_data->e_result != WK_IMU_SOCKET_ERR_CODE_SUCCESS) {
-			WK_LOGD("imu socket start error, result = %d. resend cmd.\n", _reply_data->e_result);
-			pmng->cmd_list.push_back(_reply_data->e_cmd);
-		}
-	}
-	else if(_reply_data->e_cmd == WK_IMU_SOCKET_SENSER_DATA_CMD) {
-		_wk_imu_gyro_accel_handle(_reply_data);
-	}
-
-	return;
-}
-
-/* 重发单次线程 */
-static void * _wk_imu_resend_handle(void* _pArgs)
-{
-	wk_imu_info_s* pmng = (wk_imu_info_s*)_pArgs;
-
-	while(pmng->b_proc_running == true) {
-		_wk_imu_socket_sync_pts();
+	while(pmng->b_proc_running == TD_TRUE) {
+		while(!pmng->imu_data.empty()) {
+			/* 链表数据回调 */
+			wk_imu_data_s data = pmng->imu_data.front();
+			wk_imu_middle::wk_imu_get_instance()->wk_imu_data_reported(data);
 		
-		while(!pmng->cmd_list.empty()) {
-			wk_imu_socket_cmd_e cmd = pmng->cmd_list.front();
-			if(cmd == WK_IMU_SOCKET_START_STOP_CMD) {
-				_wk_imu_socket_send_start();
-			}	
-			else if(cmd == WK_IMU_SOCKET_SYNC_PTS_CMD) {
-				_wk_imu_socket_sync_pts();
-			}
-			pmng->cmd_list.pop_front();
+			pthread_mutex_lock(&pmng->mutex);
+			pmng->imu_data.pop_front();
+			pthread_mutex_unlock(&pmng->mutex);
 		}
-		usleep(20*1000);
+
+		/* 时间同步 */
+		wk_imu_socket_sync_pts();
+		usleep(10*1000);
 	}
 	return NULL;
 }
+
 
 /* imu数据获取功能开启 */
 td_s32 wk_imu_rev_start()
 {
 	td_s32 ret = -1;
-	wk_imu_info_s* pmng = &imu_info;
+	wk_imu_mng_s* pmng = &imu_mng;
 
-	if(pmng->init_flag == TD_TRUE) {
+	if(pmng->b_proc_running == TD_TRUE) {
 		WK_LOGI("imu rev reinit\n");
 		return TD_SUCCESS;
 	}
 
-	/* imu接收socket初始化 */
-	ret = wk_imu_socket_init(NULL);
-	if(ret < 0) {
-		return -1;
+	ret = pthread_mutex_init(&pmng->mutex, NULL);
+	if(ret != 0) {
+		WK_LOGE("ret is %d\n", ret);
+		goto exit0;
 	}
-	wk_imu_socket_register_imu_data_cb(_wk_socket_reported_callback);	
 
-	std::list<wk_imu_socket_cmd_e>().swap(pmng->cmd_list);
-	pmng->b_proc_running = true;
-	ret = pthread_create(&pmng->proc_id, NULL, _wk_imu_resend_handle, pmng);
+	std::list<wk_imu_data_s>().swap(pmng->imu_data);
+	pmng->b_proc_running = TD_TRUE;
+	ret = pthread_create(&pmng->proc_id, NULL, _wk_imu_data_handle, pmng);
     if (ret != 0) {
         WK_LOGE("initial _wk_imu_resend_handle thread error\r\n");
-        goto create_thread_err;
+		goto exit1;
     }	
-	
-	/* 通知开始发送传感器数据 */
-	//usleep(100*1000); 
-	//_wk_imu_socket_send_start();    
-
-	pmng->init_flag = TD_TRUE;
 
 	return TD_SUCCESS;
-	
-create_thread_err:
-	wk_imu_socket_deinit();
-	return 0;
+exit1:
+	pthread_mutex_destroy(&pmng->mutex);
+	pmng->b_proc_running = TD_FALSE;
+exit0:	
+	return TD_FAILURE;	
 }
 
 /* imu数据获取功能停止 */
 td_s32 wk_imu_rev_stop()
 {
 	td_s32 ret = -1;
-	wk_imu_info_s* pmng = &imu_info;
+	wk_imu_mng_s* pmng = &imu_mng;
 
-	pmng->b_proc_running = false;
+	pmng->b_proc_running = TD_FALSE;
 	if(pmng->proc_id != 0){
 		ret = pthread_join(pmng->proc_id, NULL);
 	    if (ret != 0) {
@@ -175,12 +232,9 @@ td_s32 wk_imu_rev_stop()
 	    }			
 		pmng->proc_id = 0;
 	}	
-	
-	std::list<wk_imu_socket_cmd_e>().swap(pmng->cmd_list);
 
-	wk_imu_socket_deinit();
-	
-	pmng->init_flag = TD_FALSE;
+	pthread_mutex_destroy(&pmng->mutex);
+	std::list<wk_imu_data_s>().swap(pmng->imu_data);
 	return 0;
 }
 

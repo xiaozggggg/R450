@@ -39,11 +39,11 @@ void *MavlinkCmdAnalysisThread(void *arg)
 {
     int i;
     int rb_lenght;
-    unsigned char buffer[MAX_CMDLENGTH];
+    unsigned char buffer[MAX_CMDLENGTH*2];
 
     while(1)
     {
-        rb_lenght = rt_ringbuffer_get(&rb_queue, buffer, MAX_CMDLENGTH);
+        rb_lenght = rt_ringbuffer_get(&rb_queue, buffer, MAX_CMDLENGTH*2);
         if(rb_lenght > 0){
             for(i = 0;i<rb_lenght;i++){
                 mavlink_decode(buffer[i]);
