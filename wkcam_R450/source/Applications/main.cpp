@@ -53,16 +53,6 @@ int save_imu_frame_test_start(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 
-	cv::FileStorage fsSettings(argv[1], cv::FileStorage::READ);
-
-	if (!fsSettings.isOpened())
-	{
-		std::cerr << "ERROR: Wrong path to settings " << argv[1] << std::endl;
-		return -1;
-	}
-
-	double factor = static_cast<double>(fsSettings["factor"]);
-	double timeshift_cam_imu = static_cast<double>(fsSettings["timeshift_cam_imu"]);
 
 #ifndef RUN_ON_PC
 	int ret = 0;
@@ -92,6 +82,17 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 #endif
+
+	cv::FileStorage fsSettings(argv[1], cv::FileStorage::READ);
+
+	if (!fsSettings.isOpened())
+	{
+		std::cerr << "ERROR: Wrong path to settings " << argv[1] << std::endl;
+		return -1;
+	}
+
+	double factor = static_cast<double>(fsSettings["factor"]);
+	double timeshift_cam_imu = static_cast<double>(fsSettings["timeshift_cam_imu"]);
 
 	EstimatorSystem es;
 
