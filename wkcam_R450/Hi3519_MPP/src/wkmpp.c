@@ -93,7 +93,7 @@ static SAMPLE_MPP_SENSOR_T libsns[SNS_TYPE_BUTT] = {
     {SONY_IMX378_MIPI_2M_60FPS_10BIT, "imx378-0-0-2-60", "libsns_imx378.so", "g_sns_imx378_obj"},
     {OV_XC9080_MIPI_8M_30FPS_10BIT, "xc9080-0-0-8-30", NULL, NULL},
     {SONY_IMX582_MIPI_8M_30FPS_10BIT, "imx582-0-0-8-30", "libsns_imx582.so", "g_sns_imx582_obj"},
-    {OV7251_MIPI_480P_60FPS_10BIT, "ov7251-0-0-8-60", "libsns_ov7251.so", "g_sns_ov7251_obj"},
+    {OV7251_MIPI_480P_100FPS_10BIT, "ov7251-0-0-8-100", "libsns_ov7251.so", "g_sns_ov7251_obj"},
 };
 
 static sample_vb_param g_vb_param = {
@@ -292,7 +292,7 @@ int wk_mpp_start(int mode)
     cfg[0].lane = 0;
     cfg[0].wdr = 0;
     cfg[0].res = 8;
-    cfg[0].fps = 60;
+    cfg[0].fps = 100;
 
 
     sprintf(home_path, "/root");
@@ -314,7 +314,7 @@ int wk_mpp_start(int mode)
     }
 
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_RECORD, TD_TRUE, PIC_640X480);
-    sample_comm_venc_set_src_framerate(60);
+    sample_comm_venc_set_src_framerate(100);
 
     wk_mpp_vpss_set_param(WK_VIDEO_CHANNEL_PREVIEW, TD_TRUE, PIC_640X480);
     // wk_mpp_vpss_set_param(2,TD_TRUE,PIC_CIF);
