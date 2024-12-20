@@ -79,6 +79,8 @@ void fun_wk_get_frame_cb(wk_corner_video_frame_s::wk_ptr _info)
 
 void fun_wk_get_imu_cb(wk_imu_data_s::wk_ptr _info)
 {
+	return;
+
 	static int cnt=0;
 
 	if(cnt++>100){
@@ -91,6 +93,8 @@ void fun_wk_get_imu_cb(wk_imu_data_s::wk_ptr _info)
 
 void fun_wk_get_quaternion_cb(wk_quaternion_data_s::wk_ptr _info)
 {
+	return;
+
 	static int cnt=0;
 	
 	if(cnt++>100){

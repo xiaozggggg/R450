@@ -816,8 +816,11 @@ void DataCenter::UartRevThread(void)
     {
         memset(uart_buf, 0, sizeof(uart_buf));
 		uart_length = UartReadHandle(uart_buf, sizeof(uart_buf));
-		//printf("uart_length = %d\n", uart_length);
+		if(uart_length == 0) {
+			continue;
+		}
 		
+		//printf("uart_length = %d\n", uart_length);
 		if(uart_length > 0) {
 			memset(mavlink_buf, 0, sizeof(mavlink_buf));
 			mavlink_length = 0;
@@ -827,7 +830,7 @@ void DataCenter::UartRevThread(void)
 				rt_ringbuffer_put(&rb_queue, mavlink_buf, mavlink_length);
 			}	
 		}
-		usleep(5*1000);	
+		//usleep(5*1000);	
     }
 }
 #endif

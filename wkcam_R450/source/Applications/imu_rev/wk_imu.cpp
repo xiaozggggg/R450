@@ -23,14 +23,64 @@ static void _wk_socket_reported_callback(wk_imu_socket_cmd_reply_data_s* _reply_
 /*========== 用于标定的调试性代码 =================*/
 #define WK_IMU_SAVE_FILE_PATH	"/mnt/sdcard/imu/"
 #define WK_IMU_SAVE_FILE_NAME	"imu.csv"
-#define WK_IMU_FILE_HANDLE		"#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n"
-static td_bool b_save_imu = TD_FALSE;	/* imu数据是否保存标志 */
-FILE *pfd = TD_NULL;
+#define WK_IMU_FILE_HANDLE		"#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2],cur_pts[ns],pts_diff[ms]\n"
+
+typedef struct {
+	pthread_t proc_id;
+	pthread_mutex_t mutex;
+	
+	FILE *pfd;
+	td_bool b_save_imu;	/* imu是否保存标志 */
+
+	std::list<wk_imu_data_s> imu_list;
+}wk_save_imu_mng;
+
+static wk_save_imu_mng g_simu_mng;
+
+static void * _wk_list_save_imu_in_file(void* _pArgs) 
+{
+	td_char tmp_cmd[256] = {0};
+	wk_save_imu_mng* pmng = &g_simu_mng;
+	while(1) {
+		while(!pmng->imu_list.empty())
+		{
+			pthread_mutex_lock(&pmng->mutex);
+			wk_imu_data_s data = pmng->imu_list.front();
+			pmng->imu_list.pop_front();
+			pthread_mutex_unlock(&pmng->mutex);
+			
+			memset(tmp_cmd, 0, sizeof(tmp_cmd));
+			sprintf(tmp_cmd, "%ld,%f,%f,%f,%f,%f,%f,%ld,%d\n",
+								data.u64pts*1000, 
+								data.gyro_x, data.gyro_y, data.gyro_z,
+								data.accel_x, data.accel_y, data.accel_z,
+								data.u64curr_pts, (data.u64curr_pts-data.u64pts)/1000);		
+
+			static td_u32 u32cnt = 0;
+			if(u32cnt++>1000){
+				printf("list_size = %d ---- save imu: %d ----- %s",  pmng->imu_list.size(), strlen(tmp_cmd), tmp_cmd);
+				u32cnt = 0;
+			}
+
+			fwrite(&tmp_cmd[0], strlen(tmp_cmd), 1, pmng->pfd);
+		}
+		fflush(pmng->pfd);	
+		usleep(20*1000);
+	}	
+	
+	return NULL;
+}
 
 
 td_s32 wk_imu_to_file_enable(td_bool _enalbe)
 {	
 	td_char tmp_cmd[256] = {0};
+	wk_save_imu_mng* pmng = &g_simu_mng;
+
+	if(_enalbe == TD_FAILURE){
+		return 0;
+	}
+	
 	/* 判断有无sd卡，无则返回错误 */
 #if 0													
 	if(_enalbe == TD_TRUE) {
@@ -46,33 +96,28 @@ td_s32 wk_imu_to_file_enable(td_bool _enalbe)
 	}
 #endif
 
-	b_save_imu = _enalbe;
+	
 	if(_enalbe == TD_TRUE){
-		pfd = fopen("./imu.csv", "a+");
-		fwrite(WK_IMU_FILE_HANDLE, strlen(WK_IMU_FILE_HANDLE), 1, pfd);
-		fflush(pfd);
+		pmng->pfd = fopen("./imu.csv", "a+");
+		fwrite(WK_IMU_FILE_HANDLE, strlen(WK_IMU_FILE_HANDLE), 1, pmng->pfd);
+		fflush(pmng->pfd);
 	}
 
+	pthread_mutex_init(&pmng->mutex, NULL);
+	std::list<wk_imu_data_s>().swap(pmng->imu_list);
+	pthread_create(&pmng->proc_id, NULL, _wk_list_save_imu_in_file, NULL);
+
+	pmng->b_save_imu = _enalbe;
 	return TD_SUCCESS;
 }
 
 /* 将图像保存为png图，仅调试用于标定使用 */
-static td_s32 wk_imu_data_to_file_save(struct wk_imu_data_s* _data)
+static td_s32 wk_imu_data_to_in_list(struct wk_imu_data_s* _data)
 {
-	td_char tmp_cmd[256] = {0};
-	sprintf(tmp_cmd, "%ld,%f,%f,%f,%f,%f,%f\n",
-						_data->u64pts*1000, 
-						_data->gyro_x, _data->gyro_y, _data->gyro_z,
-						_data->accel_x, _data->accel_y, _data->accel_z);		
-
-	static td_u32 u32cnt = 0;
-	if(u32cnt++>20){
-		WK_LOGI("---- save imu: %d ----- %s", strlen(tmp_cmd), tmp_cmd);
-		u32cnt = 0;
-	}
-
-	fwrite(&tmp_cmd[0], strlen(tmp_cmd), 1, pfd);
-	fflush(pfd);
+	wk_save_imu_mng* pmng = &g_simu_mng;
+	pthread_mutex_lock(&pmng->mutex);
+	pmng->imu_list.push_back(*_data);
+	pthread_mutex_unlock(&pmng->mutex);
 
 	return TD_SUCCESS; 
 }
@@ -124,13 +169,22 @@ static td_s32 _wk_imu_gyro_accel_handle(wk_imu_socket_cmd_reply_data_s* _reply_d
 	data.accel_y = _reply_data->st_imu_data.accel_y/100.0;
 	data.accel_z = _reply_data->st_imu_data.accel_z/100.0;
 	data.u64pts = _reply_data->st_imu_data.u64pts*1000; 	
+	ss_mpi_sys_get_cur_pts(&data.u64curr_pts);
+
 
 	//WK_LOGD("gyro -- %f\t%f\t%f\t accel ---- %f\t%f\t%f   ----  %ld\n", 
 	//		data.gyro_x, data.gyro_y, data.gyro_z, data.accel_x, data.accel_y, data.accel_z,data.u64pts);
 
 	#ifdef DEBUG_SAVE_IMU_FRAME
-	if(b_save_imu == TD_TRUE) {
-		wk_imu_data_to_file_save(&data);
+	#if 0
+	static td_u32 diff_cnt=0;
+	if(diff_cnt < (data.u64curr_pts-data.u64pts)/1000){
+		diff_cnt = (data.u64curr_pts-data.u64pts)/1000;
+		WK_LOGI("----- diff_cnt = %d\n", diff_cnt);
+	}
+	#endif
+	if(g_simu_mng.b_save_imu == TD_TRUE) {
+		wk_imu_data_to_in_list(&data);
 	}
 	#endif
 
