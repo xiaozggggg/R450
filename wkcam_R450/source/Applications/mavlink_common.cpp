@@ -417,7 +417,7 @@ bool MavlinkCmdOnDealDate(int id ,char *MessageBuf)
 			imu_data[3] = (td_float)data->xacc;
 			imu_data[4] = (td_float)data->yacc;
 			imu_data[5] = (td_float)data->zacc;
-			wk_imu_push_data(imu_data, 6, data->time_usec);
+			//wk_imu_push_data(imu_data, 6, data->time_usec);
 			break;
 		}
 		default:{
