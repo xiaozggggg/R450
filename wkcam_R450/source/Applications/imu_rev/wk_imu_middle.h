@@ -27,7 +27,8 @@ using namespace std;
 	td_float accel_y;
 	td_float accel_z;
 	
-	td_u64 u64pts;       	// 单位：us
+	td_u64 u64pts;   	/* imu时间戳单位：us */ 
+	td_u64 u64curr_pts; /* 测试时间戳，可忽略 */
 };
 
 typedef std::function<void(wk_imu_data_s::wk_ptr)> pfun_wk_get_imu_cb;

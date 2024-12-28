@@ -98,7 +98,11 @@ static td_s32 wk_frame_in_list(ot_video_frame_info* _pframe)
 	g_sf_mng.frame_list.push_back(info);
 	pthread_mutex_unlock(&g_sf_mng.mutex);
 
-	WK_LOGD("cached frame ---- %d\n", g_sf_mng.frame_list.size());
+	static td_u32 u32cnt = 0;
+	if(u32cnt++>100){
+		printf("cached frame ---- %d\n", g_sf_mng.frame_list.size());
+		u32cnt = 0;
+	}	
 
 	ss_mpi_sys_munmap(ppage_addr, size);
     ppage_addr = TD_NULL;
@@ -143,8 +147,8 @@ static void * _wk_list_save_in_file(void* _pArgs)
 			fsync(g_sf_mng.fd);
 
 			static td_u32 u32cnt = 0;
-			if(u32cnt++>20){
-				WK_LOGI("---- save frame pts: %ld\n", tmp.cur_pts);
+			if(u32cnt++>100){
+				printf("---- save frame pts: %ld\n", tmp.cur_pts);
 				u32cnt = 0;
 			}
 
