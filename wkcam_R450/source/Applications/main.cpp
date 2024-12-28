@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 #endif
+#endif
 
 	cv::FileStorage fsSettings(argv[1], cv::FileStorage::READ);
 
@@ -94,6 +95,7 @@ int main(int argc, char *argv[])
 	double factor = static_cast<double>(fsSettings["factor"]);
 	double timeshift_cam_imu = static_cast<double>(fsSettings["timeshift_cam_imu"]);
 
+#ifndef RUN_ON_PC
 	EstimatorSystem es;
 
 	es.init(argv[1]);
