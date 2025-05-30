@@ -14,9 +14,9 @@
             // ],
             "args": [
                 "/home/xiao/dataset/yaml/my.yaml",
-                "/home/xiao/dataset/dwon/13/png",
-                "/home/xiao/dataset/dwon/13/data.csv",
-                "/home/xiao/dataset/dwon/13/imu.csv"
+                "/home/xiao/dataset/dwon/11/png",
+                "/home/xiao/dataset/dwon/11/data.csv",
+                "/home/xiao/dataset/dwon/11/imu.csv"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
