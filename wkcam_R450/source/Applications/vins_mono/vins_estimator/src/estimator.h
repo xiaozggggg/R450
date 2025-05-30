@@ -8,6 +8,7 @@
 #include "initial/initial_sfm.h"
 #include "initial/initial_alignment.h"
 #include "initial/initial_ex_rotation.h"
+#include "zupt.h"  // 添加零速更新头文件
 //#include <std_msgs/Header.h>
 //#include <std_msgs/Float32.h>
 #include "../../include/Header.h"
@@ -49,7 +50,7 @@ class Estimator
     Estimator();
 
     void setParameter();
-
+    void feedIMUForZUPT(double timestamp, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
     // interface
     void processIMU(double t, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
     void processImage(const map<int, vector<pair<int, Vector3d>>> &image, const std_msgs::Header &header);
@@ -68,6 +69,10 @@ class Estimator
     void double2vector();
     bool failureDetection();
 
+    // 零速更新相关方法
+    bool tryZeroVelocityUpdate(double timestamp);
+    void enableZeroVelocityUpdate(bool enable) { zupt_enabled = enable; }
+    bool isZeroVelocityUpdateEnabled() const { return zupt_enabled; }
 
     enum SolverFlag
     {
@@ -123,7 +128,6 @@ class Estimator
     vector<Vector3d> key_poses;
     double initial_timestamp;
 
-
     double para_Pose[WINDOW_SIZE + 1][SIZE_POSE];
     double para_SpeedBias[WINDOW_SIZE + 1][SIZE_SPEEDBIAS];
     double para_Feature[NUM_OF_F][SIZE_FEATURE];
@@ -143,4 +147,8 @@ class Estimator
     map<double, ImageFrame> all_image_frame;
     IntegrationBase *tmp_pre_integration;
 
+    // 零速更新模块
+    std::unique_ptr<UpdaterZeroVelocity> zupt_updater;
+    bool zupt_enabled;
+    bool is_zero_velocity_state;
 };

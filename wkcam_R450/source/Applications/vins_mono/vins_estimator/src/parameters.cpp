@@ -55,6 +55,13 @@ float VISUALLOOKATX;
 float VISUALLOOKATY;
 float VISUALLOOKATZ;
 
+// 零速更新参数定义（注意：这里是实际的定义，声明在parameters.h中）
+bool ENABLE_ZUPT = true;
+double ZUPT_MAX_VELOCITY = 0.5;
+double ZUPT_NOISE_MULTIPLIER = 2.0;
+double ZUPT_MAX_DISPARITY = 1.0;
+double ZUPT_CHI2_MULTIPLIER = 1.0;
+
 void readParameters(const string & config_file)
 {
 
@@ -68,6 +75,36 @@ void readParameters(const string & config_file)
 
     VINS_FOLDER_PATH = getcwd(NULL,FILENAMEPATH_MAX);
  //   fsSettings["output_path"] >> VINS_RESULT_PATH;
+
+    if (fsSettings["enable_zupt"].empty()) {
+        ENABLE_ZUPT = true;  // 默认启用
+    } else {
+        ENABLE_ZUPT = static_cast<int>(fsSettings["enable_zupt"]) != 0;
+    }
+    
+    if (!fsSettings["zupt_max_velocity"].empty()) {
+        ZUPT_MAX_VELOCITY = fsSettings["zupt_max_velocity"];
+    }
+    
+    if (!fsSettings["zupt_noise_multiplier"].empty()) {
+        ZUPT_NOISE_MULTIPLIER = fsSettings["zupt_noise_multiplier"];
+    }
+    
+    if (!fsSettings["zupt_max_disparity"].empty()) {
+        ZUPT_MAX_DISPARITY = fsSettings["zupt_max_disparity"];
+    }
+    
+    if (!fsSettings["zupt_chi2_multiplier"].empty()) {
+        ZUPT_CHI2_MULTIPLIER = fsSettings["zupt_chi2_multiplier"];
+    }
+    
+    std::cout << "零速更新参数:" << std::endl;
+    std::cout << "  启用状态: " << (ENABLE_ZUPT ? "是" : "否") << std::endl;
+    std::cout << "  最大速度阈值: " << ZUPT_MAX_VELOCITY << " m/s" << std::endl;
+    std::cout << "  噪声倍数: " << ZUPT_NOISE_MULTIPLIER << std::endl;
+    std::cout << "  最大视差阈值: " << ZUPT_MAX_DISPARITY << " pixels" << std::endl;
+    std::cout << "  卡方检验倍数: " << ZUPT_CHI2_MULTIPLIER << std::endl;
+
 
     std::cout<<"readParameters"<< std::endl;
     fsSettings["image_topic"] >> IMAGE_TOPIC;
@@ -87,7 +124,7 @@ void readParameters(const string & config_file)
     NUM_ITERATIONS = fsSettings["max_num_iterations"];
     MIN_PARALLAX = fsSettings["keyframe_parallax"];
 
-    fsSettings["output_path"] >> VINS_RESULT_PATH;
+    fsSettings["vins_result_path"] >> VINS_RESULT_PATH;
     VINS_RESULT_PATH = VINS_FOLDER_PATH + VINS_RESULT_PATH;
     cout << VINS_RESULT_PATH << endl;
     std::ofstream foutC(VINS_RESULT_PATH, std::ios::out);

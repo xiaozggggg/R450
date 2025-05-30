@@ -97,13 +97,30 @@ void EstimatorSystem::run(void)
 
 void EstimatorSystem::init(const std::string& yamlPath)
 {
-    //read parameters section
+    //读取参数部分
     readParameters(yamlPath);
 
     estimator.setParameter();
+    
+    // 根据参数配置零速更新
+    if (ENABLE_ZUPT) {
+        estimator.zupt_updater = std::make_unique<UpdaterZeroVelocity>(
+            G.norm(),                    // 重力加速度大小
+            ZUPT_MAX_VELOCITY,          // 最大速度阈值
+            ZUPT_NOISE_MULTIPLIER,      // 噪声倍数
+            ZUPT_MAX_DISPARITY,         // 最大视差阈值
+            ZUPT_CHI2_MULTIPLIER        // 卡方检验倍数
+        );
+        estimator.enableZeroVelocityUpdate(true);
+        std::cout << "[ESTIMATOR_SYSTEM] 零速更新已启用" << std::endl;
+    } else {
+        estimator.enableZeroVelocityUpdate(false);
+        std::cout << "[ESTIMATOR_SYSTEM] 零速更新已禁用" << std::endl;
+    }
+    
     for (int i = 0; i < NUM_OF_CAM; i++)
     {
-        trackerData[i].readIntrinsicParameter(CAM_NAMES[i]); //add
+        trackerData[i].readIntrinsicParameter(CAM_NAMES[i]);
         trackerData[i].setPara(cv::Size(IMAGE_COL,IMAGE_ROW), TRACK_LEVEL);
     }
 }
@@ -224,9 +241,9 @@ EstimatorSystem::imu_img_type EstimatorSystem::getMeasurements()
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
         }
-        std::cout << "IMUs end data timestamp: " << IMUs.back()->header.stamp.toSec() << " IMUs size: "<< IMUs.size() 
-                  << " img_msg timestamp" << img_msg->header.stamp.toSec() << " feature_buf size: " << feature_buf.size() 
-                  << " imu_buf size: " << imu_buf.size() << std::endl;
+        // std::cout << "IMUs end data timestamp: " << IMUs.back()->header.stamp.toSec() << " IMUs size: "<< IMUs.size() 
+        //           << " img_msg timestamp" << img_msg->header.stamp.toSec() << " feature_buf size: " << feature_buf.size() 
+        //           << " imu_buf size: " << imu_buf.size() << std::endl;
         measurements.emplace_back(IMUs, img_msg);
     }
     return measurements;
@@ -264,12 +281,12 @@ void EstimatorSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &fe
 void EstimatorSystem::send_imu(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     double t = imu_msg->header.stamp.toSec();
-        if (current_time < 0)
-            current_time = t;
-        double dt = t - current_time;
+    if (current_time < 0)
         current_time = t;
+    double dt = t - current_time;
+    current_time = t;
 
-    double ba[]{0.0, 0.0, 0.0};//TODO(cy) :没有标定imu的bias吗？而且还写固定了
+    double ba[]{0.0, 0.0, 0.0};
     double bg[]{0.0, 0.0, 0.0};
 
     double dx = imu_msg->linear_acceleration.x - ba[0];
@@ -279,9 +296,22 @@ void EstimatorSystem::send_imu(const sensor_msgs::ImuConstPtr &imu_msg)
     double rx = imu_msg->angular_velocity.x - bg[0];
     double ry = imu_msg->angular_velocity.y - bg[1];
     double rz = imu_msg->angular_velocity.z - bg[2];
-    //ROS_DEBUG("IMU %f, dt: %f, acc: %f %f %f, gyr: %f %f %f", t, dt, dx, dy, dz, rx, ry, rz);
 
-        estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+    // 原有的处理
+    estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+    
+    // 新增：用真实时间戳为ZUPT提供数据
+        // 为ZUPT提供IMU数据
+    if (estimator.zupt_enabled && estimator.zupt_updater) {
+        double t = imu_msg->header.stamp.toSec();
+        Vector3d linear_acceleration(imu_msg->linear_acceleration.x, 
+                                   imu_msg->linear_acceleration.y, 
+                                   imu_msg->linear_acceleration.z);
+        Vector3d angular_velocity(imu_msg->angular_velocity.x,
+                                imu_msg->angular_velocity.y,
+                                imu_msg->angular_velocity.z);
+        estimator.feedIMUForZUPT(t, linear_acceleration, angular_velocity);
+    }
 }
 
 void EstimatorSystem::process_loop_detection()
@@ -536,8 +566,6 @@ void EstimatorSystem::process()
                 send_imu(imu_msg);
 
             auto img_msg = measurement.second;
-            //      ROS_DEBUG("processing vision data with stamp %f \n", img_msg->header.stamp.toSec());
-            //    cout << "processing vision data with stamp "<<  img_msg->header.stamp.toSec() << endl;
 
             TicToc t_s;
             map<int, vector<pair<int, Vector3d>>> image;
@@ -549,24 +577,30 @@ void EstimatorSystem::process()
                 double x = img_msg->points[i].x;
                 double y = img_msg->points[i].y;
                 double z = img_msg->points[i].z;
-                //ROS_ASSERT(z == 1);
                 assert(z == 1);
                 image[feature_id].emplace_back(camera_id, Vector3d(x, y, z));
             }
 
+            // 处理图像数据
             estimator.processImage(image, img_msg->header);
+
+            // 零速更新状态检查和输出
+            if (estimator.isZeroVelocityUpdateEnabled() && estimator.is_zero_velocity_state) {
+                std::cout << "[ESTIMATOR_SYSTEM] 系统当前处于零速状态" << std::endl;
+            }
 
             #ifndef RUN_ON_PC
             static bool reset = false;
             if(estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR && !reset)
                 reset = reset_q();
             #endif
+
             /**
-            *** start build keyframe database for loop closure
+            *** 构建关键帧数据库用于回环检测
             **/
             if(LOOP_CLOSURE)
             {
-                // remove previous loop
+                // 移除之前的回环
                 vector<RetriveData>::iterator it = estimator.retrive_data_vector.begin();
                 for(; it != estimator.retrive_data_vector.end(); )
                 {
@@ -577,6 +611,7 @@ void EstimatorSystem::process()
                     else
                         it++;
                 }
+                
                 m_retrive_data_buf.lock();
                 while(!retrive_data_buf.empty())
                 {
@@ -585,48 +620,69 @@ void EstimatorSystem::process()
                     estimator.retrive_data_vector.push_back(tmp_retrive_data);
                 }
                 m_retrive_data_buf.unlock();
-                //WINDOW_SIZE - 2 is key frame
+
+                //WINDOW_SIZE - 2 是关键帧
                 if(estimator.marginalization_flag == 0 && estimator.solver_flag == estimator.NON_LINEAR)
                 {
-                    Vector3d vio_T_w_i = estimator.Ps[WINDOW_SIZE - 2];
-                    Matrix3d vio_R_w_i = estimator.Rs[WINDOW_SIZE - 2];
-                    i_buf.lock();
-                    while(!image_buf.empty() && image_buf.front().second < estimator.Headers[WINDOW_SIZE - 2].stamp.toSec())
-                    {
-                        image_buf.pop();
+                    // 如果是零速状态，可以减少关键帧的生成频率
+                    bool should_create_keyframe = true;
+                    if (estimator.is_zero_velocity_state) {
+                        static int zupt_keyframe_skip_count = 0;
+                        zupt_keyframe_skip_count++;
+                        
+                        // 零速状态下每5帧才生成一个关键帧
+                        if (zupt_keyframe_skip_count % 5 != 0) {
+                            should_create_keyframe = false;
+                        }
                     }
-                    i_buf.unlock();
-                    //assert(estimator.Headers[WINDOW_SIZE - 1].stamp.toSec() == image_buf.front().second);
-                    // relative_T   i-1_T_i relative_R  i-1_R_i
-                    cv::Mat KeyFrame_image;
-                    KeyFrame_image = image_buf.front().first;
+                    
+                    if (should_create_keyframe) {
+                        Vector3d vio_T_w_i = estimator.Ps[WINDOW_SIZE - 2];
+                        Matrix3d vio_R_w_i = estimator.Rs[WINDOW_SIZE - 2];
+                        
+                        i_buf.lock();
+                        while(!image_buf.empty() && image_buf.front().second < estimator.Headers[WINDOW_SIZE - 2].stamp.toSec())
+                        {
+                            image_buf.pop();
+                        }
+                        i_buf.unlock();
 
-                    const char *pattern_file = PATTERN_FILE.c_str();
-                    Vector3d cur_T;
-                    Matrix3d cur_R;
-                    cur_T = relocalize_r * vio_T_w_i + relocalize_t;
-                    cur_R = relocalize_r * vio_R_w_i;
-                    KeyFrame* keyframe = new KeyFrame(estimator.Headers[WINDOW_SIZE - 2].stamp.toSec(), vio_T_w_i, vio_R_w_i, cur_T, cur_R, image_buf.front().first, pattern_file, relocalize_t, relocalize_r);
-                    keyframe->setExtrinsic(estimator.tic[0], estimator.ric[0]);
-                    keyframe->buildKeyFrameFeatures(estimator, m_camera);
-                    m_keyframe_buf.lock();
-                    keyframe_buf.push(keyframe);
-                    m_keyframe_buf.unlock();
-                    // update loop info
+                        cv::Mat KeyFrame_image;
+                        KeyFrame_image = image_buf.front().first;
+
+                        const char *pattern_file = PATTERN_FILE.c_str();
+                        Vector3d cur_T;
+                        Matrix3d cur_R;
+                        cur_T = relocalize_r * vio_T_w_i + relocalize_t;
+                        cur_R = relocalize_r * vio_R_w_i;
+                        
+                        KeyFrame* keyframe = new KeyFrame(estimator.Headers[WINDOW_SIZE - 2].stamp.toSec(), 
+                                                        vio_T_w_i, vio_R_w_i, cur_T, cur_R, 
+                                                        image_buf.front().first, pattern_file, 
+                                                        relocalize_t, relocalize_r);
+                        keyframe->setExtrinsic(estimator.tic[0], estimator.ric[0]);
+                        keyframe->buildKeyFrameFeatures(estimator, m_camera);
+                        
+                        m_keyframe_buf.lock();
+                        keyframe_buf.push(keyframe);
+                        m_keyframe_buf.unlock();
+                    }
+
+                    // 更新回环信息
                     if (!estimator.retrive_data_vector.empty() && estimator.retrive_data_vector[0].relative_pose)
                     {
                         if(estimator.Headers[0].stamp.toSec() == estimator.retrive_data_vector[0].header)
                         {
                             KeyFrame* cur_kf = keyframe_database.getKeyframe(estimator.retrive_data_vector[0].cur_index);
-                            if (abs(estimator.retrive_data_vector[0].relative_yaw) > 30.0 || estimator.retrive_data_vector[0].relative_t.norm() > 20.0)
+                            if (abs(estimator.retrive_data_vector[0].relative_yaw) > 30.0 || 
+                                estimator.retrive_data_vector[0].relative_t.norm() > 20.0)
                             {
-                                //     ROS_DEBUG("Wrong loop");
-                                cout << "Wrong loop" <<endl;
+                                cout << "错误的回环" <<endl;
                                 cur_kf->removeLoop();
                             }
                             else
                             {
-                                cur_kf->updateLoopConnection( estimator.retrive_data_vector[0].relative_t,
+                                cur_kf->updateLoopConnection(estimator.retrive_data_vector[0].relative_t,
                                         estimator.retrive_data_vector[0].relative_q,
                                         estimator.retrive_data_vector[0].relative_yaw);
                                 m_posegraph_buf.lock();
@@ -637,12 +693,18 @@ void EstimatorSystem::process()
                     }
                 }
             }
-            //   double whole_t = t_s.toc();
-            //    printStatistics(estimator, whole_t);
-            cout << "position: " << estimator.Ps[WINDOW_SIZE].transpose() << endl << t_s.toc() << "ms" << std::endl;
+
+            // 输出位置信息，包含零速状态标识
+            std::cout << "位置: " << estimator.Ps[WINDOW_SIZE].transpose();
+            if (estimator.is_zero_velocity_state) {
+                std::cout << " [零速]";
+            }
+            // std::cout << std::endl << t_s.toc() << "ms" << std::endl;
+            
             std_msgs::Header header = img_msg->header;
             header.frame_id = "world";
             cur_header = header;
+            
             m_loop_drift.lock();
             if (estimator.relocalize)
             {
@@ -659,17 +721,17 @@ void EstimatorSystem::process()
             #endif
 
             m_loop_drift.unlock();
-            //ROS_ERROR("end: %f, at %f", img_msg->header.stamp.toSec(), ros::Time::now().toSec());
         }
+        
         m_buf.lock();
         m_state.lock();
         if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
             update();
         m_state.unlock();
         m_buf.unlock();
+        
         total_t+=t_pro_img_s.toc();
-        std::cout << "####backen process on Image mean time : " << total_t / img_num << std::endl;
-
+        // std::cout << "####后端图像处理平均时间: " << total_t / img_num << std::endl;
     }
 }
 #ifndef RUN_ON_PC
@@ -898,11 +960,11 @@ void EstimatorSystem::LoadImus(ifstream & fImus, const ros::Time &imageTimestamp
             // nsec = (nsec/1000)*1000+500;//????????
             imudata->header.stamp = ros::Time(sec,nsec);
             imu_callback(imudata);
-            if (imudata->header.stamp > imageTimestamp)       //load all imu data produced in interval time between two consecutive frams
-            {
-                std::cout<<"imudata->header.stamp "<<imudata->header.stamp.toSec()<<" imageTimestamp "<<imageTimestamp.toSec()<<std::endl;
-                break;
-            }    
+            // if (imudata->header.stamp > imageTimestamp)       //load all imu data produced in interval time between two consecutive frams
+            // {
+            //     std::cout<<"imudata->header.stamp "<<imudata->header.stamp.toSec()<<" imageTimestamp "<<imageTimestamp.toSec()<<std::endl;
+            //     break;
+            // }    
         }
     }
 }
@@ -982,8 +1044,8 @@ void EstimatorSystem::SendResult(Eigen::Vector3d loop_correct_t, Eigen::Matrix3d
 
         Eigen::Vector3d eulerAngle=correct_q.toRotationMatrix().eulerAngles(2,1,0);
         eulerAngle *= (180 / M_PI);
-        std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
-         "correct_q "<<correct_q.w()<<" "<<correct_q.x()<<" "<<correct_q.y()<<" "<<correct_q.z() <<std::endl;
+        // std::cout<<" -------------------- eulerAngle "<<eulerAngle[0]<<" "<<eulerAngle[1]<<" "<<eulerAngle[2]<<
+        //  "correct_q "<<correct_q.w()<<" "<<correct_q.x()<<" "<<correct_q.y()<<" "<<correct_q.z() <<std::endl;
 
     }
 }

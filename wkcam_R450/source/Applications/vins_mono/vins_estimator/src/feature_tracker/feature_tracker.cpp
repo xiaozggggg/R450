@@ -79,16 +79,15 @@ int FeatureTracker::readImage(const cv::Mat &_img)
                                img_pyr_->getCurrImgPyr(),
                                img_pyr_->getPreDivPyr(),
                                &pre_temp,
-                               &cur_temp, // TODO(cy): predict point
+                               &cur_temp,
                                &status,
                                &err,
-                               cv::Size(7, 7),
+                               cv::Size(15, 15),
                                MaxPyraLevel,
                                track_level_);
-
         // std::vector<cv::Point2f> pre_temp;
         // cv::KeyPoint::convert(prev_pts,pre_temp);
-        // cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(21, 21), 3);
+        // cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(11, 11), 5);
 
         assert(cur_pts.size() == cur_temp.size());
         for (int i = 0; i < cur_temp.size(); i++)
@@ -111,40 +110,33 @@ int FeatureTracker::readImage(const cv::Mat &_img)
         reduceVector(ids, status);
         reduceVector(track_cnt, status);
         track_num = track_cnt.size();
-        printf("temporal optical flow costs: %fms\n", t_o.toc());
     }
 
     rejectWithF();
+    
+    // 添加极线误差检查
+    TicToc t_epipolar;
+    rejectWithEpipolarError();
+    std::cout << "极线误差检查耗时: " << t_epipolar.toc() << " ms" << std::endl;
 
     vector<uchar> status;
-    deature_detector_->PutOldPtsInGrid(cur_pts, status); // 访问grid,并且不让点粘在一个小grid里面
+    deature_detector_->PutOldPtsInGrid(cur_pts, status);
     reduceVector(prev_pts, status);
     reduceVector(cur_pts, status);
     reduceVector(ids, status);
     reduceVector(track_cnt, status);
 
-    // cv::Mat db_op = img_pyr_->getCurrPyrImg(0).clone();
-    // IMGUtility::DrawGridInImg(deature_detector_->getBigGridRows(), deature_detector_->getBigGridCols(),
-    //                           deature_detector_->getBigGridRowSize() * 2, deature_detector_->getBigGridColSize() * 2, db_op);
-    // cv::Mat db_op_bgr = IMGUtility::drawPoints(db_op, cur_pts, -1);
-    // IMGUtility::showImg(db_op_bgr, "db_op_bgr");
-    // if (prev_pts.size() > 0)
-    //     IMGUtility::drawMatchesePts(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), prev_pts, cur_pts, "match");
-
     for (auto &n : track_cnt)
         n++;
-
 
     TicToc t_t;
     int n_max_cnt = MAX_CNT - static_cast<int>(cur_pts.size());
     n_pts.clear();
     if (n_max_cnt > 0)
     {
-        // deature_detector_->DetectNewPts(img_pyr_->getCurrPyrImg(0), img_pyr_->getCurrDivPyrImg(1), cur_pts, n_pts, n_max_cnt);
         deature_detector_->DetectNewPts(img_pyr_->getCurrImgPyr(), cur_pts, n_pts, n_max_cnt);
-        std::cout << "########cy feature detect: " << t_t.toc() << " n_max_cnt: " << n_max_cnt << " n_pts.size(): " << n_pts.size() << std::endl;
+        std::cout << "########xzg feature detect: " << t_t.toc() << " n_max_cnt: " << n_max_cnt << " n_pts.size(): " << n_pts.size() << std::endl;
     }
-
 
     TicToc t_a;
     addPoints(n_pts);
@@ -155,13 +147,17 @@ int FeatureTracker::readImage(const cv::Mat &_img)
     return track_num;
 }
 
+// 5. 添加设置极线误差阈值的函数（可选）
+void FeatureTracker::setEpipolarThreshold(double threshold)
+{
+    epipolar_threshold_ = threshold;
+}
 void FeatureTracker::rejectWithF()
 {
     if (cur_pts.size() >= 8)
     {
         vector<uchar> status;
 
-        // ROS_DEBUG("FM ransac begins");
         TicToc t_f;
         vector<cv::Point2f> un_prev_pts(prev_pts.size()), un_forw_pts(cur_pts.size());
         for (unsigned int i = 0; i < prev_pts.size(); i++)
@@ -178,7 +174,9 @@ void FeatureTracker::rejectWithF()
             un_forw_pts[i] = cv::Point2f(tmp_p.x(), tmp_p.y());
         }
 
-        cv::findFundamentalMat(un_prev_pts, un_forw_pts, cv::FM_RANSAC, F_THRESHOLD, 0.99, status);
+        // 计算基础矩阵并保存
+        fundamental_matrix_ = cv::findFundamentalMat(un_prev_pts, un_forw_pts, cv::FM_RANSAC, F_THRESHOLD, 0.99, status);
+        
         int size_a = prev_pts.size();
         assert(prev_pts.size() == cur_pts.size());
         assert(ids.size() == cur_pts.size());
@@ -188,8 +186,91 @@ void FeatureTracker::rejectWithF()
         reduceVector(ids, status);
         reduceVector(track_cnt, status);
 
-        //  ROS_DEBUG("FM ransac: %d -> %lu: %f", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
-        //  ROS_DEBUG("FM ransac costs: %fms", t_f.toc());
+
+    }
+}
+
+// 2. 实现计算单个点对极线误差的函数
+double FeatureTracker::computeEpipolarError(const cv::Point2f& pt1, const cv::Point2f& pt2, const cv::Mat& F)
+{
+    // 将点转换为归一化平面坐标
+    Eigen::Vector3d p1_3d, p2_3d;
+    m_camera->liftProjective(Eigen::Vector2d(pt1.x, pt1.y), p1_3d);
+    m_camera->liftProjective(Eigen::Vector2d(pt2.x, pt2.y), p2_3d);
+    
+    // 转换到虚拟归一化相机坐标
+    cv::Point3f p1_norm(FOCAL_LENGTH * p1_3d.x() / p1_3d.z() + COL / 2.0,
+                        FOCAL_LENGTH * p1_3d.y() / p1_3d.z() + ROW / 2.0, 1.0);
+    cv::Point3f p2_norm(FOCAL_LENGTH * p2_3d.x() / p2_3d.z() + COL / 2.0,
+                        FOCAL_LENGTH * p2_3d.y() / p2_3d.z() + ROW / 2.0, 1.0);
+    
+    // 计算极线 l = F * p1
+    cv::Mat p1_mat = (cv::Mat_<double>(3, 1) << p1_norm.x, p1_norm.y, 1.0);
+    cv::Mat l = F * p1_mat;
+    
+    // 计算点到极线的距离: |ax + by + c| / sqrt(a^2 + b^2)
+    double a = l.at<double>(0);
+    double b = l.at<double>(1);
+    double c = l.at<double>(2);
+    
+    double dist = std::abs(a * p2_norm.x + b * p2_norm.y + c) / std::sqrt(a * a + b * b);
+    
+    return dist;
+}
+
+// 3. 实现极线误差检查函数
+void FeatureTracker::rejectWithEpipolarError()
+{
+    if (fundamental_matrix_.empty() || cur_pts.size() < 8)
+    {
+        std::cout << "跳过极线误差检查：基础矩阵为空或点数不足" << std::endl;
+        return;
+    }
+    
+    vector<uchar> status(cur_pts.size(), 1);
+    vector<double> epipolar_errors;
+    epipolar_errors.reserve(cur_pts.size());
+    
+    // 计算每个点对的极线误差
+    for (size_t i = 0; i < cur_pts.size(); i++)
+    {
+        double error = computeEpipolarError(prev_pts[i].pt, cur_pts[i].pt, fundamental_matrix_);
+        epipolar_errors.push_back(error);
+        
+        // 如果误差超过阈值，标记为异常点
+        if (error > epipolar_threshold_)
+        {
+            status[i] = 0;
+        }
+    }
+    
+    // 统计信息
+    int rejected_count = 0;
+    double sum_error = 0.0;
+    double max_error = 0.0;
+    for (size_t i = 0; i < status.size(); i++)
+    {
+        sum_error += epipolar_errors[i];
+        max_error = std::max(max_error, epipolar_errors[i]);
+        if (status[i] == 0) rejected_count++;
+    }
+    
+    double avg_error = sum_error / epipolar_errors.size();
+    
+    // std::cout << "极线误差检查统计:" << std::endl;
+    // std::cout << "  - 平均误差: " << avg_error << " 像素" << std::endl;
+    // std::cout << "  - 最大误差: " << max_error << " 像素" << std::endl;
+    // std::cout << "  - 误差阈值: " << epipolar_threshold_ << " 像素" << std::endl;
+    // std::cout << "  - 剔除点数: " << rejected_count << "/" << cur_pts.size() 
+            //   << " (" << (100.0 * rejected_count / cur_pts.size()) << "%)" << std::endl;
+    
+    // 剔除不满足极线约束的点
+    if (rejected_count > 0)
+    {
+        reduceVector(prev_pts, status);
+        reduceVector(cur_pts, status);
+        reduceVector(ids, status);
+        reduceVector(track_cnt, status);
     }
 }
 

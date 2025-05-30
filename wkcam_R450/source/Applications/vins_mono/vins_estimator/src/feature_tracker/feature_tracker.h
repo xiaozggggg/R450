@@ -49,6 +49,18 @@ public:
 
   void rejectWithF();
 
+  // 计算极线误差并剔除不满足约束的点
+  void rejectWithEpipolarError();
+  
+  // 计算单个点对的极线误差
+  double computeEpipolarError(const cv::Point2f& pt1, const cv::Point2f& pt2, const cv::Mat& F);
+
+  // 设置极线误差阈值
+  void setEpipolarThreshold(double threshold);
+  
+  // 成员变量（在类的private部分添加）：
+  double epipolar_threshold_ = 0.5;  // 极线误差阈值（像素）
+  cv::Mat fundamental_matrix_;       // 基础矩阵，在rejectWithF中计算
   vector<cv::Point2f> undistortedPoints();
 
   cv::Mat mask;

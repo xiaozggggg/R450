@@ -5,6 +5,17 @@ Estimator::Estimator(): f_manager{Rs}
     //ROS_INFO("init begins");
     clearState();
     failure_occur = 0;
+    
+    // 初始化零速更新模块
+    zupt_updater = std::make_unique<UpdaterZeroVelocity>(
+        9.81,    // 重力加速度
+        0.5,     // 最大速度阈值 (m/s)
+        2.0,     // 噪声倍数
+        1.0,     // 最大视差阈值 (pixels)
+        1.0      // 卡方检验倍数
+    );
+    zupt_enabled = true;  // 默认启用零速更新
+    is_zero_velocity_state = false;
 }
 
 void Estimator::setParameter()
@@ -18,6 +29,7 @@ void Estimator::setParameter()
     ProjectionFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
 }
 
+// 在clearState()中添加零速更新重置
 void Estimator::clearState()
 {
     for (int i = 0; i < WINDOW_SIZE + 1; i++)
@@ -67,6 +79,27 @@ void Estimator::clearState()
     last_marginalization_parameter_blocks.clear();
 
     f_manager.clearState();
+    
+    // 重置零速更新状态
+    if (zupt_updater) {
+        zupt_updater->reset_zupt_state();
+    }
+    is_zero_velocity_state = false;
+}
+
+void Estimator::feedIMUForZUPT(double timestamp, const Vector3d &linear_acceleration, const Vector3d &angular_velocity)
+{
+    if (zupt_enabled && zupt_updater) {
+        zupt_updater->feed_imu(timestamp, linear_acceleration, angular_velocity);
+        
+        // 删除调试输出，避免日志过多
+        static int debug_count = 0;
+        if (debug_count % 200 == 0) {
+            std::cout << "[ZUPT] IMU数据同步: t=" << timestamp 
+                      << ", 数据总量=" << zupt_updater->getIMUDataSize() << std::endl;
+        }
+        debug_count++;
+    }
 }
 
 void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity)
@@ -85,8 +118,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
     if (frame_count != 0)
     {
         pre_integrations[frame_count]->push_back(dt, linear_acceleration, angular_velocity);
-        //if(solver_flag != NON_LINEAR)
-            tmp_pre_integration->push_back(dt, linear_acceleration, angular_velocity);
+        tmp_pre_integration->push_back(dt, linear_acceleration, angular_velocity);
 
         dt_buf[frame_count].push_back(dt);
         linear_acceleration_buf[frame_count].push_back(linear_acceleration);
@@ -103,13 +135,86 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
     }
     acc_0 = linear_acceleration;
     gyr_0 = angular_velocity;
-	//std::cout << "acc_0 : " << acc_0 << std::endl;
-	//std::cout << "gyr_0 : " << gyr_0 << std::endl;
+}
 
+// 零速更新尝试方法
+bool Estimator::tryZeroVelocityUpdate(double timestamp)
+{
+    if (!zupt_enabled || !zupt_updater || solver_flag != NON_LINEAR) {
+        std::cerr<<"1111111111111111111111111111"<<std::endl;
+        return false;
+    }
+    
+    // // 只有在系统已经初始化完成后才进行零速检测
+    // if (frame_count < WINDOW_SIZE) {
+    //     return false;
+    // }
+    
+    bool zupt_success = zupt_updater->try_update(this, timestamp);
+    
+    if (zupt_success) {
+        is_zero_velocity_state = true;
+        std::cout << "[ESTIMATOR] 零速更新成功执行" << std::endl;
+        
+        // 如果是零速状态，可以跳过部分视觉处理来节省计算
+        return true;
+    } else {
+        is_zero_velocity_state = false;
+    }
+    
+    return zupt_success;
 }
 
 void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image, const std_msgs::Header &header)
 {
+    // 首先同步IMU数据到当前图像时间
+    if (zupt_enabled && zupt_updater) {
+        // 确保ZUPT模块有最新的IMU数据
+        // 这里可以添加一个同步机制
+        double img_time = header.stamp.toSec();
+        
+        // 输出调试信息
+        // std::cout << "[ESTIMATOR] 处理图像时间: " << img_time 
+        //           << ", ZUPT IMU数据量: " << zupt_updater->getIMUDataSize() << std::endl;
+    }
+    
+    // 尝试零速更新
+    bool zupt_applied = false;
+    if (solver_flag == NON_LINEAR) {
+        // 确保系统已经收敛
+        if (frame_count >= WINDOW_SIZE) {
+            zupt_applied = tryZeroVelocityUpdate(header.stamp.toSec());
+        }
+    }
+    
+    // 如果零速更新成功且处于静止状态，可以选择跳过部分视觉处理
+    if (zupt_applied && is_zero_velocity_state) {
+        std::cout << "[ESTIMATOR] 系统处于零速状态，简化视觉处理" << std::endl;
+        
+        // 仍然需要基本的特征管理，但可以跳过一些计算密集的操作
+        Headers[frame_count] = header;
+        
+        // 简化的特征处理
+        bool is_keyframe = f_manager.addFeatureCheckParallax(frame_count, image);
+        marginalization_flag = is_keyframe ? MARGIN_OLD : MARGIN_SECOND_NEW;
+        
+        // 更新时间戳但跳过复杂的优化
+        if (frame_count == WINDOW_SIZE) {
+            slideWindow();
+            f_manager.removeFailures();
+        } else {
+            frame_count++;
+        }
+        
+        // 更新关键状态
+        last_R = Rs[WINDOW_SIZE];
+        last_P = Ps[WINDOW_SIZE];
+        last_R0 = Rs[0];
+        last_P0 = Ps[0];
+        
+        return;
+    }
+
    // ROS_DEBUG("new image coming ------------------------------------------");
   //  ROS_DEBUG("Adding feature points %lu", image.size());
     if (f_manager.addFeatureCheckParallax(frame_count, image))
@@ -205,6 +310,9 @@ void Estimator::processImage(const map<int, vector<pair<int, Vector3d>>> &image,
         last_P = Ps[WINDOW_SIZE];
         last_R0 = Rs[0];
         last_P0 = Ps[0];
+    //         std::cout << "估计的IMU偏置:" << std::endl;
+    // std::cout << "加速度计: " << Bas[WINDOW_SIZE].transpose() << std::endl;
+    // std::cout << "陀螺仪: " << Bgs[WINDOW_SIZE].transpose() << std::endl;
     }
 }
 bool Estimator::initialStructure()

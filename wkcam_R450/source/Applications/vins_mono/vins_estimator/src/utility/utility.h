@@ -138,4 +138,52 @@ class Utility
         return angle_degrees +
             two_pi * std::floor((-angle_degrees + T(180)) / two_pi);
     };
+
+
+
+
+/**
+ * @brief SO(3)的对数映射 - 从旋转矩阵到轴角
+ * @param R 旋转矩阵
+ * @return 轴角向量
+ */
+inline Eigen::Vector3d log_so3(const Eigen::Matrix3d &R)
+{
+    double trace = R.trace();
+    double angle = acos((trace - 1.0) * 0.5);
+    
+    if (abs(angle) < 1e-6) {
+        // 小角度情况
+        return Eigen::Vector3d::Zero();
+    } else if (abs(angle - M_PI) < 1e-6) {
+        // 角度接近π的情况
+        Eigen::Vector3d axis;
+        // 找到最大的对角元素
+        int max_idx = 0;
+        for (int i = 1; i < 3; i++) {
+            if (R(i, i) > R(max_idx, max_idx)) {
+                max_idx = i;
+            }
+        }
+        
+        axis[max_idx] = sqrt((R(max_idx, max_idx) + 1.0) * 0.5);
+        for (int i = 0; i < 3; i++) {
+            if (i != max_idx) {
+                axis[i] = R(max_idx, i) / (2.0 * axis[max_idx]);
+            }
+        }
+        
+        return angle * axis;
+    } else {
+        // 一般情况
+        double sin_angle = sin(angle);
+        Eigen::Vector3d axis;
+        axis << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1);
+        axis = axis * angle / (2.0 * sin_angle);
+        return axis;
+    }
+}
+
+
+
 };

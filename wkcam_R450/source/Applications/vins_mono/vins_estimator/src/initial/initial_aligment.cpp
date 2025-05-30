@@ -26,8 +26,8 @@ bool solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
     }
     delta_bg = A.ldlt().solve(b);
     cout << "gyroscope bias initial calibration " << delta_bg.transpose() << endl;
-    if(delta_bg.norm()>0.1)
-        return false;
+    // if(delta_bg.norm()<0.5)
+    //     return false;
 
     for (int i = 0; i <= WINDOW_SIZE; i++)
         Bgs[i] += delta_bg;

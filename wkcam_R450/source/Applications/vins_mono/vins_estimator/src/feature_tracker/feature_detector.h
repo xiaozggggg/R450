@@ -22,8 +22,8 @@ class IdGenerator {
 };
 
 #define DETECT_LEVEL 1
-#define BIG_GRID_ROW 5
-#define BIG_GRID_COL 5
+#define BIG_GRID_ROW 8
+#define BIG_GRID_COL 8
 #define BIG_SMALL_RATE_ROW 3
 #define BIG_SMALL_RATE_COL 4
 #define DROP_BORDER 4

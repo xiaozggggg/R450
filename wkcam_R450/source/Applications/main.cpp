@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
 	double factor = static_cast<double>(fsSettings["factor"]);
 	double timeshift_cam_imu = static_cast<double>(fsSettings["timeshift_cam_imu"]);
-
+	int use_equalize = static_cast<int>(fsSettings["use_equalize"]);
 #ifndef RUN_ON_PC
 	EstimatorSystem es;
 
@@ -130,6 +130,9 @@ int main(int argc, char *argv[])
 		uint32_t nsec = (timestamp - sec) * 1e9;
 		nsec = (nsec / 1000) * 1000 + 500;
 		ros::Time image_timestamp = ros::Time(sec, nsec);
+
+		if (use_equalize)
+			cv::equalizeHist(im, im);
 
 		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 		es.img_callback(im, image_timestamp, img_data);
@@ -184,7 +187,7 @@ int main(int argc, char *argv[])
 			std::cout << "q_data->u64pts: " << q_data->u64pts << " us" << std::endl;
 			Eigen::Vector3d eulerAngle = q.toRotationMatrix().eulerAngles(2, 1, 0);
 			eulerAngle *= (180 / M_PI);
-			std::cout << " -------------------- eulerAngle " << eulerAngle[0] << " " << eulerAngle[1] << " " << eulerAngle[2] << "correct_q " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
+			// std::cout << " -------------------- eulerAngle " << eulerAngle[0] << " " << eulerAngle[1] << " " << eulerAngle[2] << "correct_q " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
 		}
 		tmp3++;
 	};
@@ -263,6 +266,10 @@ int main(int argc, char *argv[])
 
 		if(factor != 1)
 			cv::resize(image, image, cv::Size(), factor, factor, cv::INTER_NEAREST);
+
+		if(use_equalize)
+			cv::equalizeHist(image, image);
+
 
 		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 		es.img_callback(image, image_timestamp);

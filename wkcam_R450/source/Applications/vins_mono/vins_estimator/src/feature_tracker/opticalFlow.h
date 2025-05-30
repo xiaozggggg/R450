@@ -5,8 +5,13 @@
 #include <boost/pool/object_pool.hpp>
 #include <vector>
 #include <memory>
+#include <iostream> // Added for logging
 
 // #define _WK_OPTICAL_FLOW_DEBUG_MODE_
+
+// Define a maximum window size for buffer allocation in WKKeyPointRepo
+// This should be large enough for the desired maximum window size, e.g., 15x15, 21x21, etc.
+#define MAX_OPTICAL_FLOW_WINDOW_SIZE 21 
 
 typedef int16_t deriv_type;
 
@@ -20,17 +25,21 @@ typedef struct _interpolation_param
   int w_bits;
 } InterpolationParam;
 
-// only works for win_size(7, 7)
+// WKKeyPointRepo stores data for a keypoint at a specific pyramid level.
+// The patch and xy_gradient buffers are sized for MAX_OPTICAL_FLOW_WINDOW_SIZE.
+// The actual winSize used in calculations will determine the portion of these buffers used.
 typedef struct _WKKeyPointRepo
 {
-  int16_t patch[52];           // image patch storage
+  // Image patch storage: channels (usually 1 for grayscale) * MAX_OPTICAL_FLOW_WINDOW_SIZE * MAX_OPTICAL_FLOW_WINDOW_SIZE
+  int16_t patch[MAX_OPTICAL_FLOW_WINDOW_SIZE * MAX_OPTICAL_FLOW_WINDOW_SIZE];
   float covariance_maxtrix[6]; // covariance matrix
-  int16_t xy_gradient[128];    // xy gradient
+  // XY gradient storage: 2 (for dx, dy) * MAX_OPTICAL_FLOW_WINDOW_SIZE * MAX_OPTICAL_FLOW_WINDOW_SIZE
+  int16_t xy_gradient[MAX_OPTICAL_FLOW_WINDOW_SIZE * MAX_OPTICAL_FLOW_WINDOW_SIZE * 2];
 } WKKeyPointRepo;
 
 typedef struct _WKKeyPointPyramidRepo
 {
-  WKKeyPointRepo pyramids[4];
+  WKKeyPointRepo pyramids[4]; // Assuming max 4 pyramid levels as before
 } WKKeyPointPyramidRepo;
 
 static boost::object_pool<WKKeyPointPyramidRepo> g_xp_of_tracker_pool;
@@ -43,6 +52,7 @@ struct WKKeyPoint : public cv::KeyPoint
     this->angle = 0.f;
     this->response = 0.f;
     this->need_to_update_repo = true;
+    this->keypoint_repo = nullptr; // Initialize shared_ptr
   }
   WKKeyPoint(float _x, float _y)
   {
@@ -51,6 +61,7 @@ struct WKKeyPoint : public cv::KeyPoint
     this->response = 0.f;
     this->angle = 0.f;
     this->need_to_update_repo = true;
+    this->keypoint_repo = nullptr; // Initialize shared_ptr
   }
   explicit WKKeyPoint(const cv::Point2f &pt)
   {
@@ -58,6 +69,7 @@ struct WKKeyPoint : public cv::KeyPoint
     this->response = 0.f;
     this->angle = 0.f;
     this->need_to_update_repo = true;
+    this->keypoint_repo = nullptr; // Initialize shared_ptr
   }
 
   explicit WKKeyPoint(const cv::KeyPoint &kp)
@@ -67,13 +79,24 @@ struct WKKeyPoint : public cv::KeyPoint
     this->angle = kp.angle;
     this->class_id = kp.class_id;
     this->need_to_update_repo = true;
+    this->keypoint_repo = nullptr; // Initialize shared_ptr
   }
 
   static void convert(const std::vector<cv::KeyPoint> &keypoints, std::vector<WKKeyPoint> &WKkpts)
   {
     WKkpts.resize(keypoints.size());
     for (size_t i = 0; i < keypoints.size(); i++)
-      WKkpts[i] = WKKeyPoint(keypoints[i]);
+    {
+      // WKkpts[i] = WKKeyPoint(keypoints[i]); // This might try to re-allocate if not careful
+      // Safer to copy members and manage shared_ptr explicitly if needed
+      WKkpts[i].pt = keypoints[i].pt;
+      WKkpts[i].response = keypoints[i].response;
+      WKkpts[i].angle = keypoints[i].angle;
+      WKkpts[i].class_id = keypoints[i].class_id;
+      WKkpts[i].need_to_update_repo = true; // Default for new conversion
+      // keypoint_repo should be allocated when needed by calling allocate()
+      WKkpts[i].keypoint_repo = nullptr;
+    }
   }
 
   static void convert(const std::vector<WKKeyPoint> WKkpts, std::vector<cv::KeyPoint> &keypoints)
@@ -89,8 +112,6 @@ struct WKKeyPoint : public cv::KeyPoint
     }
   }
 
-  // guarantee the patch memory is released
-  // when doing WKKeyPoint assignment
   WKKeyPoint &operator=(const WKKeyPoint &other)
   {
     if (this != &other)
@@ -98,14 +119,13 @@ struct WKKeyPoint : public cv::KeyPoint
       this->pt = other.pt;
       this->response = other.response;
       this->angle = other.angle;
+      this->class_id = other.class_id; // Make sure class_id is copied
       this->keypoint_repo = other.keypoint_repo;
       this->need_to_update_repo = other.need_to_update_repo;
     }
     return *this;
   }
-  // call this function to allocate memory for the patch of this keypoint,
-  // if the patch of keypoint has already allocated, this function will not
-  // reallocate memory.
+
   void allocate()
   {
     if (keypoint_repo)
@@ -116,11 +136,15 @@ struct WKKeyPoint : public cv::KeyPoint
         g_xp_of_tracker_pool.malloc(),
         [](WKKeyPointPyramidRepo *ptr)
         { g_xp_of_tracker_pool.free(ptr); });
+    if (!keypoint_repo) {
+        std::cerr << "Error: Failed to allocate WKKeyPointPyramidRepo from pool." << std::endl;
+        // Consider throwing an exception or handling error appropriately
+    }
   }
-  // repository of keypoint, the memory here is automaticcally handled
   std::shared_ptr<WKKeyPointPyramidRepo> keypoint_repo;
   bool need_to_update_repo;
 };
+
 /*****************************************************************************
  * @param[in]  _prevPyramids   the pyramids of previous image
  * @param[out] _nextPyramids   the pyramids of current image
@@ -129,13 +153,13 @@ struct WKKeyPoint : public cv::KeyPoint
  * @param[out] _nextPts        output keypoints
  * @param[out] _status         the vector of track status
  * @param[out] _err            the vector of errors
- * @param[in]  win_size        window size, only support 7 x 7 for now
- * @param[in]  max_level       the maximum pyramid level, only surpport 4 levels
- *                             pyramid level = [0, max_level], max_level <= 3
- * @param[in]  start_level     you can do optical flow start from this level
- * @param[in]  criteria        termination condition for iteration
- * @param[in]  flags           not used yet
- * @param[in]  minEigThreshold
+ * @param[in]  _win_size       window size (e.g., cv::Size(7,7) or cv::Size(15,15))
+ * @param[in]  _max_level      the maximum pyramid level, only surpport 4 levels
+ * pyramid level = [0, max_level], max_level <= 3
+ * @param[in]  _start_level    you can do optical flow start from this level
+ * @param[in]  _criteria       termination condition for iteration
+ * @param[in]  _flags          flags, e.g., cv::OPTFLOW_USE_INITIAL_FLOW, cv::OPTFLOW_LK_GET_MIN_EIGENVALS
+ * @param[in]  _minEigThreshold minimum eigenvalue threshold
  */
 void WKcalcOpticalFlowPyrLK(const std::vector<cv::Mat> &_prevPyramids,
                             const std::vector<cv::Mat> &_nextPyramids,
@@ -144,13 +168,13 @@ void WKcalcOpticalFlowPyrLK(const std::vector<cv::Mat> &_prevPyramids,
                             std::vector<cv::Point2f> *_nextPts,
                             std::vector<uchar> *_status,
                             std::vector<float> *_err,
-                            const cv::Size _win_size = cv::Size(7, 7),
-                            int _max_level = 3,
-                            int _start_level = 1,
+                            const cv::Size _win_size = cv::Size(15, 15), // Default, but will be overridden
+                            int _max_level = 3, // Adjusted default to match common use (0,1,2,3 means 4 levels)
+                            int _start_level = 0, // Default start level
                             cv::TermCriteria _criteria =
                                 cv::TermCriteria(cv::TermCriteria::COUNT +
                                                  cv::TermCriteria::EPS,
-                                             20, 0.01),
+                                             30, 0.01), // Adjusted criteria
                             int _flags = 0, double _minEigThreshold = 1e-4);
 
 typedef struct WKTrackerInvoker
@@ -169,36 +193,54 @@ typedef struct WKTrackerInvoker
                    int _start_level,
                    int _flags, float _minEigThreshold);
 
-  /*************************************************************
-   * To decide whether a image point is in a given region
-   * @param[in]    pt        a given image point
-   * @param[out]   region    a region descriped by cv::Rect
-   * @return       bool      true if not in range
-   */
   static inline bool is_keypoint_not_in_valid_range(
       const cv::Point2i &pt,
-      const cv::Rect &region)
+      const cv::Rect &region,
+      const cv::Size& winSize, // Added winSize for more accurate boundary checks
+      const cv::Size& imageSize // Added imageSize for complete check
+      )
   {
-    return (pt.x < region.x || pt.x > region.width + region.x ||
-            pt.y < region.y || pt.y > region.height + region.y);
+    // Check considers top-left corner of the window for the point 'pt'
+    // and if the window would go out of bounds of 'region'.
+    // 'region' itself should be pre-calculated to be valid within imageSize.
+    // For example, region might be image.size() inset by winSize/2 if pt is centered.
+    // Or more simply, check if the whole window around pt fits in imageSize.
+    int halfW = winSize.width / 2;
+    int halfH = winSize.height / 2;
+
+    // Check if the point itself (top-left of patch) is within the image boundary
+    // allowing for the full window size.
+    if (pt.x < 0 || pt.y < 0 || 
+        pt.x + winSize.width >= imageSize.width || 
+        pt.y + winSize.height >= imageSize.height) {
+        return true; // Point is such that window would be out of image bounds
+    }
+    // The original check against 'region' might be for a pre-padded region.
+    // If 'region' is just the image boundary minus padding:
+    // return (pt.x < region.x || pt.x + winSize.width > region.width + region.x ||
+    //         pt.y < region.y || pt.y + winSize.height > region.height + region.y);
+    // For simplicity, let's assume region is already the valid area for top-left of patch
+     return (pt.x < region.x || pt.x >= region.x + region.width ||   // Check if top-left of patch is within region
+            pt.y < region.y || pt.y >= region.y + region.height);
+    // A more robust check would be:
+    // return (pt.x - halfW < 0 || pt.x + halfW + (winSize.width % 2) >= imageSize.width ||
+    //         pt.y - halfH < 0 || pt.y + halfH + (winSize.height % 2) >= imageSize.height);
+    // But the original code uses region, so we stick to that concept.
+    // The key is that the caller must define 'region' correctly based on winSize.
   }
 
-  // Invoke optical flow by operator()
+
   void operator()(const cv::Range &range) const;
-  /*********************************************************************
-   * compute covariance matrix and update patch to corresponding keypoint
-   * @param[in]  iprevPt      keypoint position
-   * @param[in]  inter_param  bilinear interpolation parameter
-   * @param[out] IWinBuf      patch after interpolation
-   * @param[out] derivIWinBuf gradient patch after interpolation
-   * @param[in]  A_ptr        start address of covariance matrix in patch
-   */
+
   void compute_covariance_matrix_and_update_patch(
       const cv::Point2i &iprevPt,
       const InterpolationParam &inter_param,
-      cv::Mat *IWinBuf,
-      cv::Mat *derivIWinBuf,
-      float *const A_ptr) const;
+      cv::Mat *IWinBuf,       // This Mat will wrap WKKeyPointRepo::patch
+      cv::Mat *derivIWinBuf,  // This Mat will wrap WKKeyPointRepo::xy_gradient
+      float *const A_ptr,      // Points to WKKeyPointRepo::covariance_maxtrix
+      const cv::Size& currentWinSize // Pass current winSize
+      ) const;
+
 
   const cv::Mat *prevImg;
   const cv::Mat *nextImg;
@@ -208,7 +250,7 @@ typedef struct WKTrackerInvoker
   std::vector<uchar> *m_status;
   std::vector<float> *m_err;
 
-  cv::Size winSize;
+  cv::Size winSize; // This will be the actual, variable window size
   cv::TermCriteria criteria;
   int level;
   int maxLevel;

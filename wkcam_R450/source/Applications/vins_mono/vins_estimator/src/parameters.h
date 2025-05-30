@@ -75,6 +75,14 @@ extern int EQUALIZE;
 extern int FISHEYE;
 extern bool PUB_THIS_FRAME;
 
+
+// 零速更新参数声明（注意：这里只是声明，定义在parameters.cpp中）
+extern bool ENABLE_ZUPT;                    // 是否启用零速更新
+extern double ZUPT_MAX_VELOCITY;           // 零速更新最大速度阈值 (m/s)
+extern double ZUPT_NOISE_MULTIPLIER;       // 零速更新噪声倍数
+extern double ZUPT_MAX_DISPARITY;          // 零速更新最大视差阈值 (pixels)
+extern double ZUPT_CHI2_MULTIPLIER;        // 零速更新卡方检验倍数
+
 void readParameters(const string & );
 
 enum SIZE_PARAMETERIZATION
