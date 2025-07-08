@@ -248,8 +248,8 @@ bool UpdaterZeroVelocity::try_update(Estimator* estimator, double timestamp) {
     //           << " m/s^2 (阈值: 0.3)" << std::endl;
     
     if (!gyr_check || !acc_check) {
-        std::cout << "[ZUPT] IMU检测失败 - 角速度检查: " << (gyr_check ? "通过" : "失败")
-                  << ", 加速度检查: " << (acc_check ? "通过" : "失败") << std::endl;
+        // std::cout << "[ZUPT] IMU检测失败 - 角速度检查: " << (gyr_check ? "通过" : "失败")
+        //           << ", 加速度检查: " << (acc_check ? "通过" : "失败") << std::endl;
         reset_zupt_state();
         return false;
     }
@@ -273,7 +273,7 @@ bool UpdaterZeroVelocity::try_update(Estimator* estimator, double timestamp) {
     bool chi2_check = perform_chi2_test(estimator, imu_recent, R_ItoG, bg, ba);
     
     if (!chi2_check) {
-        std::cout << "[ZUPT] 卡方检验失败，测量不符合零速假设" << std::endl;
+        // std::cout << "[ZUPT] 卡方检验失败，测量不符合零速假设" << std::endl;
         reset_zupt_state();
         return false;
     }
@@ -287,20 +287,20 @@ bool UpdaterZeroVelocity::try_update(Estimator* estimator, double timestamp) {
     
     // 如果速度很大，增加额外的确认
     if (velocity_norm > 2.0) {  // 2 m/s
-        std::cout << "[ZUPT] 警告：当前速度较大 (" << velocity_norm 
-                  << " m/s)，但IMU显示静止" << std::endl;
+        // std::cout << "[ZUPT] 警告：当前速度较大 (" << velocity_norm 
+        //           << " m/s)，但IMU显示静止" << std::endl;
         
         // 需要更多连续检测
         if (last_zupt_count < 5) {
             last_zupt_count++;
-            std::cout << "[ZUPT] 需要更多连续检测，当前次数: " << last_zupt_count << std::endl;
+            // std::cout << "[ZUPT] 需要更多连续检测，当前次数: " << last_zupt_count << std::endl;
             return false;
         }
     } else {
         // 正常情况下需要3次连续检测
         if (last_zupt_count < 3) {
             last_zupt_count++;
-            std::cout << "[ZUPT] 零速检测通过，连续次数: " << last_zupt_count << std::endl;
+            // std::cout << "[ZUPT] 零速检测通过，连续次数: " << last_zupt_count << std::endl;
             return false;
         }
     }
@@ -309,8 +309,8 @@ bool UpdaterZeroVelocity::try_update(Estimator* estimator, double timestamp) {
     // 5. 执行零速更新
     // =============================================================
     
-    std::cout << "[ZUPT] ========== 执行零速更新 ==========" << std::endl;
-    std::cout << "[ZUPT] 更新前速度: " << velocity_norm << " m/s" << std::endl;
+    // std::cout << "[ZUPT] ========== 执行零速更新 ==========" << std::endl;
+    // std::cout << "[ZUPT] 更新前速度: " << velocity_norm << " m/s" << std::endl;
     
     // 设置速度为零
     estimator->Vs[WINDOW_SIZE].setZero();
@@ -346,8 +346,8 @@ bool UpdaterZeroVelocity::try_update(Estimator* estimator, double timestamp) {
     
     last_zupt_state_timestamp = timestamp;
     
-    std::cout << "[ZUPT] 偏置更新 - 陀螺: " << bg_update.transpose() 
-              << ", 加速度: " << ba_update.transpose() << std::endl;
+    // std::cout << "[ZUPT] 偏置更新 - 陀螺: " << bg_update.transpose() 
+            //   << ", 加速度: " << ba_update.transpose() << std::endl;
     std::cout << "[ZUPT] 零速更新完成" << std::endl;
     
     return true;

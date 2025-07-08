@@ -59,7 +59,7 @@ public:
   void setEpipolarThreshold(double threshold);
   
   // 成员变量（在类的private部分添加）：
-  double epipolar_threshold_ = 0.5;  // 极线误差阈值（像素）
+  double epipolar_threshold_ = 10.0;  // 极线误差阈值（像素）
   cv::Mat fundamental_matrix_;       // 基础矩阵，在rejectWithF中计算
   vector<cv::Point2f> undistortedPoints();
 

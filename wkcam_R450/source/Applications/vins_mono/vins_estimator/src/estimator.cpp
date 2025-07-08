@@ -141,7 +141,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
 bool Estimator::tryZeroVelocityUpdate(double timestamp)
 {
     if (!zupt_enabled || !zupt_updater || solver_flag != NON_LINEAR) {
-        std::cerr<<"1111111111111111111111111111"<<std::endl;
+        // std::cerr<<"1111111111111111111111111111"<<std::endl;
         return false;
     }
     
@@ -558,7 +558,7 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
     {
         vector<pair<Vector3d, Vector3d>> corres;
         corres = f_manager.getCorresponding(i, WINDOW_SIZE);
-        if (corres.size() > 20)
+        if (corres.size() > 15)
         {
             double sum_parallax = 0;
             double average_parallax;
@@ -571,7 +571,7 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
 
             }
             average_parallax = 1.0 * sum_parallax / int(corres.size());
-            if(average_parallax * 460 > 30 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
+            if(average_parallax * 460 > 10 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
             {
                 l = i;
 				std::cout << "average_parallax:" << average_parallax*460 <<  " choose l :" << l << " and newest frame to triangulate the whole structure, corres.size():" <<  corres.size()  << std::endl;
@@ -712,19 +712,21 @@ void Estimator::double2vector()
 
 bool Estimator::failureDetection()
 {
-    if (f_manager.last_track_num < 2)
-    {
-     //   ROS_INFO(" little feature %d", f_manager.last_track_num);
-        return true;
-    }
-    if (Bas[WINDOW_SIZE].norm() > 2.5)
+    // if (f_manager.last_track_num < 2)
+    // {
+    //  //   ROS_INFO(" little feature %d", f_manager.last_track_num);
+    //     return true;
+    // }
+    if (Bas[WINDOW_SIZE].norm() > 3.5)
     {
      //   ROS_INFO(" big IMU acc bias estimation %f", Bas[WINDOW_SIZE].norm());
+     std::cerr<<"big IMU acc bias estimation "<< Bas[WINDOW_SIZE].norm()<<std::endl;
         return true;
     }
     if (Bgs[WINDOW_SIZE].norm() > 1.0)
     {
    //     ROS_INFO(" big IMU gyr bias estimation %f", Bgs[WINDOW_SIZE].norm());
+   std::cerr<<"big IMU gyr bias estimation "<< Bgs[WINDOW_SIZE].norm()<<std::endl;
         return true;
     }
     /*
@@ -735,14 +737,16 @@ bool Estimator::failureDetection()
     }
     */
     Vector3d tmp_P = Ps[WINDOW_SIZE];
-    if ((tmp_P - last_P).norm() > 5)
+    if ((tmp_P - last_P).norm() > 2)
     {
      //   ROS_INFO(" big translation");
+     std::cerr<<"big translation"<<std::endl;
         return true;
     }
     if (abs(tmp_P.z() - last_P.z()) > 1)
     {
     //    ROS_INFO(" big z translation");
+   std::cerr<<"big z translation"<<std::endl;
         return true; 
     }
     Matrix3d tmp_R = Rs[WINDOW_SIZE];
@@ -753,6 +757,7 @@ bool Estimator::failureDetection()
     if (delta_angle > 50)
     {
        // ROS_INFO(" big delta_angle ");
+   std::cerr<<"big delta_angle "<<std::endl;
         return true;
     }
     return false;

@@ -82,12 +82,12 @@ int FeatureTracker::readImage(const cv::Mat &_img)
                                &cur_temp,
                                &status,
                                &err,
-                               cv::Size(15, 15),
+                               cv::Size(21, 21),
                                MaxPyraLevel,
                                track_level_);
         // std::vector<cv::Point2f> pre_temp;
         // cv::KeyPoint::convert(prev_pts,pre_temp);
-        // cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(11, 11), 5);
+        // cv::calcOpticalFlowPyrLK(img_pyr_->getPrePyrImg(0), img_pyr_->getCurrPyrImg(0), pre_temp, cur_temp, status, err, cv::Size(21, 21), 5);
 
         assert(cur_pts.size() == cur_temp.size());
         for (int i = 0; i < cur_temp.size(); i++)

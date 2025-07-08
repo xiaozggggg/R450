@@ -333,6 +333,7 @@ void EstimatorSystem::process_loop_detection()
     {
         KeyFrame* cur_kf = NULL;
         m_keyframe_buf.lock();
+        int keyframe_count = keyframe_buf.size();
         while(!keyframe_buf.empty())
         {
             if(cur_kf!=NULL)
@@ -341,6 +342,9 @@ void EstimatorSystem::process_loop_detection()
             keyframe_buf.pop();
         }
         m_keyframe_buf.unlock();
+                if(keyframe_count > 0) {
+            std::cout << "[LOOP DEBUG] Processing " << keyframe_count << " keyframes" << std::endl;
+        }
         if (cur_kf != NULL)
         {
             cur_kf->global_index = global_frame_cnt;
@@ -361,6 +365,8 @@ void EstimatorSystem::process_loop_detection()
             TicToc t_loopdetect;
             loop_succ = loop_closure->startLoopClosure(cur_kf->keypoints, cur_kf->descriptors, cur_pts, old_pts, old_index);
             double t_loop = t_loopdetect.toc();
+                        std::cout << "[LOOP DEBUG] Loop detection took " << t_loop << "ms, result: " 
+                      << (loop_succ ? "SUCCESS" : "FAILED");
             //ROS_DEBUG("t_loopdetect %f ms", t_loop);
             // cout << "t_loopdetect %f ms" << t_loop << endl;
             if(loop_succ)
@@ -624,6 +630,7 @@ void EstimatorSystem::process()
                 //WINDOW_SIZE - 2 是关键帧
                 if(estimator.marginalization_flag == 0 && estimator.solver_flag == estimator.NON_LINEAR)
                 {
+                    std::cout << "[LOOP DEBUG] Creating keyframe, marginalization_flag=0, solver=NON_LINEAR" << std::endl;
                     // 如果是零速状态，可以减少关键帧的生成频率
                     bool should_create_keyframe = true;
                     if (estimator.is_zero_velocity_state) {
@@ -633,10 +640,13 @@ void EstimatorSystem::process()
                         // 零速状态下每5帧才生成一个关键帧
                         if (zupt_keyframe_skip_count % 5 != 0) {
                             should_create_keyframe = false;
+                            std::cout << "[LOOP DEBUG] Skipping keyframe due to zero velocity state" << std::endl;
                         }
                     }
                     
                     if (should_create_keyframe) {
+                        std::cout << "[LOOP DEBUG] Creating keyframe at time: " 
+                      << estimator.Headers[WINDOW_SIZE - 2].stamp.toSec() << std::endl;
                         Vector3d vio_T_w_i = estimator.Ps[WINDOW_SIZE - 2];
                         Matrix3d vio_R_w_i = estimator.Rs[WINDOW_SIZE - 2];
                         
@@ -666,6 +676,8 @@ void EstimatorSystem::process()
                         m_keyframe_buf.lock();
                         keyframe_buf.push(keyframe);
                         m_keyframe_buf.unlock();
+                                    std::cout << "[LOOP DEBUG] Keyframe added to buffer, buffer size: " 
+                      << keyframe_buf.size() << std::endl;
                     }
 
                     // 更新回环信息
